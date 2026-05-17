@@ -1,0 +1,22 @@
+# Groq inference (free tier — replaces Anthropic API)
+groq>=0.9.0
+
+# LangGraph orchestration
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# HuggingFace dataset loading
+datasets>=2.20.0
+huggingface-hub>=0.23.0
+
+# Data processing
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Dashboard
+streamlit>=1.35.0
+plotly>=5.22.0
+
+# Utilities
+python-dotenv>=1.0.0
+tqdm>=4.66.0

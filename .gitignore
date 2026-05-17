@@ -1,0 +1,38 @@
+# ── Secrets ───────────────────────────────────────────────────────────
+.env
+
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Pipeline outputs ──────────────────────────────────────────────────
+# Commit summary.json manually if you want live results in the repo.
+# Commit qa_report*.json to track quality over time (optional).
+outputs/call_results_*.csv
+outputs/full_results_*.json
+outputs/run_manifest_*.json
+outputs/merge_manifest_*.json
+outputs/.checkpoint_*.jsonl
+outputs/pipeline.log
+
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editor ────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Jupyter ───────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb

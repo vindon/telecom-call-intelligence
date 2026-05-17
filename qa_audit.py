@@ -1,0 +1,467 @@
+"""
+qa_audit.py
+-----------
+QA audit engine for pipeline outputs.
+
+Scoring model (100 points per call)
+-------------------------------------
+  Completeness  30 pts — required fields are non-null and non-empty
+  Enum validity 25 pts — string fields match the allowed value set
+  Consistency   25 pts — cross-field logical rules hold
+  Plausibility  20 pts — numeric ranges and derived relationships are sane
+
+Aggregate report is written to:
+  outputs/qa_report_{ts}.json
+
+Pass threshold: calls scoring < 60 are flagged as LOW_QUALITY.
+A dataset is considered PASS if ≥90% of calls score ≥60.
+
+Usage
+-----
+  python qa_audit.py                        # audit latest full_results_*.json
+  python qa_audit.py --file outputs/full_results_combined_20260517_123456.json
+  python qa_audit.py --threshold 70         # stricter pass threshold
+"""
+
+import argparse
+import json
+from datetime import datetime
+from pathlib import Path
+
+OUTPUT_DIR = Path("outputs")
+
+# ── Schema ────────────────────────────────────────────────────────────
+
+# Fields that must be present and non-null/non-empty for a well-formed record
+REQUIRED_FIELDS: list[str] = [
+    "call_id",
+    "total_duration_seconds",
+    "total_issues_count",
+    "primary_issue_resolved",
+    "all_issues_resolved",
+    "fcr_indicator",
+    "escalation_required",
+    "customer_sentiment_start",
+    "customer_sentiment_end",
+    "customer_sentiment_improved",
+    "agent_skill_rating",
+    "primary_cost_driver",
+    "avoidable_call",
+    "could_be_self_served",
+    "agentic_ai_resolvable",
+    "proactive_outreach_applicable",
+    "repeat_call_risk",
+    "handle_time_efficiency",
+    "call_summary",
+]
+
+# Allowed values for each string enum field (None = any non-null string is OK)
+ENUM_RULES: dict[str, set[str]] = {
+    "channel":                         {"voice", "chat"},
+    "account_type":                    {"prepaid", "postpaid", "business", "unknown"},
+    "upsell_outcome":                  {"accepted", "declined", "pending", "not_attempted"},
+    "upsell_scripted_or_personalized": {"scripted", "personalized", "unclear"},
+    "agent_skill_rating":              {"proficient", "adequate", "needs_improvement"},
+    "agent_disproportionate_time_phase": {
+        "welcome", "discovery", "diagnosis", "resolution", "none",
+    },
+    "customer_sentiment_start":        {"positive", "neutral", "negative", "frustrated", "distressed"},
+    "customer_sentiment_end":          {"positive", "neutral", "negative", "frustrated", "distressed"},
+    "repeat_call_risk":                {"high", "medium", "low"},
+    "self_serve_channel_applicable":   {"IVR", "app", "website", "chatbot", "none"},
+    "primary_cost_driver":             {
+        "billing", "technical", "plan_change", "device", "information_only", "complaint",
+    },
+    "handle_time_efficiency":          {"efficient", "average", "inefficient"},
+    **{f"issue_{i}_category": {
+        "billing", "technical", "plan", "account",
+        "device", "information", "complaint", "other",
+    } for i in range(1, 6)},
+    **{f"issue_{i}_resolution_method": {
+        "agent_action", "self_serve_guidance", "escalated", "workaround", "unresolved",
+    } for i in range(1, 6)},
+}
+
+
+# ── Scoring functions ─────────────────────────────────────────────────
+
+def _is_null(val) -> bool:
+    if val is None:
+        return True
+    if isinstance(val, str) and val.lower() in {"null", "none", "nan", ""}:
+        return True
+    return False
+
+
+def score_completeness(record: dict) -> tuple[float, list[str]]:
+    """30 pts: required fields present and non-null."""
+    issues: list[str] = []
+    missing = 0
+    for field in REQUIRED_FIELDS:
+        if _is_null(record.get(field)):
+            missing += 1
+            issues.append(f"missing: {field}")
+
+    score = round((len(REQUIRED_FIELDS) - missing) / len(REQUIRED_FIELDS) * 30, 1)
+    return score, issues
+
+
+def score_enum_validity(record: dict) -> tuple[float, list[str]]:
+    """25 pts: string enum fields match their allowed value sets."""
+    issues:  list[str] = []
+    checked = 0
+    invalid = 0
+
+    for field, allowed in ENUM_RULES.items():
+        val = record.get(field)
+        if _is_null(val):
+            continue   # null/missing is handled by completeness check
+        checked += 1
+        if str(val) not in allowed:
+            invalid += 1
+            issues.append(f"invalid {field}='{val}' (allowed: {sorted(allowed)})")
+
+    if checked == 0:
+        return 25.0, []   # no enum fields present → neutral
+
+    score = round((checked - invalid) / checked * 25, 1)
+    return score, issues
+
+
+def score_consistency(record: dict) -> tuple[float, list[str]]:
+    """25 pts: cross-field logical rules."""
+    penalties: list[str] = []
+    max_pts = 25
+    deduct  = 0
+
+    # Rule 1: FCR requires no escalation (can't have both)
+    if record.get("fcr_indicator") is True and record.get("escalation_required") is True:
+        deduct += 10
+        penalties.append("fcr_indicator=true conflicts with escalation_required=true")
+
+    # Rule 2: upsell_outcome must match upsell_attempted
+    attempted = record.get("upsell_attempted")
+    outcome   = record.get("upsell_outcome")
+    if attempted is False and not _is_null(outcome) and str(outcome) in {"accepted", "declined", "pending"}:
+        deduct += 8
+        penalties.append(
+            f"upsell_attempted=false but upsell_outcome='{outcome}'"
+        )
+
+    # Rule 3: If total_issues_count > 0, issue_1_description should exist
+    issue_count = record.get("total_issues_count", 0)
+    try:
+        issue_count = int(issue_count)
+    except (TypeError, ValueError):
+        issue_count = 0
+
+    if issue_count > 0 and _is_null(record.get("issue_1_description")):
+        deduct += 7
+        penalties.append(
+            f"total_issues_count={issue_count} but issue_1_description is null"
+        )
+
+    # Rule 4: all_issues_resolved=true and repeat_call_risk=high is contradictory
+    if record.get("all_issues_resolved") is True and record.get("repeat_call_risk") == "high":
+        deduct += 5
+        penalties.append("all_issues_resolved=true conflicts with repeat_call_risk='high'")
+
+    # Rule 5: could_be_self_served=true requires a channel
+    if record.get("could_be_self_served") is True:
+        channel = record.get("self_serve_channel_applicable")
+        if _is_null(channel) or str(channel).lower() == "none":
+            deduct += 5
+            penalties.append(
+                "could_be_self_served=true but self_serve_channel_applicable is null/none"
+            )
+
+    score = max(0.0, round(max_pts - deduct, 1))
+    return score, penalties
+
+
+def score_plausibility(record: dict) -> tuple[float, list[str]]:
+    """20 pts: numeric ranges and derived sanity checks."""
+    issues:  list[str] = []
+    max_pts  = 20
+    deduct   = 0
+
+    # Duration in plausible range [30s, 7200s]
+    duration = record.get("total_duration_seconds")
+    if not _is_null(duration):
+        try:
+            d = float(duration)
+            if d < 30:
+                deduct += 5
+                issues.append(f"total_duration_seconds={d} < 30s (implausibly short)")
+            elif d > 7200:
+                deduct += 4
+                issues.append(f"total_duration_seconds={d} > 7200s (2h — implausibly long)")
+        except (TypeError, ValueError):
+            deduct += 5
+            issues.append(f"total_duration_seconds='{duration}' is not numeric")
+
+    # Hold count non-negative
+    hold_count = record.get("hold_count", 0)
+    try:
+        if int(hold_count) < 0:
+            deduct += 3
+            issues.append(f"hold_count={hold_count} < 0")
+    except (TypeError, ValueError):
+        pass
+
+    # Empathy statements non-negative
+    empathy = record.get("agent_empathy_statements_count", 0)
+    try:
+        if int(empathy) < 0:
+            deduct += 3
+            issues.append(f"agent_empathy_statements_count={empathy} < 0")
+    except (TypeError, ValueError):
+        pass
+
+    # Issue count in [0, 5]
+    try:
+        ic = int(record.get("total_issues_count", 0))
+        if not (0 <= ic <= 5):
+            deduct += 4
+            issues.append(f"total_issues_count={ic} outside [0,5]")
+    except (TypeError, ValueError):
+        pass
+
+    # Phase durations non-negative
+    phase_cols = [
+        "phase_welcome_duration_seconds",
+        "phase_discovery_duration_seconds",
+        "phase_diagnosis_duration_seconds",
+        "phase_resolution_duration_seconds",
+        "phase_hold_total_seconds",
+        "phase_upsell_duration_seconds",
+        "phase_closing_duration_seconds",
+    ]
+    neg_phases = []
+    for col in phase_cols:
+        val = record.get(col)
+        if not _is_null(val):
+            try:
+                if float(val) < 0:
+                    neg_phases.append(col)
+            except (TypeError, ValueError):
+                pass
+    if neg_phases:
+        deduct += min(5, len(neg_phases) * 2)
+        issues.append(f"negative phase durations: {', '.join(neg_phases)}")
+
+    score = max(0.0, round(max_pts - deduct, 1))
+    return score, issues
+
+
+# ── Per-call audit ────────────────────────────────────────────────────
+
+def audit_record(record: dict) -> dict:
+    """Compute QA scores for a single result record."""
+    c_score, c_issues = score_completeness(record)
+    e_score, e_issues = score_enum_validity(record)
+    x_score, x_issues = score_consistency(record)
+    p_score, p_issues = score_plausibility(record)
+
+    total = round(c_score + e_score + x_score + p_score, 1)
+
+    return {
+        "call_id":             str(record.get("call_id", "UNKNOWN")),
+        "total_score":         total,
+        "grade": (
+            "HIGH"   if total >= 85 else
+            "MEDIUM" if total >= 60 else
+            "LOW"
+        ),
+        "dimension_scores": {
+            "completeness":  c_score,
+            "enum_validity": e_score,
+            "consistency":   x_score,
+            "plausibility":  p_score,
+        },
+        "issues": {
+            "completeness":  c_issues,
+            "enum_validity": e_issues,
+            "consistency":   x_issues,
+            "plausibility":  p_issues,
+        },
+        "total_issues": len(c_issues) + len(e_issues) + len(x_issues) + len(p_issues),
+    }
+
+
+# ── Aggregate QA report ───────────────────────────────────────────────
+
+def build_report(
+    results: list[dict],
+    source_file: str,
+    pass_threshold: int = 60,
+) -> dict:
+    """Generate the full QA report from audited records."""
+    audited   = [audit_record(r) for r in results]
+    n         = len(audited)
+    scores    = [a["total_score"] for a in audited]
+
+    high   = sum(1 for a in audited if a["grade"] == "HIGH")
+    medium = sum(1 for a in audited if a["grade"] == "MEDIUM")
+    low    = sum(1 for a in audited if a["grade"] == "LOW")
+
+    avg_score   = round(sum(scores) / n, 1) if n else 0
+    pass_rate   = round(sum(1 for s in scores if s >= pass_threshold) / n * 100, 1) if n else 0
+    dataset_pass = pass_rate >= 90.0
+
+    # Average per-dimension scores
+    avg_dims = {
+        dim: round(
+            sum(a["dimension_scores"][dim] for a in audited) / n, 1
+        )
+        for dim in ("completeness", "enum_validity", "consistency", "plausibility")
+    }
+
+    # Most common issues
+    all_issues: list[str] = []
+    for a in audited:
+        for dim_issues in a["issues"].values():
+            all_issues.extend(dim_issues)
+
+    issue_freq: dict[str, int] = {}
+    for issue in all_issues:
+        # Normalise to first 60 chars to group similar messages
+        key = issue[:60]
+        issue_freq[key] = issue_freq.get(key, 0) + 1
+
+    top_issues = sorted(issue_freq.items(), key=lambda x: x[1], reverse=True)[:15]
+
+    # Low-quality call IDs for targeted review
+    low_quality_ids = [a["call_id"] for a in audited if a["grade"] == "LOW"]
+
+    return {
+        "qa_report_timestamp":  datetime.now().isoformat(),
+        "source_file":          source_file,
+        "total_calls_audited":  n,
+        "pass_threshold":       pass_threshold,
+        "dataset_verdict":      "PASS" if dataset_pass else "FAIL",
+        "summary": {
+            "avg_score":          avg_score,
+            "pass_rate_pct":      pass_rate,
+            "grade_HIGH":         high,
+            "grade_MEDIUM":       medium,
+            "grade_LOW":          low,
+            "pct_HIGH":           round(high   / n * 100, 1) if n else 0,
+            "pct_MEDIUM":         round(medium / n * 100, 1) if n else 0,
+            "pct_LOW":            round(low    / n * 100, 1) if n else 0,
+        },
+        "avg_dimension_scores":   avg_dims,
+        "top_issues":             [{"pattern": k, "count": v} for k, v in top_issues],
+        "low_quality_call_ids":   low_quality_ids,
+        "per_call_scores":        [
+            {
+                "call_id":    a["call_id"],
+                "score":      a["total_score"],
+                "grade":      a["grade"],
+                "n_issues":   a["total_issues"],
+                "dimensions": a["dimension_scores"],
+            }
+            for a in audited
+        ],
+        "per_call_detail":        audited,
+    }
+
+
+# ── Main ──────────────────────────────────────────────────────────────
+
+def _latest_results_file() -> Path | None:
+    """Return the most recent full_results_*.json (combined preferred)."""
+    combined = sorted(OUTPUT_DIR.glob("full_results_combined_*.json"))
+    if combined:
+        return combined[-1]
+    batch = sorted(OUTPUT_DIR.glob("full_results_[0-9]*.json"))
+    return batch[-1] if batch else None
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Telecom Call Intelligence — QA audit engine"
+    )
+    parser.add_argument(
+        "--file", type=str, default=None,
+        help="Path to full_results JSON to audit (default: latest in outputs/)",
+    )
+    parser.add_argument(
+        "--threshold", type=int, default=60,
+        help="Minimum score to count as 'passing' (default: 60)",
+    )
+    args = parser.parse_args()
+
+    print("\n" + "═" * 60)
+    print("  QA AUDIT — Telecom Call Intelligence")
+    print("═" * 60)
+
+    if args.file:
+        source = Path(args.file)
+    else:
+        source = _latest_results_file()
+
+    if source is None or not source.exists():
+        print("\n  ✗ No results file found.")
+        print("    Run run_pipeline.py or merge_outputs.py first.")
+        return
+
+    print(f"\n  Source file   : {source}")
+    print(f"  Pass threshold: {args.threshold} / 100")
+
+    with open(source, encoding="utf-8") as fh:
+        results = json.load(fh)
+
+    if not isinstance(results, list) or not results:
+        print("\n  ✗ Source file is empty or not a list of records.")
+        return
+
+    print(f"  Records loaded: {len(results)}")
+    print("\n  Running audit …")
+
+    report = build_report(results, str(source), args.threshold)
+
+    # ── Console summary ───────────────────────────────────────────────
+    summary = report["summary"]
+    dims    = report["avg_dimension_scores"]
+    verdict = report["dataset_verdict"]
+
+    print(f"\n  {'─' * 50}")
+    print(f"  VERDICT          : {'✓ PASS' if verdict == 'PASS' else '✗ FAIL'}  "
+          f"(pass_rate={summary['pass_rate_pct']}%  ≥90% required)")
+    print(f"  {'─' * 50}")
+    print(f"  Avg QA score     : {summary['avg_score']} / 100")
+    print(f"  Grade breakdown  : HIGH {summary['grade_HIGH']}  "
+          f"({summary['pct_HIGH']}%)   "
+          f"MEDIUM {summary['grade_MEDIUM']}  ({summary['pct_MEDIUM']}%)   "
+          f"LOW {summary['grade_LOW']}  ({summary['pct_LOW']}%)")
+    print(f"\n  Dimension averages:")
+    print(f"    Completeness   : {dims['completeness']:5.1f} / 30")
+    print(f"    Enum validity  : {dims['enum_validity']:5.1f} / 25")
+    print(f"    Consistency    : {dims['consistency']:5.1f} / 25")
+    print(f"    Plausibility   : {dims['plausibility']:5.1f} / 20")
+
+    if report["top_issues"]:
+        print(f"\n  Top issues:")
+        for item in report["top_issues"][:8]:
+            print(f"    [{item['count']:>3}x]  {item['pattern']}")
+
+    if report["low_quality_call_ids"]:
+        sample = report["low_quality_call_ids"][:5]
+        suffix = f" … (+{len(report['low_quality_call_ids']) - 5} more)" \
+                 if len(report["low_quality_call_ids"]) > 5 else ""
+        print(f"\n  LOW quality calls : {', '.join(str(c)[:12] for c in sample)}{suffix}")
+
+    # ── Write report ──────────────────────────────────────────────────
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    ts           = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path  = OUTPUT_DIR / f"qa_report_{ts}.json"
+
+    with open(report_path, "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=2)
+
+    print(f"\n  ✓ QA report written: {report_path}\n")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-validate:
+    name: Lint & validate
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Syntax check — pipeline modules
+        run: |
+          python -m py_compile \
+            pipeline/__init__.py \
+            pipeline/logger.py \
+            pipeline/token_tracker.py \
+            pipeline/hf_loader.py \
+            pipeline/analyzer.py \
+            pipeline/aggregator.py \
+            pipeline/graph.py
+
+      - name: Syntax check — entry points
+        run: |
+          python -m py_compile \
+            run_pipeline.py \
+            run_batches.py \
+            merge_outputs.py \
+            qa_audit.py
+
+      - name: Syntax check — dashboard
+        run: python -m py_compile dashboard/app.py
+
+      - name: Verify pipeline imports resolve
+        run: |
+          python -c "
+          from pipeline.logger import get_logger
+          from pipeline.token_tracker import token_summary, cost_usd
+          from pipeline.hf_loader import load_telecom_transcripts
+          print('All pipeline imports OK')
+          "
+
+      - name: Verify LangGraph graph compiles
+        env:
+          GROQ_API_KEY: gsk_dummy_key_for_import_check
+        run: |
+          python -c "
+          import os
+          os.environ['GROQ_API_KEY'] = 'gsk_dummy'
+          from pipeline.graph import build_pipeline, PipelineState
+          pipeline = build_pipeline()
+          print('LangGraph graph compiled OK')
+          "
+
+      - name: Verify QA audit schema is self-consistent
+        run: |
+          python -c "
+          from qa_audit import REQUIRED_FIELDS, ENUM_RULES, audit_record
+          # Audit a minimal record to confirm no runtime errors
+          sample = {f: None for f in REQUIRED_FIELDS}
+          sample['call_id'] = 'test-001'
+          result = audit_record(sample)
+          assert 'total_score' in result
+          assert 'grade' in result
+          print(f'QA audit schema OK — sample score: {result[\"total_score\"]}')
+          "

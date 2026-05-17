@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "total_calls_analyzed": 3,
+    "analysis_timestamp": "2026-05-17T13:39:03.033914",
+    "dataset": "talkmap/telecom-conversation-corpus",
+    "model": "llama-3.3-70b-versatile",
+    "inference_provider": "Groq",
+    "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark. Replace with actual ACD data for production."
+  },
+  "kpis": {
+    "total_calls_analyzed": 3,
+    "avg_handle_time_seconds": 142.0,
+    "avg_handle_time_minutes": 2.4,
+    "fcr_rate_pct": 0.0,
+    "avoidable_call_rate_pct": 33.3,
+    "self_serve_deflection_pct": 33.3,
+    "agentic_ai_resolvable_pct": 33.3,
+    "proactive_outreach_pct": 0.0,
+    "all_issues_resolved_pct": 0.0,
+    "escalation_rate_pct": 33.3,
+    "upsell_attempted_pct": 33.3,
+    "upsell_conversion_pct": 100.0,
+    "sentiment_improved_pct": 100.0,
+    "agent_tool_struggle_pct": 0.0,
+    "multi_issue_call_pct": 0.0,
+    "avg_issues_per_call": 1.0,
+    "avg_hold_time_seconds": 0.0,
+    "avg_hold_count": 0.0,
+    "avg_empathy_statements": 1.3
+  },
+  "phase_avg_seconds": {
+    "Welcome & Auth": 12.0,
+    "Discovery": 41.7,
+    "Diagnosis": 33.0,
+    "Resolution": 59.0,
+    "Hold": 0.0,
+    "Upsell": 13.3,
+    "Closing": 9.3
+  },
+  "distributions": {
+    "issue_category": {
+      "technical": 3
+    },
+    "cost_driver": {
+      "technical": 100.0
+    },
+    "agent_skill": {
+      "adequate": 50.0,
+      "proficient": 50.0
+    },
+    "customer_sentiment_start": {
+      "negative": 66.7,
+      "frustrated": 33.3
+    },
+    "customer_sentiment_end": {
+      "neutral": 66.7,
+      "positive": 33.3
+    },
+    "handle_time_efficiency": {
+      "average": 50.0,
+      "efficient": 50.0
+    },
+    "self_serve_channel": {
+      "website": 100.0
+    },
+    "repeat_call_risk": {
+      "medium": 33.3,
+      "low": 33.3,
+      "high": 33.3
+    },
+    "agent_disproportionate_phase": {},
+    "upsell_outcome": {
+      "not_attempted": 66.7,
+      "accepted": 33.3
+    },
+    "resolution_method_issue1": {
+      "troubleshooting": 50.0,
+      "escalated": 50.0
+    },
+    "account_type": {}
+  },
+  "cost_levers": {
+    "cost_per_call_usd": 6.0,
+    "monthly_volume_estimate": 100000,
+    "baseline_monthly_cost_usd": 600000,
+    "self_serve_savings_usd": 169830,
+    "agentic_ai_savings_usd": 139860,
+    "proactive_care_savings_usd": 0,
+    "total_savings_opportunity_usd": 309690,
+    "savings_pct_of_baseline": 51.6
+  }
+}
