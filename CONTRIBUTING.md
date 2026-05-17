@@ -59,7 +59,7 @@ feat: add agent coaching score to aggregator
 fix: handle null customer_sentiment_end in QA audit
 refactor: extract checkpoint logic to standalone module
 docs: update ARCHITECTURE.md with new state schema
-chore: bump groq>=0.12.0 in requirements.txt
+chore: bump google-genai>=1.1.0 in requirements.txt
 ```
 
 ### Branch naming

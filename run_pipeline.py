@@ -36,7 +36,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load .env before importing any pipeline module (they read GROQ_API_KEY at call time)
+# Load .env before importing any pipeline module (they read GEMINI_API_KEY at call time)
 load_dotenv()
 
 if not os.environ.get("GEMINI_API_KEY"):
@@ -67,7 +67,7 @@ def main() -> dict:
     )
     parser.add_argument(
         "--delay",  type=float, default=2.0,
-        help="Seconds between Groq API calls (default: 2.0)",
+        help="Seconds between Gemini API calls (default: 2.0)",
     )
     args = parser.parse_args()
 

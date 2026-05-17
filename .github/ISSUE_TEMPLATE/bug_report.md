@@ -37,7 +37,7 @@ Paste error here
 | Python version | `python --version` |
 | Pipeline version | `git rev-parse --short HEAD` |
 | pandas version | `python -c "import pandas; print(pandas.__version__)"` |
-| groq version | `pip show groq \| grep Version` |
+| google-genai version | `pip show google-genai \| grep Version` |
 | Plotly version | `pip show plotly \| grep Version` |
 
 ## Logs

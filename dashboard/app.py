@@ -166,8 +166,8 @@ DEMO_DATA = {
         "total_calls_analyzed": 100,
         "analysis_timestamp": "2025-04-12T09:41:22.000000",
         "dataset": "talkmap/telecom-conversation-corpus",
-        "model": "llama-3.3-70b-versatile",
-        "inference_provider": "Groq",
+        "model": "gemini-2.5-flash-lite",
+        "inference_provider": "Google AI Studio",
         "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark.",
     },
     "kpis": {
@@ -507,8 +507,8 @@ def main():
     with col_badge:
         mode_label = "⚡ DEMO MODE — Sample Data" if is_demo else "✓ LIVE DATA — Pipeline Output"
         mode_color = "#5B8DB8" if is_demo else "#3DAD7F"
-        provider   = meta.get("inference_provider", "Groq")
-        model_name = meta.get("model", "llama-3.3-70b-versatile")
+        provider   = meta.get("inference_provider", "Google AI Studio")
+        model_name = meta.get("model", "gemini-2.5-flash-lite")
         st.markdown(f"""
         <div style="text-align:right;margin-top:12px;">
             <span style="background:rgba(0,0,0,0.3);border:1px solid {mode_color};border-radius:6px;
@@ -742,7 +742,7 @@ def main():
             {meta['total_calls_analyzed']} CALLS ANALYSED · {meta['dataset']}
         </div>
         <div style="font-size:0.68rem;color:#4A5568;">
-            {meta.get('inference_provider','Groq')} · {meta['model']} · {meta['analysis_timestamp'][:10]}
+            {meta.get('inference_provider','Google AI Studio')} · {meta['model']} · {meta['analysis_timestamp'][:10]}
         </div>
     </div>
     """, unsafe_allow_html=True)
