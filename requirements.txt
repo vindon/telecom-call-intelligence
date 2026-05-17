@@ -1,5 +1,6 @@
-# Groq inference (free tier — replaces Anthropic API)
-groq>=0.9.0
+# Google AI Studio inference (Gemini 2.0 Flash — free tier)
+# NOTE: google-generativeai is deprecated; use google-genai
+google-genai>=1.0.0
 
 # LangGraph orchestration
 langgraph>=0.2.0

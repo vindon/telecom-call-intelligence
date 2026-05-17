@@ -181,8 +181,8 @@ def aggregate_metrics(results: list[dict]) -> dict:
             "total_calls_analyzed":  n,
             "analysis_timestamp":    datetime.now().isoformat(),
             "dataset":               "talkmap/telecom-conversation-corpus",
-            "model":                 "llama-3.3-70b-versatile",
-            "inference_provider":    "Groq",
+            "model":                 "gemini-2.5-flash-lite",
+            "inference_provider":    "Google AI Studio",
             "cost_benchmark_note": (
                 "Cost estimates use $6.00/call industry benchmark. "
                 "Replace with actual ACD data for production."

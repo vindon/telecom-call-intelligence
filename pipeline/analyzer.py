@@ -1,22 +1,25 @@
 """
 analyzer.py  —  Node 3: Analyze
 ---------------------------------
-Sends each transcript to Llama 3.3 70B via Groq and extracts structured JSON.
+Sends each transcript to Gemini 2.5 Flash Lite via Google AI Studio and extracts
+structured JSON using the 70-field system prompt.
+
+Why Gemini 2.5 Flash Lite
+--------------------
+  • Native JSON mode (response_mime_type="application/json") guarantees valid JSON
+    output — no markdown fence stripping, no parse retries for format errors.
+  • 1,500 req/day · 15 RPM free tier — far more headroom than alternatives.
+  • 1M-token context window — handles the longest transcripts without truncation.
+  • Uses the current google-genai SDK (google-generativeai is deprecated).
 
 Production features
 -------------------
-  Token tracking   : _prompt_tokens / _completion_tokens / _total_tokens injected
-                     into every result dict from response.usage.
-  Checkpoint saves : Each successful result is appended to
+  Token tracking   : _prompt_tokens / _completion_tokens / _total_tokens from
+                     response.usage_metadata injected into every result dict.
+  Checkpoint saves : Each successful result appended to
                      outputs/.checkpoint_{key}.jsonl immediately after the call.
-                     On restart with the same key, completed calls are skipped,
-                     so a killed process loses no work.
   Structured logs  : INFO → stdout, DEBUG → outputs/pipeline.log.
-  Backoff          : Exponential on RateLimitError; linear on APIStatusError.
-
-Groq free tier limits (as of 2025-Q2):
-  30 requests / minute  ·  14,400 requests / day
-  A 2 s inter-call delay keeps throughput at ~25 req/min — safely under the cap.
+  Backoff          : Exponential on 429 ResourceExhausted (rate limit).
 """
 
 import json
@@ -24,7 +27,9 @@ import os
 import time
 from pathlib import Path
 
-from groq import Groq, RateLimitError, APIStatusError
+from google import genai
+from google.genai import types
+from google.genai import errors as genai_errors
 from tqdm import tqdm
 
 from pipeline.logger import get_logger
@@ -33,9 +38,9 @@ log = get_logger(__name__)
 
 PROMPT_PATH    = Path(__file__).parent.parent / "prompts" / "system_prompt.txt"
 CHECKPOINT_DIR = Path("outputs")
-MODEL          = "llama-3.3-70b-versatile"
-MAX_TOKENS     = 2048
-TEMPERATURE    = 0.1   # Low → consistent, deterministic JSON across calls
+MODEL          = "gemini-2.5-flash-lite"
+MAX_TOKENS     = 8192
+TEMPERATURE    = 0.1
 
 
 # ── System prompt ─────────────────────────────────────────────────────
@@ -45,17 +50,7 @@ def load_system_prompt() -> str:
         return f.read().strip()
 
 
-# ── Helpers ───────────────────────────────────────────────────────────
-
-def _strip_fences(text: str) -> str:
-    """Remove ```json ... ``` fences if the model wraps its output."""
-    text = text.strip()
-    if text.startswith("```"):
-        lines = text.split("\n")
-        inner = lines[1:] if lines[-1].strip() == "```" else lines[1:]
-        text = "\n".join(inner).rstrip("`").strip()
-    return text
-
+# ── Message builder ───────────────────────────────────────────────────
 
 def _build_user_message(transcript: dict) -> str:
     return (
@@ -82,19 +77,11 @@ def checkpoint_path(key: str) -> Path:
 
 
 def load_checkpoint(key: str) -> tuple[list[dict], set[str]]:
-    """
-    Load persisted results for a batch key.
-
-    Returns:
-        (results, done_call_ids) — safe to call even if no checkpoint exists.
-    """
     path = checkpoint_path(key)
     if not path.exists():
         return [], set()
-
     results: list[dict] = []
     done_ids: set[str]  = set()
-
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
@@ -106,7 +93,6 @@ def load_checkpoint(key: str) -> tuple[list[dict], set[str]]:
                 done_ids.add(str(r.get("call_id", "")))
             except json.JSONDecodeError:
                 log.warning("Corrupt checkpoint line skipped in %s", path)
-
     return results, done_ids
 
 
@@ -119,49 +105,50 @@ def _append_checkpoint(key: str, result: dict) -> None:
 # ── Core analysis ─────────────────────────────────────────────────────
 
 def analyze_transcript(
-    client: Groq,
-    transcript: dict,
+    client: genai.Client,
     system_prompt: str,
+    transcript: dict,
     max_retries: int = 3,
 ) -> dict | None:
     """
-    Analyze a single transcript via Groq (Llama 3.3 70B).
+    Analyze a single transcript via Gemini 2.5 Flash Lite.
 
+    Native JSON mode guarantees valid JSON responses.
     Injects _prompt_tokens / _completion_tokens / _total_tokens from
-    response.usage into the returned dict.
+    response.usage_metadata into the returned dict.
 
     Returns:
-        Parsed JSON result dict, or None on permanent failure.
+        Parsed result dict, or None on permanent failure.
     """
     call_id_short = transcript["call_id"][:12]
 
     for attempt in range(max_retries):
         try:
-            response = client.chat.completions.create(
+            response = client.models.generate_content(
                 model=MODEL,
-                max_tokens=MAX_TOKENS,
-                temperature=TEMPERATURE,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user",   "content": _build_user_message(transcript)},
-                ],
+                contents=_build_user_message(transcript),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="application/json",
+                    temperature=TEMPERATURE,
+                    max_output_tokens=MAX_TOKENS,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
             )
 
-            raw     = response.choices[0].message.content
-            cleaned = _strip_fences(raw)
-            result  = json.loads(cleaned)
+            result = json.loads(response.text)
 
-            # Inject Groq token usage
-            if response.usage:
-                result["_prompt_tokens"]     = response.usage.prompt_tokens
-                result["_completion_tokens"] = response.usage.completion_tokens
-                result["_total_tokens"]      = response.usage.total_tokens
+            # Inject token usage
+            if response.usage_metadata:
+                result["_prompt_tokens"]     = response.usage_metadata.prompt_token_count
+                result["_completion_tokens"] = response.usage_metadata.candidates_token_count
+                result["_total_tokens"]      = response.usage_metadata.total_token_count
                 log.debug(
                     "OK  %s  prompt=%d  completion=%d  total=%d",
                     call_id_short,
-                    response.usage.prompt_tokens,
-                    response.usage.completion_tokens,
-                    response.usage.total_tokens,
+                    response.usage_metadata.prompt_token_count,
+                    response.usage_metadata.candidates_token_count,
+                    response.usage_metadata.total_token_count,
                 )
 
             return result
@@ -175,22 +162,33 @@ def analyze_transcript(
                 return None
             time.sleep(2)
 
-        except RateLimitError:
-            wait = 30 * (2 ** attempt)
-            log.warning(
-                "Rate limit hit (Groq). Waiting %ds before retry %d/%d …",
-                wait, attempt + 1, max_retries,
-            )
-            time.sleep(wait)
+        except genai_errors.ClientError as exc:
+            if exc.code == 429:
+                wait = 30 * (2 ** attempt)
+                log.warning(
+                    "Rate limit (Google AI Studio). Waiting %ds before retry %d/%d — %s",
+                    wait, attempt + 1, max_retries, str(exc.message)[:120],
+                )
+                time.sleep(wait)
+            else:
+                log.warning(
+                    "Client error [%s] attempt %d/%d: HTTP %d — %s",
+                    call_id_short, attempt + 1, max_retries,
+                    exc.code, str(exc.message)[:120],
+                )
+                if attempt == max_retries - 1:
+                    return None
+                time.sleep(5 * (attempt + 1))
 
-        except APIStatusError as exc:
+        except genai_errors.ServerError as exc:
+            wait = 10 * (attempt + 1)
             log.warning(
-                "API error [%s] attempt %d/%d: HTTP %d",
-                call_id_short, attempt + 1, max_retries, exc.status_code,
+                "Server error [%s] attempt %d/%d: HTTP %d. Waiting %ds …",
+                call_id_short, attempt + 1, max_retries, exc.code, wait,
             )
             if attempt == max_retries - 1:
                 return None
-            time.sleep(5 * (attempt + 1))
+            time.sleep(wait)
 
         except Exception as exc:
             log.exception(
@@ -212,32 +210,24 @@ def analyze_batch(
     checkpoint_key: str = "",
 ) -> list[dict]:
     """
-    Sequentially analyze all transcripts via the Groq free tier.
+    Sequentially analyze all transcripts via Gemini 2.5 Flash Lite.
 
-    Checkpoint / resume behavior
-    ----------------------------
-    If `checkpoint_key` is non-empty:
-      - On first run: results are appended to outputs/.checkpoint_{key}.jsonl
-        after each successful call.
-      - On restart: completed calls are loaded from disk and skipped, so only
-        the remaining transcripts are sent to the API.
-      - On clean completion (zero failures): the checkpoint file is deleted.
-      - On partial failure: the checkpoint is kept so a retry skips successes.
+    Gemini free tier: 15 RPM · 1,500 req/day · 1M TPM
+    Default 2s delay → ~25 req/min, safely within the free tier.
 
     Args:
         transcripts:       Transcript dicts from hf_loader.load_telecom_transcripts()
-        inter_call_delay:  Seconds between Groq calls (default 2.0 keeps rate ≤25 req/min)
-        checkpoint_key:    Unique identifier for this batch (e.g. "batch_1_n20_seed42")
+        inter_call_delay:  Seconds between API calls (default 2.0)
+        checkpoint_key:    Unique identifier for checkpoint file
 
     Returns:
-        List of result dicts (all batches combined if resuming).
-        Each result includes _prompt_tokens / _completion_tokens / _total_tokens.
+        List of result dicts including _prompt_tokens / _completion_tokens / _total_tokens.
     """
-    api_key = os.environ.get("GROQ_API_KEY")
+    api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise EnvironmentError("GROQ_API_KEY not set. Check your .env file.")
+        raise EnvironmentError("GEMINI_API_KEY not set. Check your .env file.")
 
-    client        = Groq(api_key=api_key)
+    client        = genai.Client(api_key=api_key)
     system_prompt = load_system_prompt()
 
     # ── Resume from checkpoint ───────────────────────────────────────
@@ -249,7 +239,7 @@ def analyze_batch(
         resumed, done_ids = load_checkpoint(checkpoint_key)
         if resumed:
             log.info(
-                "Resuming from checkpoint '%s': %d calls already completed",
+                "Resuming checkpoint '%s': %d calls already completed",
                 checkpoint_key, len(resumed),
             )
         results = resumed
@@ -263,17 +253,17 @@ def analyze_batch(
         len(remaining), skipped, checkpoint_key or "none",
     )
 
-    print(f"\nAnalyzing {len(remaining)} transcripts with {MODEL} via Groq ...")
+    print(f"\nAnalyzing {len(remaining)} transcripts with {MODEL} via Google AI Studio ...")
     if skipped:
         print(f"  ↩ Resuming checkpoint '{checkpoint_key}' — {skipped} calls already done")
     print(
-        f"Free tier: 30 req/min · {inter_call_delay}s delay · "
-        f"Est. {len(remaining) * (inter_call_delay + 4) / 60:.1f} min total\n"
+        f"Free tier: 15 RPM · {inter_call_delay}s delay · "
+        f"Est. {len(remaining) * (inter_call_delay + 3) / 60:.1f} min total\n"
     )
 
     with tqdm(total=len(remaining), desc="Calls analyzed", unit="call") as pbar:
         for i, transcript in enumerate(remaining):
-            result = analyze_transcript(client, transcript, system_prompt)
+            result = analyze_transcript(client, system_prompt, transcript)
 
             if result is not None:
                 result["_turn_count"]     = transcript.get("turn_count",     0)
@@ -306,7 +296,6 @@ def analyze_batch(
         suffix = f" … (+{len(failed_ids) - 5} more)" if len(failed_ids) > 5 else ""
         print(f"  Failed IDs: {sample}{suffix}")
 
-    # ── Clean up checkpoint on clean completion ──────────────────────
     if checkpoint_key and not failed_ids:
         ckpt = checkpoint_path(checkpoint_key)
         if ckpt.exists():

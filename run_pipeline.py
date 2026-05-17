@@ -1,7 +1,11 @@
 """
 run_pipeline.py
 ---------------
-Entry point for the Telecom Call Intelligence pipeline.
+Entry point for the Telecom Call Intelligence multi-agent pipeline.
+
+Architecture (6 agents):
+  DataIngestionAgent  →  ExtractionAgent  →  QualityAgent
+  AggregationAgent    →  InsightsAgent    →  ExportAgent
 
 Usage
 -----
@@ -35,10 +39,10 @@ from dotenv import load_dotenv
 # Load .env before importing any pipeline module (they read GROQ_API_KEY at call time)
 load_dotenv()
 
-if not os.environ.get("GROQ_API_KEY"):
-    print("ERROR: GROQ_API_KEY not set.")
-    print("  Copy .env.example to .env and add your Groq API key.")
-    print("  Free key at: https://console.groq.com")
+if not os.environ.get("GEMINI_API_KEY"):
+    print("ERROR: GEMINI_API_KEY not set.")
+    print("  Copy .env.example to .env and add your Google AI Studio key.")
+    print("  Free key at: https://aistudio.google.com")
     sys.exit(1)
 
 from pipeline.graph import build_pipeline
@@ -71,10 +75,12 @@ def main() -> dict:
     checkpoint_key = f"offset{args.offset}_n{args.n}_seed{args.seed}"
 
     print("\n" + "█" * 60)
-    print("  TELECOM CALL INTELLIGENCE — Analysis Pipeline")
+    print("  TELECOM CALL INTELLIGENCE — Multi-Agent Pipeline")
     print("█" * 60)
+    print(f"  Agents     : DataIngestion → Extraction → Quality →")
+    print(f"               Aggregation  → Insights   → Export")
     print(f"  Dataset    : talkmap/telecom-conversation-corpus")
-    print(f"  Model      : llama-3.3-70b-versatile (Groq)")
+    print(f"  Model      : gemini-2.5-flash-lite (Google AI Studio)")
     print(f"  Calls      : {args.n}")
     print(f"  Seed       : {args.seed}")
     print(f"  Offset     : {args.offset}")
@@ -91,7 +97,10 @@ def main() -> dict:
         "raw_transcripts":       [],
         "validated_transcripts": [],
         "analysis_results":      [],
+        "qa_report":             {},
+        "qa_passed_results":     [],
         "aggregated_metrics":    {},
+        "agent_insights":        {},
         "export_paths":          {},
         "validation_errors":     [],
         "failed_call_ids":       [],
@@ -103,14 +112,22 @@ def main() -> dict:
 
     usage = final_state.get("token_usage", {})
 
+    qa   = final_state.get("qa_report", {})
+    ins  = final_state.get("agent_insights", {})
+
     print("\n" + "█" * 60)
-    print("  PIPELINE COMPLETE")
+    print("  MULTI-AGENT PIPELINE COMPLETE")
     print("█" * 60)
     print(f"  Results saved to : {Path('outputs').resolve()}")
     print(f"  Dashboard        : streamlit run dashboard/app.py")
     if usage:
         print(f"  Tokens used      : {usage.get('total_tokens', 0):,}")
         print(f"  Inference cost   : ${usage.get('total_cost_usd', 0):.4f} USD")
+    if qa:
+        print(f"  QA verdict       : {qa.get('dataset_verdict', 'N/A')}  "
+              f"(avg score: {qa.get('summary', {}).get('avg_score', 0)}/100)")
+    if ins:
+        print(f"  Insights source  : {ins.get('source', 'N/A')}")
     print("█" * 60 + "\n")
 
     return final_state

@@ -1,10 +1,10 @@
 # Telecom Call Intelligence
 
-> Production-grade LLM pipeline that extracts 70+ structured KPIs from telecom customer care transcripts and delivers an executive analytics dashboard for cost-to-serve optimisation.
+> Production-grade **multi-agent LLM pipeline** that extracts 70+ structured KPIs from telecom customer care transcripts, scores extraction quality inline, generates LLM-powered strategic recommendations, and delivers an executive analytics dashboard for cost-to-serve optimisation.
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-0.2%2B-4A90D9)
-![Groq](https://img.shields.io/badge/Groq-Llama%203.3%2070B-F55036?logo=groq&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash%20Lite-4285F4?logo=google&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B?logo=streamlit&logoColor=white)
 ![License](https://img.shields.io/badge/License-Proprietary-DC2626)
 ![Status](https://img.shields.io/badge/Status-Production-22C55E)
@@ -13,24 +13,39 @@
 
 ## What this is
 
-Most contact centres analyse 2–5% of calls manually. This pipeline analyses **100%** — automatically extracting structured intelligence from every transcript and surfacing it as executive-ready KPIs.
+Most contact centres analyse 2–5% of calls manually. This pipeline analyses **100%** — automatically extracting structured intelligence from every transcript, validating extraction quality, and surfacing it as executive-ready KPIs with AI-generated strategic recommendations.
 
-Built on a 5-node **LangGraph** state graph, it streams from a public HuggingFace corpus, runs each transcript through **Llama 3.3 70B via Groq**, and aggregates results into a **Streamlit** dashboard that shows cost levers, phase inefficiencies, and deflection opportunities — all reproducible, all production-ready.
+Built on a **6-agent LangGraph** state graph, it streams from a public HuggingFace corpus, runs each transcript through **Gemini 2.5 Flash Lite**, scores every extraction with a 100-point QA model, and uses a second LLM agent to synthesise aggregated KPIs into prioritised recommendations — all in a single pipeline invocation.
 
 ```
-HuggingFace (streaming)
-        │
-  ┌─────▼──────────────────────────────────────────────────────┐
-  │  LangGraph Pipeline                                        │
-  │  Fetch → Validate → Analyze → Aggregate → Export          │
-  └─────┬──────────────────────────────────────────────────────┘
-        │                    │                        │
-  transcripts         Groq API                  outputs/
-  (turn-level)    Llama 3.3 70B           summary.json
-                 (70-field JSON)          call_results.csv
-                                          qa_report.json
-                                                │
-                                      Streamlit Dashboard
+HuggingFace Streaming Dataset
+           │
+           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│           LangGraph  ·  Multi-Agent Pipeline v2.0                │
+│                                                                  │
+│  ┌──────────────────┐      ┌──────────────────┐                 │
+│  │ DataIngestion    │─────▶│  Extraction      │                 │
+│  │ Agent  (1/6)     │      │  Agent  (2/6)    │                 │
+│  │ fetch + validate │      │  Gemini · 70 fields              │ │
+│  └──────────────────┘      └────────┬─────────┘                 │
+│                                     │                            │
+│                                     ▼                            │
+│  ┌──────────────────┐      ┌──────────────────┐                 │
+│  │  Aggregation     │◀─────│  Quality         │                 │
+│  │  Agent  (4/6)    │      │  Agent  (3/6)    │                 │
+│  │  KPIs + levers   │      │  100-pt scoring  │                 │
+│  └────────┬─────────┘      └──────────────────┘                 │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌──────────────────┐      ┌──────────────────┐                 │
+│  │  Insights        │─────▶│  Export          │                 │
+│  │  Agent  (5/6)    │      │  Agent  (6/6)    │                 │
+│  │  Gemini · recs   │      │  CSV+JSON+reports│                 │
+│  └──────────────────┘      └────────┬─────────┘                 │
+└────────────────────────────────────┼────────────────────────────┘
+                                     │
+                           outputs/summary.json ── Streamlit Dashboard
 ```
 
 ---
@@ -39,13 +54,15 @@ HuggingFace (streaming)
 
 | Feature | Description |
 |---------|-------------|
-| **70-field extraction** | Phase durations, FCR, escalation, sentiment, upsell outcome, agent skill, cost drivers |
-| **Checkpoint / resume** | Each successful API call is persisted immediately — a killed process loses nothing |
-| **Batch orchestration** | `run_batches.py` runs N×M batches with process isolation and auto-merge |
+| **6-agent architecture** | Specialized agents for ingestion, extraction, QA, aggregation, insights, and export — decoupled and independently replaceable |
+| **Dual LLM agents** | ExtractionAgent extracts per-call JSON; InsightsAgent synthesises cross-call strategic recommendations — different prompts, roles, and temperatures |
+| **Inline QA scoring** | QualityAgent scores every extraction on completeness, enum validity, consistency, and plausibility (100 pts) before aggregation |
+| **70-field extraction** | Phase durations, FCR, escalation, sentiment, upsell outcome, agent skill, cost drivers per call |
+| **Checkpoint / resume** | Each successful API call persisted immediately — a killed process loses nothing |
+| **Batch orchestration** | `run_batches.py` runs N×M batches with process isolation, auto-merge, and post-run QA audit |
 | **Token cost tracking** | Every result carries `_prompt_tokens/_completion_tokens` and cumulative USD cost |
-| **QA audit engine** | 100-point scoring across completeness, enum validity, consistency, and plausibility |
 | **Executive dashboard** | 9-panel Streamlit app with cost waterfall, phase breakdown, and deflection analysis |
-| **Non-overlapping batches** | Offset-based sampling guarantees unique conversations across all batch runs |
+| **Graceful degradation** | InsightsAgent falls back to rule-based recommendations if LLM quota is exhausted |
 
 ---
 
