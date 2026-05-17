@@ -18,8 +18,12 @@ Outputs injected into PipelineState:
   failed_call_ids   — call IDs that could not be extracted after all retries
 """
 
-from pipeline.analyzer import analyze_batch
-from pipeline.logger   import get_logger
+import time
+
+from pipeline.analyzer   import analyze_batch
+from pipeline.governance import AUDIT_LOG, BUDGET_GUARD
+from pipeline.logger     import get_logger
+from pipeline.memory     import MEMORY
 
 log = get_logger(__name__)
 
@@ -30,10 +34,15 @@ class ExtractionAgent:
     name = "ExtractionAgent"
 
     def run(self, state: dict) -> dict:
-        transcripts   = state["validated_transcripts"]
-        delay         = state.get("inter_call_delay", 2.0)
+        t0             = time.monotonic()
+        transcripts    = state["validated_transcripts"]
+        delay          = state.get("inter_call_delay", 2.0)
         checkpoint_key = state.get("checkpoint_key", "")
 
+        AUDIT_LOG.record_agent_start(
+            self.name,
+            {"n_transcripts": len(transcripts), "checkpoint_key": checkpoint_key},
+        )
         log.info(
             "[%s] Starting extraction: %d transcripts  checkpoint='%s'",
             self.name, len(transcripts), checkpoint_key or "none",
@@ -52,9 +61,36 @@ class ExtractionAgent:
             if t["call_id"] not in result_ids
         ]
 
+        # Record failures in agent memory for pattern analysis
+        if failed:
+            MEMORY.record_failures(failed, context=f"checkpoint={checkpoint_key}")
+
+        # Budget check — uses token usage already injected into results
+        total_tokens = sum(r.get("_total_tokens", 0) for r in results)
+        # Approx cost: $0.10/MTok input + $0.40/MTok output (gemini-2.5-flash-lite)
+        est_cost = total_tokens / 1_000_000 * 0.10
+        try:
+            BUDGET_GUARD.check(est_cost, context=f"after {len(results)} calls")
+            AUDIT_LOG.record_governance(
+                check="budget", passed=True,
+                details={"est_cost_usd": round(est_cost, 4), "limit_usd": BUDGET_GUARD.max_cost_usd},
+            )
+        except BUDGET_GUARD.BudgetExceededError as exc:
+            AUDIT_LOG.record_governance(
+                check="budget", passed=False,
+                details={"est_cost_usd": round(est_cost, 4), "limit_usd": BUDGET_GUARD.max_cost_usd},
+            )
+            AUDIT_LOG.record_error(self.name, str(exc))
+            raise
+
         log.info(
             "[%s] Extraction complete: %d OK  %d failed",
             self.name, len(results), len(failed),
+        )
+        AUDIT_LOG.record_agent_end(
+            self.name,
+            {"n_ok": len(results), "n_failed": len(failed)},
+            elapsed_s=time.monotonic() - t0,
         )
 
         return {

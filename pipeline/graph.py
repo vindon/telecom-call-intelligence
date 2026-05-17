@@ -32,7 +32,9 @@ from pipeline.agents import (
     InsightsAgent,
     QualityAgent,
 )
-from pipeline.logger import get_logger
+from pipeline.governance import AUDIT_LOG
+from pipeline.logger     import get_logger
+from pipeline.memory     import MEMORY
 
 log = get_logger(__name__)
 
@@ -101,13 +103,24 @@ def quality_node(state: PipelineState) -> PipelineState:
     rep     = result.get("qa_report", {})
     summary = rep.get("summary", {})
     verdict = rep.get("dataset_verdict", "N/A")
+    gate_ok = not rep.get("_quality_gate_failed", False)
     print(f"  Dataset verdict  : {'✓ PASS' if verdict == 'PASS' else '✗ FAIL' if verdict == 'FAIL' else verdict}")
     if summary:
         print(f"  Avg QA score     : {summary.get('avg_score', 0)} / 100")
         print(f"  Grade breakdown  : HIGH {summary.get('grade_HIGH', 0)}  "
               f"MEDIUM {summary.get('grade_MEDIUM', 0)}  "
               f"LOW {summary.get('grade_LOW', 0)} (excluded)")
+    if not gate_ok:
+        print(f"  ⚠ Quality gate FAILED — routing to emergency export")
     return result
+
+
+def _route_after_quality(state: PipelineState) -> str:
+    """Dynamic routing: skip to export if quality gate tripped."""
+    if state.get("qa_report", {}).get("_quality_gate_failed"):
+        log.warning("Quality gate failed — routing directly to export (skipping aggregate/insights)")
+        return "export"
+    return "aggregate"
 
 
 def aggregate_node(state: PipelineState) -> PipelineState:
@@ -169,7 +182,16 @@ def export_node(state: PipelineState) -> PipelineState:
 # ── Graph assembly ────────────────────────────────────────────────────
 
 def build_pipeline() -> object:
-    """Compile and return the 6-agent LangGraph pipeline."""
+    """
+    Compile and return the 6-agent LangGraph pipeline.
+
+    Normal path:   ingest → extract → quality → aggregate → insights → export → END
+    Emergency path (quality gate failure):
+                   ingest → extract → quality → export → END
+    """
+    # Load agent memory at pipeline build time so InsightsAgent has context
+    MEMORY.load()
+
     graph = StateGraph(PipelineState)
 
     graph.add_node("ingest",     ingest_node)
@@ -182,7 +204,14 @@ def build_pipeline() -> object:
     graph.set_entry_point("ingest")
     graph.add_edge("ingest",    "extract")
     graph.add_edge("extract",   "quality")
-    graph.add_edge("quality",   "aggregate")
+
+    # Dynamic routing: quality gate failure → skip aggregate + insights
+    graph.add_conditional_edges(
+        "quality",
+        _route_after_quality,
+        {"aggregate": "aggregate", "export": "export"},
+    )
+
     graph.add_edge("aggregate", "insights")
     graph.add_edge("insights",  "export")
     graph.add_edge("export",    END)

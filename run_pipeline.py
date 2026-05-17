@@ -128,6 +128,13 @@ def main() -> dict:
               f"(avg score: {qa.get('summary', {}).get('avg_score', 0)}/100)")
     if ins:
         print(f"  Insights source  : {ins.get('source', 'N/A')}")
+    from pipeline.governance import AUDIT_LOG
+    audit_summary = AUDIT_LOG.summary()
+    print(f"  Audit events     : {audit_summary['total_events']}  "
+          f"(errors: {audit_summary['error_count']})")
+    from pipeline.memory import MEMORY
+    print(f"  Memory runs      : {MEMORY.total_runs}  "
+          f"total calls: {MEMORY.cumulative['total_calls_analyzed']}")
     print("█" * 60 + "\n")
 
     return final_state

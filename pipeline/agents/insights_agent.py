@@ -28,7 +28,9 @@ from __future__ import annotations
 import json
 import os
 
-from pipeline.logger import get_logger
+from pipeline.governance import AUDIT_LOG
+from pipeline.logger     import get_logger
+from pipeline.memory     import MEMORY
 
 log = get_logger(__name__)
 
@@ -158,30 +160,52 @@ class InsightsAgent:
     name = "InsightsAgent"
 
     def run(self, state: dict) -> dict:
+        import time
+        t0      = time.monotonic()
         metrics = state.get("aggregated_metrics", {})
         kpis    = metrics.get("kpis", {})
         qa_rep  = state.get("qa_report", {})
         n_calls = kpis.get("total_calls_analyzed", len(state.get("analysis_results", [])))
 
+        AUDIT_LOG.record_agent_start(self.name, {"n_calls": n_calls})
         log.info("[%s] Generating strategic insights for %d calls", self.name, n_calls)
 
+        # Load historical context from agent memory
+        historical_context = MEMORY.get_context_for_insights()
+        if historical_context:
+            log.info("[%s] Memory context: %s", self.name, historical_context[:80])
+
         # ── Attempt LLM insights ─────────────────────────────────────
-        insights = self._llm_insights(kpis, metrics, qa_rep, n_calls)
+        insights = self._llm_insights(kpis, metrics, qa_rep, n_calls, historical_context)
 
         if insights:
             log.info("[%s] LLM insights generated successfully", self.name)
+            AUDIT_LOG.record_governance(
+                check="insights_source", passed=True,
+                details={"source": "gemini_llm", "historical_context_used": bool(historical_context)},
+            )
         else:
             log.warning("[%s] LLM unavailable — using rule-based fallback", self.name)
             insights = _rule_based_insights(kpis, qa_rep.get("summary", {}), n_calls)
+            AUDIT_LOG.record_governance(
+                check="insights_source", passed=True,
+                details={"source": "rule_based_fallback"},
+            )
 
+        AUDIT_LOG.record_agent_end(
+            self.name,
+            {"source": insights.get("source", "unknown"), "n_recommendations": len(insights.get("top_recommendations", []))},
+            elapsed_s=time.monotonic() - t0,
+        )
         return {**state, "agent_insights": insights}
 
     def _llm_insights(
         self,
-        kpis:    dict,
-        metrics: dict,
-        qa_rep:  dict,
-        n_calls: int,
+        kpis:               dict,
+        metrics:            dict,
+        qa_rep:             dict,
+        n_calls:            int,
+        historical_context: str = "",
     ) -> dict | None:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
@@ -201,7 +225,12 @@ class InsightsAgent:
             sentiment_dist = metrics.get("distributions", {}).get("sentiment_end", {})
             positive_end   = sentiment_dist.get("positive", 0) + sentiment_dist.get("neutral", 0)
 
-            prompt = INSIGHTS_PROMPT_TEMPLATE.format(
+            # Append historical context from agent memory if available
+            hist_section = (
+                f"\n--- Historical Performance Context ---\n{historical_context}\n"
+                if historical_context else ""
+            )
+            prompt = (hist_section + INSIGHTS_PROMPT_TEMPLATE).format(
                 n_calls              = n_calls,
                 aht_min              = kpis.get("avg_handle_time_minutes", 0),
                 fcr_pct              = kpis.get("fcr_rate_pct", 0),

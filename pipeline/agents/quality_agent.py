@@ -22,8 +22,11 @@ Outputs injected into PipelineState:
   qa_passed_results  — HIGH + MEDIUM records forwarded to aggregation
 """
 
-from qa_audit   import audit_record, build_report
-from pipeline.logger import get_logger
+import time
+
+from qa_audit            import audit_record, build_report
+from pipeline.governance import AUDIT_LOG, QUALITY_GATE
+from pipeline.logger     import get_logger
 
 log = get_logger(__name__)
 
@@ -36,7 +39,10 @@ class QualityAgent:
     name = "QualityAgent"
 
     def run(self, state: dict) -> dict:
+        t0      = time.monotonic()
         results = state["analysis_results"]
+
+        AUDIT_LOG.record_agent_start(self.name, {"n_results": len(results)})
 
         if not results:
             log.warning("[%s] No results to score — skipping QA", self.name)
@@ -89,10 +95,44 @@ class QualityAgent:
                 self.name, low_count,
             )
 
-        # Replace analysis_results with QA-enriched versions (keeping all for export)
+        # Governance: quality gate check (catastrophic failure only)
+        gate_passed = True
+        try:
+            QUALITY_GATE.check(report)
+            AUDIT_LOG.record_governance(
+                check="quality_gate", passed=True,
+                details={
+                    "pass_rate_pct": summary.get("pass_rate_pct", 0),
+                    "avg_score":     summary.get("avg_score", 0),
+                    "verdict":       verdict,
+                },
+            )
+        except QUALITY_GATE.QualityGateError as exc:
+            gate_passed = False
+            AUDIT_LOG.record_governance(
+                check="quality_gate", passed=False,
+                details={"error": str(exc)[:200]},
+            )
+            AUDIT_LOG.record_error(self.name, str(exc))
+            log.error("[%s] Quality gate FAILED: %s", self.name, exc)
+            # Don't raise — set a flag so graph can route to emergency export
+            report["_quality_gate_failed"] = True
+
+        AUDIT_LOG.record_agent_end(
+            self.name,
+            {
+                "avg_score": summary.get("avg_score", 0),
+                "verdict":   verdict,
+                "n_passed":  len(passed),
+                "n_low":     low_count,
+                "gate_ok":   gate_passed,
+            },
+            elapsed_s=time.monotonic() - t0,
+        )
+
         return {
             **state,
-            "analysis_results": scored_results,   # all records, now have _qa_* fields
-            "qa_report":        report,
+            "analysis_results":  scored_results,
+            "qa_report":         report,
             "qa_passed_results": passed,
         }
