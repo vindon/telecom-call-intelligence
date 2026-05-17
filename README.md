@@ -6,7 +6,7 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-0.2%2B-4A90D9)
 ![Groq](https://img.shields.io/badge/Groq-Llama%203.3%2070B-F55036?logo=groq&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B?logo=streamlit&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-22C55E)
+![License](https://img.shields.io/badge/License-Proprietary-DC2626)
 ![Status](https://img.shields.io/badge/Status-Production-22C55E)
 
 ---
@@ -272,4 +272,6 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to run the project locally, sub
 
 ## License
 
-[MIT](LICENSE) — dataset also MIT (`talkmap/telecom-conversation-corpus`).
+Copyright © 2026 Vinoth N. All rights reserved. See [LICENSE](LICENSE).
+
+Dataset: `talkmap/telecom-conversation-corpus` — MIT License (original authors).
