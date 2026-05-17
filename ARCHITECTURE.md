@@ -243,20 +243,30 @@ class PipelineState(TypedDict):
 ```
 run_batches.py
   │
-  ├── Batch 1: python run_pipeline.py --offset 0  --n 20  → checkpoint_offset0_n20_seed42
-  ├── Batch 2: python run_pipeline.py --offset 20 --n 20  → checkpoint_offset20_n20_seed42
-  ├── Batch 3: python run_pipeline.py --offset 40 --n 20  → checkpoint_offset40_n20_seed42
-  ├── Batch 4: python run_pipeline.py --offset 60 --n 20  → checkpoint_offset60_n20_seed42
-  └── Batch 5: python run_pipeline.py --offset 80 --n 20  → checkpoint_offset80_n20_seed42
-          │
-          └── merge_outputs.py   → full_results_combined_{ts}.json
-                  │
-                  └── qa_audit.py  → qa_report_{ts}.json
+  └── Orchestrator (pipeline/orchestrator.py)
+        │
+        │  WorkPlanner.plan() → [BatchTask × 5]
+        │  AgentHealthMonitor — tracks per-agent success/failure rates
+        │
+        ├── Task 1: subprocess → run_pipeline.py --offset 0  --n 20  (checkpoint_offset0_n20_seed42)
+        ├── Task 2: subprocess → run_pipeline.py --offset 20 --n 20  (checkpoint_offset20_n20_seed42)
+        ├── Task 3: subprocess → run_pipeline.py --offset 40 --n 20  (checkpoint_offset40_n20_seed42)
+        ├── Task 4: subprocess → run_pipeline.py --offset 60 --n 20  (checkpoint_offset60_n20_seed42)
+        └── Task 5: subprocess → run_pipeline.py --offset 80 --n 20  (checkpoint_offset80_n20_seed42)
+              │  (failed tasks retried up to max_retries=2, then recorded in memory)
+              │
+              └── Orchestration report → merge_outputs.py → qa_audit.py
 ```
 
-Each batch runs sequentially in a subprocess, respects the free-tier rate limit
-(15 RPM with 2s inter-call delay), and produces independent checkpoint files.
-Interrupted batches resume automatically with no duplicate API calls.
+The `Orchestrator` class provides:
+- **WorkPlanner** — generates `BatchTask` objects with non-overlapping offsets and ceiling-division for uneven totals
+- **AgentHealthMonitor** — tracks per-agent success/failure rates across all tasks; `is_healthy()` supports future circuit-breaker logic
+- **Adaptive retry** — failed tasks are re-queued at the front of the work queue, up to `max_retries`
+- **Process isolation** — each batch runs as a subprocess; a crash cannot corrupt other batches' checkpoints
+- **Orchestration report** — structured JSON summary of tasks, success rates, elapsed time, and agent health
+- **Memory integration** — quota events (repeated failures) recorded to `AgentMemory` for cross-run awareness
+
+Interrupted batches resume automatically with no duplicate API calls (checkpoint/resume built into ExtractionAgent).
 
 ---
 
@@ -273,7 +283,11 @@ telecom-call-intelligence/
 │   │   ├── aggregation_agent.py  ← Agent 4: AggregationAgent
 │   │   ├── insights_agent.py     ← Agent 5: InsightsAgent
 │   │   └── export_agent.py       ← Agent 6: ExportAgent
-│   ├── graph.py                  ← LangGraph orchestrator
+│   ├── graph.py                  ← LangGraph orchestrator (6 nodes + conditional routing)
+│   ├── orchestrator.py           ← Batch orchestrator (WorkPlanner, Orchestrator, AgentHealthMonitor)
+│   ├── governance.py             ← BudgetGuard, QualityGate, PIIScanner, AuditLog
+│   ├── memory.py                 ← AgentMemory — persistent cross-run JSON store
+│   ├── tools.py                  ← ToolRegistry — formal JSON-schema tool definitions
 │   ├── analyzer.py               ← Gemini API client (used by ExtractionAgent)
 │   ├── aggregator.py             ← KPI computation (used by AggregationAgent)
 │   ├── hf_loader.py              ← HuggingFace streaming (used by DataIngestionAgent)
