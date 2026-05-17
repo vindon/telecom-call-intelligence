@@ -1,57 +1,50 @@
 """
 run_batches.py
 --------------
-Orchestrates N sequential pipeline batches, then merges and QA-audits the results.
+Entry point for multi-batch orchestration of the Telecom Call Intelligence pipeline.
 
-Each batch runs as a subprocess so a crash in one batch does not affect others.
-After all batches complete, merge_outputs.py and qa_audit.py are invoked
-automatically.
+Delegates all batch scheduling, health monitoring, and retry logic to
+pipeline.orchestrator.Orchestrator. After all batches complete, optionally
+merges outputs and runs a QA audit across the combined dataset.
 
 Default config  : 5 batches × 20 calls = 100 total calls
 
 Usage
 -----
-  python run_batches.py                        # 5×20, seed=42
-  python run_batches.py --batches 10 --n 10    # 10×10 = 100 calls
-  python run_batches.py --batches 3 --n 5      # 3×5 = 15 calls (quick test)
-  python run_batches.py --seed 99              # Reproducible alternate sample
-  python run_batches.py --delay 2.5            # Slower Groq pacing
-  python run_batches.py --skip-merge           # Batches only, no post-processing
+  python run_batches.py                        # 5×20 = 100 calls, seed=42
+  python run_batches.py --batches 10 --n 10   # 10×10 = 100 calls
+  python run_batches.py --batches 3 --n 5     # 3×5  = 15 calls (quick test)
+  python run_batches.py --seed 99             # Reproducible alternate sample
+  python run_batches.py --delay 2.5           # Slower API pacing
+  python run_batches.py --skip-merge          # Batches only, no post-processing
+  python run_batches.py --retries 3           # Up to 3 retry attempts per batch
 """
 
 import argparse
 import subprocess
 import sys
-import time
-from datetime import datetime
 from pathlib import Path
 
-# ── Helpers ───────────────────────────────────────────────────────────
+from dotenv import load_dotenv
 
-def _hr(char: str = "─", width: int = 60) -> str:
-    return char * width
+load_dotenv()
+
+from pipeline.orchestrator import Orchestrator
 
 
 def _run_subprocess(cmd: list[str], label: str) -> bool:
-    """
-    Run a subprocess, stream output, return True on success.
-    """
-    print(f"\n{_hr('─')}")
+    """Run a post-processing subprocess, stream output, return True on success."""
+    print(f"\n{'─' * 60}")
     print(f"  RUNNING: {label}")
     print(f"  CMD    : {' '.join(cmd)}")
-    print(_hr("─"))
-
+    print('─' * 60)
     result = subprocess.run(cmd, check=False)
-
     if result.returncode == 0:
         print(f"\n  ✓ {label} — completed (exit 0)")
         return True
-    else:
-        print(f"\n  ✗ {label} — FAILED (exit {result.returncode})")
-        return False
+    print(f"\n  ✗ {label} — FAILED (exit {result.returncode})")
+    return False
 
-
-# ── Main ──────────────────────────────────────────────────────────────
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -62,16 +55,24 @@ def main() -> None:
         help="Number of sequential batches to run (default: 5)",
     )
     parser.add_argument(
-        "--n",       type=int, default=20,
+        "--n", type=int, default=20,
         help="Calls per batch (default: 20). Total calls = batches × n.",
     )
     parser.add_argument(
-        "--seed",    type=int, default=42,
-        help="Base random seed. Each batch uses the same seed for reproducibility (default: 42).",
+        "--seed", type=int, default=42,
+        help="Random seed for reproducible transcript sampling (default: 42).",
     )
     parser.add_argument(
-        "--delay",   type=float, default=2.0,
-        help="Seconds between Groq API calls within each batch (default: 2.0).",
+        "--delay", type=float, default=2.0,
+        help="Seconds between Gemini API calls within each batch (default: 2.0).",
+    )
+    parser.add_argument(
+        "--retries", type=int, default=2,
+        help="Max retry attempts per failed batch (default: 2).",
+    )
+    parser.add_argument(
+        "--rpm", type=int, default=15,
+        help="Rate limit in requests per minute — used for duration estimates (default: 15).",
     )
     parser.add_argument(
         "--skip-merge", action="store_true",
@@ -80,71 +81,29 @@ def main() -> None:
     args = parser.parse_args()
 
     total_calls = args.batches * args.n
-    started_at  = datetime.now()
 
-    print("\n" + "█" * 60)
-    print("  TELECOM CALL INTELLIGENCE — Batch Orchestrator")
-    print("█" * 60)
-    print(f"  Batches      : {args.batches}")
-    print(f"  Calls/batch  : {args.n}")
-    print(f"  Total calls  : {total_calls}")
-    print(f"  Seed         : {args.seed}")
-    print(f"  API delay    : {args.delay}s/call")
-    print(f"  Est. runtime : ~{total_calls * (args.delay + 4) / 60:.0f} min")
-    print("█" * 60)
+    orch = Orchestrator(
+        total_calls    = total_calls,
+        batch_size     = args.n,
+        seed           = args.seed,
+        delay          = args.delay,
+        rate_limit_rpm = args.rpm,
+        max_retries    = args.retries,
+    )
 
-    succeeded: list[int] = []
-    failed:    list[int] = []
+    report = orch.run()
 
-    for batch_num in range(1, args.batches + 1):
-        offset = (batch_num - 1) * args.n
-
-        print(f"\n{'═' * 60}")
-        print(f"  BATCH {batch_num}/{args.batches}  │  offset={offset}, n={args.n}, seed={args.seed}")
-        print(f"{'═' * 60}")
-
-        cmd = [
-            sys.executable, "run_pipeline.py",
-            "--n",      str(args.n),
-            "--seed",   str(args.seed),
-            "--offset", str(offset),
-            "--delay",  str(args.delay),
-        ]
-
-        ok = _run_subprocess(cmd, f"Batch {batch_num}/{args.batches}")
-        if ok:
-            succeeded.append(batch_num)
-        else:
-            failed.append(batch_num)
-            print(f"\n  ⚠ Batch {batch_num} failed. Check outputs/pipeline.log for details.")
-            print(f"    The checkpoint file (if any) is preserved for resume.")
-
-        # Brief pause between batches to let Groq rate limits reset
-        if batch_num < args.batches:
-            pause = 5
-            print(f"\n  Pausing {pause}s before next batch …")
-            time.sleep(pause)
-
-    # ── Summary ───────────────────────────────────────────────────────
-    elapsed = (datetime.now() - started_at).total_seconds()
-
-    print(f"\n{'█' * 60}")
-    print(f"  ALL BATCHES DONE")
-    print(f"{'█' * 60}")
-    print(f"  Succeeded : {len(succeeded)}/{args.batches}  {succeeded}")
-    print(f"  Failed    : {len(failed)}/{args.batches}  {failed}")
-    print(f"  Elapsed   : {elapsed / 60:.1f} min")
-
-    if not succeeded:
-        print("\n  ✗ No batches succeeded. Nothing to merge.")
+    # Abort post-processing if nothing succeeded
+    if report["execution_summary"]["tasks_done"] == 0:
+        print("\n  ✗ No batches succeeded — skipping merge and QA audit.")
         sys.exit(1)
 
     # ── Post-processing ───────────────────────────────────────────────
     if args.skip_merge:
         print("\n  --skip-merge set: skipping merge and QA audit.")
-        print(f"  Run manually:\n"
-              f"    python merge_outputs.py\n"
-              f"    python qa_audit.py")
+        print("  Run manually:\n"
+              "    python merge_outputs.py\n"
+              "    python qa_audit.py")
         return
 
     print(f"\n{'═' * 60}")
