@@ -26,10 +26,10 @@ from __future__ import annotations
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime    import datetime
-from pathlib     import Path
-from typing      import Iterator
+from datetime import datetime
+from pathlib import Path
 
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
@@ -316,7 +316,7 @@ class Orchestrator:
         print(f"  Batches      : {len(self.tasks)}")
         print(f"  Rate limit   : {self.rate_limit_rpm} RPM (free tier)")
         print(f"  Max retries  : {self.max_retries} per batch")
-        print(f"  Execution    : sequential (rate-limit safe)")
+        print("  Execution    : sequential (rate-limit safe)")
         print(f"  {'─' * 54}")
         for t in self.tasks:
             print(f"  Task {t.task_id:02d} │ offset={t.offset:<4} n={t.n_calls:<3} "
@@ -335,7 +335,7 @@ class Orchestrator:
         print(f"  Total time   : {s['total_elapsed_min']} min")
 
         if h:
-            print(f"\n  Agent health:")
+            print("\n  Agent health:")
             for agent, stats in h.items():
                 print(f"    {agent:<25} success={stats['success_rate_pct']}%  "
                       f"avg={stats['avg_elapsed_s']}s/call")

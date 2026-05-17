@@ -28,13 +28,12 @@ from __future__ import annotations
 import json
 import os
 
+from pipeline.config import INSIGHTS_MODEL, INSIGHTS_TEMPERATURE, MAX_OUTPUT_TOKENS
 from pipeline.governance import AUDIT_LOG
-from pipeline.logger     import get_logger
-from pipeline.memory     import MEMORY
+from pipeline.logger import get_logger
+from pipeline.memory import MEMORY
 
 log = get_logger(__name__)
-
-INSIGHTS_MODEL = "gemini-2.5-flash-lite"
 
 INSIGHTS_PROMPT_TEMPLATE = """\
 You are a senior telecom contact center strategy consultant.
@@ -213,17 +212,14 @@ class InsightsAgent:
 
         try:
             from google import genai
-            from google.genai import types
             from google.genai import errors as genai_errors
+            from google.genai import types
 
             client = genai.Client(api_key=api_key)
 
             # Build cost driver from distributions
             cost_dist  = metrics.get("distributions", {}).get("cost_driver", {})
             top_driver = max(cost_dist, key=cost_dist.get) if cost_dist else "unknown"
-
-            sentiment_dist = metrics.get("distributions", {}).get("sentiment_end", {})
-            positive_end   = sentiment_dist.get("positive", 0) + sentiment_dist.get("neutral", 0)
 
             # Append historical context from agent memory if available
             hist_section = (
@@ -251,8 +247,8 @@ class InsightsAgent:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    temperature=0.3,
-                    max_output_tokens=2048,
+                    temperature=INSIGHTS_TEMPERATURE,
+                    max_output_tokens=MAX_OUTPUT_TOKENS,
                     thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )

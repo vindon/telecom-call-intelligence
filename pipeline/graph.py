@@ -33,8 +33,8 @@ from pipeline.agents import (
     QualityAgent,
 )
 from pipeline.governance import AUDIT_LOG
-from pipeline.logger     import get_logger
-from pipeline.memory     import MEMORY
+from pipeline.logger import get_logger
+from pipeline.memory import MEMORY
 
 log = get_logger(__name__)
 
@@ -111,7 +111,7 @@ def quality_node(state: PipelineState) -> PipelineState:
               f"MEDIUM {summary.get('grade_MEDIUM', 0)}  "
               f"LOW {summary.get('grade_LOW', 0)} (excluded)")
     if not gate_ok:
-        print(f"  ⚠ Quality gate FAILED — routing to emergency export")
+        print("  ⚠ Quality gate FAILED — routing to emergency export")
     return result
 
 
@@ -160,7 +160,7 @@ def insights_node(state: PipelineState) -> PipelineState:
             print(line)
     recs = insights.get("top_recommendations", [])
     if recs:
-        print(f"\n  Top recommendations:")
+        print("\n  Top recommendations:")
         for r in recs[:3]:
             print(f"    {r.get('priority', '?')}. {r.get('title', '')}")
     return result

@@ -1,0 +1,33 @@
+repos:
+  # Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # Prevent accidentally committing secrets
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-yaml
+      - id: end-of-file-fixer
+        exclude: ^outputs/
+      - id: trailing-whitespace
+        exclude: ^outputs/
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]   # require PRs for main
+
+  # Forbid committing .env files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-case-conflict

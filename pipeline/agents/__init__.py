@@ -12,12 +12,12 @@ Agent roster (execution order):
   6. ExportAgent          — CSV, JSON, manifest, QA report to disk
 """
 
-from pipeline.agents.data_agent        import DataIngestionAgent
-from pipeline.agents.extraction_agent  import ExtractionAgent
-from pipeline.agents.quality_agent     import QualityAgent
 from pipeline.agents.aggregation_agent import AggregationAgent
-from pipeline.agents.insights_agent    import InsightsAgent
-from pipeline.agents.export_agent      import ExportAgent
+from pipeline.agents.data_agent import DataIngestionAgent
+from pipeline.agents.export_agent import ExportAgent
+from pipeline.agents.extraction_agent import ExtractionAgent
+from pipeline.agents.insights_agent import InsightsAgent
+from pipeline.agents.quality_agent import QualityAgent
 
 __all__ = [
     "DataIngestionAgent",

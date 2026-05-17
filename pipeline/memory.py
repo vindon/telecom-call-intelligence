@@ -29,9 +29,9 @@ Usage:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-from pathlib  import Path
-from typing   import Any
+from datetime import UTC, datetime, timezone
+from pathlib import Path
+from typing import Any
 
 from pipeline.logger import get_logger
 
@@ -59,7 +59,7 @@ class AgentMemory:
     def _empty(self) -> dict:
         return {
             "schema_version":  _SCHEMA_VERSION,
-            "created_at":      datetime.now(timezone.utc).isoformat(),
+            "created_at":      datetime.now(UTC).isoformat(),
             "last_updated":    None,
             "total_runs":      0,
             "run_history":     [],       # list of run summaries (newest last)
@@ -74,7 +74,7 @@ class AgentMemory:
             },
         }
 
-    def load(self) -> "AgentMemory":
+    def load(self) -> AgentMemory:
         """Load memory from disk. Returns self for chaining."""
         if not self.path.exists():
             log.info("[AgentMemory] No memory file found — starting fresh")
@@ -101,7 +101,7 @@ class AgentMemory:
     def save(self) -> None:
         """Persist memory to disk."""
         self.path.parent.mkdir(exist_ok=True)
-        self._data["last_updated"] = datetime.now(timezone.utc).isoformat()
+        self._data["last_updated"] = datetime.now(UTC).isoformat()
         with open(self.path, "w", encoding="utf-8") as fh:
             json.dump(self._data, fh, indent=2)
         log.info("[AgentMemory] Saved to %s", self.path)
@@ -153,7 +153,7 @@ class AgentMemory:
         if not failed_ids:
             return
         entry = {
-            "timestamp":  datetime.now(timezone.utc).isoformat(),
+            "timestamp":  datetime.now(UTC).isoformat(),
             "context":    context,
             "failed_ids": failed_ids,
             "count":      len(failed_ids),
@@ -166,7 +166,7 @@ class AgentMemory:
     def record_quota_event(self, model: str, provider: str) -> None:
         """Record a quota-exhaustion event for scheduling awareness."""
         entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "model":     model,
             "provider":  provider,
         }

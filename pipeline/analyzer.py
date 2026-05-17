@@ -28,19 +28,28 @@ import time
 from pathlib import Path
 
 from google import genai
-from google.genai import types
 from google.genai import errors as genai_errors
+from google.genai import types
 from tqdm import tqdm
 
+from pipeline.config import (
+    EXTRACTION_MODEL as MODEL,
+)
+from pipeline.config import (
+    EXTRACTION_TEMPERATURE as TEMPERATURE,
+)
+from pipeline.config import (
+    MAX_OUTPUT_TOKENS as MAX_TOKENS,
+)
+from pipeline.config import (
+    OUTPUT_DIR as CHECKPOINT_DIR,
+)
+from pipeline.config import (
+    PROMPT_PATH,
+)
 from pipeline.logger import get_logger
 
 log = get_logger(__name__)
-
-PROMPT_PATH    = Path(__file__).parent.parent / "prompts" / "system_prompt.txt"
-CHECKPOINT_DIR = Path("outputs")
-MODEL          = "gemini-2.5-flash-lite"
-MAX_TOKENS     = 8192
-TEMPERATURE    = 0.1
 
 
 # ── System prompt ─────────────────────────────────────────────────────
@@ -225,7 +234,7 @@ def analyze_batch(
     """
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise EnvironmentError("GEMINI_API_KEY not set. Check your .env file.")
+        raise OSError("GEMINI_API_KEY not set. Check your .env file.")
 
     client        = genai.Client(api_key=api_key)
     system_prompt = load_system_prompt()

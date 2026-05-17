@@ -29,7 +29,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pipeline.orchestrator import Orchestrator
+from pipeline.orchestrator import Orchestrator  # noqa: E402
 
 
 def _run_subprocess(cmd: list[str], label: str) -> bool:
@@ -107,7 +107,7 @@ def main() -> None:
         return
 
     print(f"\n{'═' * 60}")
-    print(f"  POST-PROCESSING")
+    print("  POST-PROCESSING")
     print(f"{'═' * 60}")
 
     merge_ok = _run_subprocess(
@@ -125,9 +125,9 @@ def main() -> None:
         print("    Retry: python merge_outputs.py && python qa_audit.py")
 
     print(f"\n{'█' * 60}")
-    print(f"  PIPELINE ORCHESTRATION COMPLETE")
+    print("  PIPELINE ORCHESTRATION COMPLETE")
     print(f"{'█' * 60}")
-    print(f"  Dashboard  : streamlit run dashboard/app.py")
+    print("  Dashboard  : streamlit run dashboard/app.py")
     print(f"  Outputs    : {Path('outputs').resolve()}")
     print(f"{'█' * 60}\n")
 

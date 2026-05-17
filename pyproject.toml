@@ -1,0 +1,48 @@
+[project]
+name = "telecom-call-intelligence"
+version = "2.0.0"
+description = "Multi-agent telecom call intelligence pipeline — LangGraph + Gemini"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "Vinoth N", email = "vinoth.n@outlook.com" }]
+keywords = ["telecom", "nlp", "multi-agent", "langGraph", "gemini", "agentic-ai"]
+
+
+# ── Ruff ───────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length    = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = [
+    "E501",   # line too long — handled per-file, not globally
+    "E741",   # ambiguous variable name (l, O, I) — false-positives in ML code
+    "F401",   # unused imports — some are re-exported
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*"        = ["F811"]   # redefined fixtures OK in test files
+"pipeline/tools.py" = ["F401"]   # tool funcs imported for side effects
+
+[tool.ruff.format]
+quote-style = "double"
+
+
+# ── Mypy ───────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version         = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores    = false
+warn_return_any        = false
+strict_optional        = false   # TypedDict fields are not Optional by default
+
+
+# ── Pytest ─────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths   = ["tests"]
+addopts     = "-v --tb=short"
+markers     = [
+    "slow: marks tests that make real API calls or download datasets (deselect with -m 'not slow')",
+    "integration: marks full pipeline integration tests",
+]

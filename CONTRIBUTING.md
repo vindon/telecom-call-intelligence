@@ -1,41 +1,54 @@
 # Contributing to Telecom Call Intelligence
 
-Thank you for your interest in contributing. This document covers how to set up the project locally, the conventions we follow, and how to submit changes.
+This is a proprietary project (Copyright © 2026 Vinoth N). Contributions are welcome from authorised team members only.
 
 ---
 
-## Development setup
+## Development Setup
 
 ```bash
 git clone https://github.com/vindon/telecom-call-intelligence.git
 cd telecom-call-intelligence
-
-python3 -m venv .venv
-source .venv/bin/activate
-
-pip install -r requirements.txt
-
-cp .env.example .env
-# Add your GROQ_API_KEY to .env
+python -m venv .venv && source .venv/bin/activate
+make install-dev          # installs prod + dev deps and pre-commit hooks
+cp .env.example .env      # add your GEMINI_API_KEY (Google AI Studio free key)
 ```
 
-Verify the setup with a 3-call smoke test:
+Verify setup:
 
 ```bash
-python run_pipeline.py --n 3
+make test          # 149 unit tests — should all pass in < 2 seconds
+make run           # 3-call smoke test (requires GEMINI_API_KEY in .env)
 ```
 
 ---
 
-## Project conventions
+## Branch Strategy
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production-stable; protected; no direct pushes |
+| `develop` | Integration branch for feature merges |
+| `feat/*` | New features or agents |
+| `fix/*` | Bug fixes |
+| `chore/*` | CI, deps, tooling, docs |
+
+Pre-commit blocks direct commits to `main`.
+
+---
+
+## Project Conventions
 
 ### Code style
 
+- **All constants** must live in `pipeline/config.py` — not scattered across modules
+- **Agents are stateless** — `run(state: dict) -> dict`; never store data on `self`
+- **State is immutable** — always `return {**state, "new_key": value}`; never mutate in-place
 - **No unnecessary comments** — code should be self-documenting through naming
-- **No docstrings on obvious functions** — one-line doc is acceptable on public module functions where the signature is non-obvious
+- **No docstrings on obvious functions** — one-line module header is acceptable
 - **Type hints** — use them on all function signatures
-- **Logging** — always use `get_logger(__name__)` from `pipeline.logger`; never `print()` in pipeline modules (print is acceptable in CLI entry points)
-- **No f-string logging** — use `log.info("msg %s", var)` not `log.info(f"msg {var}")` (avoids string interpolation on filtered levels)
+- **Logging** — always use `get_logger(__name__)` from `pipeline.logger`; never `print()` in pipeline modules
+- **No f-string logging** — use `log.info("msg %s", var)` not `log.info(f"msg {var}")`
 
 ### Git commits
 
@@ -68,15 +81,27 @@ If you want to propose a significant change, open an issue first to discuss the 
 
 ---
 
-## Submitting a pull request
+## Adding a New Agent
 
-1. Fork the repo and create a branch from `main`
-2. Make your changes
-3. Verify the pipeline still works: `python run_pipeline.py --n 3`
-4. Run a syntax check: `python -m py_compile pipeline/*.py *.py`
-5. Open a pull request against `main` and fill in the PR template
+See `CLAUDE.md` for the full checklist. In brief:
 
-One PR per logical change. Keep commits clean — squash fixup commits before opening.
+1. `pipeline/agents/your_agent.py` — stateless class, `run(state: dict) -> dict`
+2. Export from `pipeline/agents/__init__.py`
+3. Wire the node and edges in `pipeline/graph.py`; update `PipelineState`
+4. Register any tools in `pipeline/tools.py`
+5. Write tests in `tests/`
+6. Update `ARCHITECTURE.md` and `CHANGELOG.md`
+
+---
+
+## Submitting a Pull Request
+
+1. Branch from `develop` — not from `main`
+2. Run `make check` (lint + type-check + test) — CI must be green
+3. Open a PR against `develop` and fill in the PR template
+4. One approval required before merge
+
+One PR per logical change. Squash fixup commits before opening.
 
 ---
 

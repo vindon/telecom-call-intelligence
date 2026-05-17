@@ -119,11 +119,11 @@ def main() -> None:
 
     # ── Re-run aggregation on combined dataset ────────────────────────
     print(f"\n  Aggregating {len(merged)} unique records …")
-    from pipeline.aggregator import aggregate_metrics
-    from pipeline.token_tracker import token_summary
-
     # Load dotenv for any imports that need it
     from dotenv import load_dotenv
+
+    from pipeline.aggregator import aggregate_metrics
+    from pipeline.token_tracker import token_summary
     load_dotenv()
 
     metrics      = aggregate_metrics(merged)
@@ -174,7 +174,7 @@ def main() -> None:
     print(f"\n  ✓ Combined JSON  : {combined_path}")
     print(f"  ✓ Summary JSON   : {summary_path}  ← dashboard updated")
     print(f"  ✓ Merge manifest : {manifest_path}")
-    print(f"\n  Dashboard: streamlit run dashboard/app.py\n")
+    print("\n  Dashboard: streamlit run dashboard/app.py\n")
 
 
 if __name__ == "__main__":

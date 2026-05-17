@@ -435,14 +435,14 @@ def main() -> None:
           f"({summary['pct_HIGH']}%)   "
           f"MEDIUM {summary['grade_MEDIUM']}  ({summary['pct_MEDIUM']}%)   "
           f"LOW {summary['grade_LOW']}  ({summary['pct_LOW']}%)")
-    print(f"\n  Dimension averages:")
+    print("\n  Dimension averages:")
     print(f"    Completeness   : {dims['completeness']:5.1f} / 30")
     print(f"    Enum validity  : {dims['enum_validity']:5.1f} / 25")
     print(f"    Consistency    : {dims['consistency']:5.1f} / 25")
     print(f"    Plausibility   : {dims['plausibility']:5.1f} / 20")
 
     if report["top_issues"]:
-        print(f"\n  Top issues:")
+        print("\n  Top issues:")
         for item in report["top_issues"][:8]:
             print(f"    [{item['count']:>3}x]  {item['pattern']}")
 

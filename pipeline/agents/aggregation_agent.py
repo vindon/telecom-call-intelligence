@@ -12,9 +12,9 @@ Outputs injected into PipelineState:
   token_usage        — inference cost summary
 """
 
-from pipeline.aggregator    import aggregate_metrics
+from pipeline.aggregator import aggregate_metrics
+from pipeline.logger import get_logger
 from pipeline.token_tracker import token_summary
-from pipeline.logger        import get_logger
 
 log = get_logger(__name__)
 

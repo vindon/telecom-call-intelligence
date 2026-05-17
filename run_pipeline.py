@@ -45,7 +45,7 @@ if not os.environ.get("GEMINI_API_KEY"):
     print("  Free key at: https://aistudio.google.com")
     sys.exit(1)
 
-from pipeline.graph import build_pipeline
+from pipeline.graph import build_pipeline  # noqa: E402
 
 
 def main() -> dict:
@@ -77,10 +77,10 @@ def main() -> dict:
     print("\n" + "█" * 60)
     print("  TELECOM CALL INTELLIGENCE — Multi-Agent Pipeline")
     print("█" * 60)
-    print(f"  Agents     : DataIngestion → Extraction → Quality →")
-    print(f"               Aggregation  → Insights   → Export")
-    print(f"  Dataset    : talkmap/telecom-conversation-corpus")
-    print(f"  Model      : gemini-2.5-flash-lite (Google AI Studio)")
+    print("  Agents     : DataIngestion → Extraction → Quality →")
+    print("               Aggregation  → Insights   → Export")
+    print("  Dataset    : talkmap/telecom-conversation-corpus")
+    print("  Model      : gemini-2.5-flash-lite (Google AI Studio)")
     print(f"  Calls      : {args.n}")
     print(f"  Seed       : {args.seed}")
     print(f"  Offset     : {args.offset}")
@@ -119,7 +119,7 @@ def main() -> dict:
     print("  MULTI-AGENT PIPELINE COMPLETE")
     print("█" * 60)
     print(f"  Results saved to : {Path('outputs').resolve()}")
-    print(f"  Dashboard        : streamlit run dashboard/app.py")
+    print("  Dashboard        : streamlit run dashboard/app.py")
     if usage:
         print(f"  Tokens used      : {usage.get('total_tokens', 0):,}")
         print(f"  Inference cost   : ${usage.get('total_cost_usd', 0):.4f} USD")

@@ -6,6 +6,44 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.0.0] — 2026-05-18
+
+### Added — Agentic AI Architecture
+
+- **6-agent multi-agent pipeline** (`pipeline/agents/`) — DataIngestionAgent, ExtractionAgent, QualityAgent, AggregationAgent, InsightsAgent, ExportAgent; each is stateless with `run(state: dict) -> dict`
+- **InsightsAgent** — second Gemini LLM call synthesising KPIs into strategic recommendations (5 prioritised actions, 3 quick wins, 2 risk flags); graceful degradation to rule-based fallback on quota exhaustion
+- **Governance layer** (`pipeline/governance.py`) — `BudgetGuard` (hard-stop at $5 USD), `QualityGate` (catastrophic failure at <40% pass rate), `PIIScanner` (6 PII pattern types with redaction), `AuditLog` (append-only structured event trace)
+- **Agent memory system** (`pipeline/memory.py`) — persistent cross-run JSON store at `outputs/agent_memory.json`; tracks run history (last 50), failure log, quota events, model performance; injects historical context into InsightsAgent prompt
+- **Tool registry** (`pipeline/tools.py`) — formal JSON-schema tool definitions for all 5 agent operations; uniform invocation audit trail with latency tracking; LLM-discoverable via `REGISTRY.manifest()`
+- **Orchestrator** (`pipeline/orchestrator.py`) — `WorkPlanner` (ceiling-division batch planning), `AgentHealthMonitor` (per-agent success/failure tracking), `Orchestrator` (adaptive retry, process isolation, structured report)
+- **Centralized config** (`pipeline/config.py`) — single source of truth for all constants: model names, temperatures, token limits, paths, governance thresholds, QA thresholds
+- **Dynamic routing** — LangGraph `add_conditional_edges` bypasses AggregationAgent + InsightsAgent on catastrophic quality gate failure; pipeline always completes with an export
+- **Unit test suite** (`tests/`) — 149 tests across governance, memory, orchestrator, tools, config, and graph; 0 tests depend on real API calls; < 2 second full run
+- **`pyproject.toml`** — ruff, mypy, and pytest configuration unified in one file
+- **`requirements-dev.txt`** — pytest, pytest-cov, pytest-mock, ruff, mypy, pre-commit
+- **`Makefile`** — `make test`, `make lint`, `make check`, `make run`, `make run-batches`, `make dashboard`
+- **`CLAUDE.md`** — AI assistant guide (conventions, what not to do, agent addition checklist)
+- **`.pre-commit-config.yaml`** — ruff lint + format, secret detection, no-commit-to-main gate
+- **`SECURITY.md`** — vulnerability disclosure policy
+- **Updated CI** (`ci.yml`) — ruff lint, pytest, LangGraph compile check, tool registry validation, config module verification; GEMINI_API_KEY from GitHub Secrets
+
+### Changed
+
+- **LLM provider** — Groq + `llama-3.3-70b-versatile` → Google Gemini 2.5 Flash Lite via `google-genai` SDK
+- **`run_batches.py`** — now delegates entirely to `Orchestrator`; adds `--retries` and `--rpm` flags
+- **`pipeline/analyzer.py`** — imports MODEL, MAX_TOKENS, TEMPERATURE from `pipeline/config.py`; `MAX_TOKENS` raised from 2048 → 8192; `thinking_budget=0` added to prevent JSON truncation
+- **`pipeline/agents/insights_agent.py`** — imports INSIGHTS_MODEL, INSIGHTS_TEMPERATURE, MAX_OUTPUT_TOKENS from `pipeline/config.py`
+- **`ARCHITECTURE.md`** — updated with Orchestrator section, governance/memory/tools in file tree
+- **`CONTRIBUTING.md`** — updated setup instructions, branch strategy, agent addition checklist
+- **`requirements.txt`** — `google-generativeai` (deprecated) replaced with `google-genai>=1.0.0`
+
+### Fixed
+
+- **JSON truncation** — Gemini 2.5 thinking tokens consumed extraction token budget; fixed by `thinking_budget=0` + `MAX_TOKENS=8192`
+- **Model quota** — switched from `gemini-2.5-flash` → `gemini-2.5-flash-lite` when daily quota exhausted; model selection now in centralised config
+
+---
+
 ## [1.0.0] — 2026-05-17
 
 ### Added

@@ -20,10 +20,10 @@ Outputs injected into PipelineState:
 
 import time
 
-from pipeline.analyzer   import analyze_batch
+from pipeline.analyzer import analyze_batch
 from pipeline.governance import AUDIT_LOG, BUDGET_GUARD
-from pipeline.logger     import get_logger
-from pipeline.memory     import MEMORY
+from pipeline.logger import get_logger
+from pipeline.memory import MEMORY
 
 log = get_logger(__name__)
 

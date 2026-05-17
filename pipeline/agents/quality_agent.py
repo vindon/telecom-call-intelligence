@@ -24,9 +24,9 @@ Outputs injected into PipelineState:
 
 import time
 
-from qa_audit            import audit_record, build_report
 from pipeline.governance import AUDIT_LOG, QUALITY_GATE
-from pipeline.logger     import get_logger
+from pipeline.logger import get_logger
+from qa_audit import audit_record, build_report
 
 log = get_logger(__name__)
 
