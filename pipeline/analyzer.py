@@ -59,6 +59,10 @@ from pipeline.security import (
 
 log = get_logger(__name__)
 
+# Tripped on first 429 during a gap-fill call; prevents wasting remaining
+# daily quota on retries when the free-tier RPD limit is already exhausted.
+_react_quota_exhausted: bool = False
+
 
 # ── System prompt ─────────────────────────────────────────────────────
 
@@ -285,6 +289,13 @@ def gap_fill_transcript(
     first pass and make a targeted second call to fill them in.
     Returns a merged dict (first_pass values preserved where retry returns null).
     """
+    global _react_quota_exhausted
+
+    # Circuit breaker: once quota is exhausted for the day, skip all retries
+    # so remaining batches can complete their primary extraction.
+    if _react_quota_exhausted:
+        return first_pass
+
     missing = [f for f in _CRITICAL_FIELDS if first_pass.get(f) in (None, "", 0)]
     if not missing:
         return first_pass
@@ -318,6 +329,18 @@ def gap_fill_transcript(
         log.info("[ReAct] call %s: gap-fill improved coverage %d → %d",
                  call_id_short, score_field_coverage(first_pass), score_field_coverage(merged))
         return merged
+
+    except genai_errors.ClientError as exc:
+        if exc.code == 429:
+            _react_quota_exhausted = True
+            log.warning(
+                "[ReAct] Daily quota exhausted — disabling gap-fill for remaining batches. "
+                "Main extraction quota is preserved."
+            )
+        else:
+            log.warning("[ReAct] gap-fill client error for call %s: HTTP %d — %s",
+                        call_id_short, exc.code, str(exc.message)[:120])
+        return first_pass
 
     except Exception as exc:
         log.warning("[ReAct] gap-fill failed for call %s: %s", call_id_short, str(exc)[:120])

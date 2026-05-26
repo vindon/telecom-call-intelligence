@@ -29,6 +29,7 @@ Outputs injected into PipelineState
 import os
 import time
 
+import pipeline.analyzer as _analyzer_mod
 from pipeline.analyzer import (
     analyze_batch,
     analyze_transcript,
@@ -154,6 +155,10 @@ class ExtractionAgent:
         coverage_before: list[int] = []
 
         for result in results:
+            # Check module-level circuit breaker — quota already exhausted
+            if _analyzer_mod._react_quota_exhausted:
+                improved_results.extend(results[len(improved_results):])
+                break
             call_id = result.get("call_id")
 
             # ── Observe: score current coverage ─────────────────────

@@ -18,6 +18,8 @@ Groupings mirror the system architecture:
 from pathlib import Path
 
 # ── Model ──────────────────────────────────────────────────────────────
+# Free-tier limits (2026-05): gemini-2.5-flash-lite = 20 RPD / 15 RPM.
+# Switch to gemini-2.0-flash-lite (1 500 RPD / 30 RPM) for larger batch runs.
 EXTRACTION_MODEL       = "gemini-2.5-flash-lite"
 INSIGHTS_MODEL         = "gemini-2.5-flash-lite"
 MAX_OUTPUT_TOKENS      = 8192
@@ -29,6 +31,8 @@ MAX_RETRIES_PER_CALL = 3
 RETRY_DELAYS_S       = (30, 60, 120)   # exponential backoff on 429
 
 # ── Batching ───────────────────────────────────────────────────────────
+# With gemini-2.5-flash-lite free tier (20 RPD), use DEFAULT_BATCH_SIZE=20
+# and one batch per day. Switch to 2.0-flash-lite for multi-batch runs.
 DEFAULT_N_CALLS        = 100
 DEFAULT_BATCH_SIZE     = 20
 DEFAULT_SEED           = 42

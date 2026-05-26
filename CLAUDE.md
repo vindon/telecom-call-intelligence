@@ -78,7 +78,7 @@ make dashboard      # Streamlit dashboard on localhost:8501
 - Current model: `gemini-2.5-flash-lite` (defined in `pipeline/config.py` as `EXTRACTION_MODEL` and `INSIGHTS_MODEL`)
 - `thinking_budget=0` — **must not be removed**. Without it, thinking tokens consume the token budget and JSON output is truncated.
 - `max_output_tokens=8192` — sized to fit the 70-field extraction JSON; do not reduce.
-- Free tier: 500 RPD shared across all `gemini-2.5-*` models. Daily quota resets at midnight Pacific.
+- Free tier: `gemini-2.5-flash-lite` = **20 RPD / 15 RPM** (enough for one 20-call batch per day). For larger runs switch to `gemini-2.0-flash-lite` (1 500 RPD / 30 RPM) by updating `EXTRACTION_MODEL` and `INSIGHTS_MODEL` in `pipeline/config.py`. Daily quota resets at midnight Pacific.
 
 ### Adding new agents
 1. Create `pipeline/agents/your_agent.py` with a stateless class + `run(state: dict) -> dict`

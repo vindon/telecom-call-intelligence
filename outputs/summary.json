@@ -1,92 +1,145 @@
 {
   "meta": {
-    "total_calls_analyzed": 3,
-    "analysis_timestamp": "2026-05-17T13:39:03.033914",
+    "total_calls_analyzed": 30,
+    "analysis_timestamp": "2026-05-26T15:30:51.688097",
     "dataset": "talkmap/telecom-conversation-corpus",
-    "model": "llama-3.3-70b-versatile",
-    "inference_provider": "Groq",
+    "model": "gemini-2.5-flash-lite",
+    "inference_provider": "Google AI Studio",
     "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark. Replace with actual ACD data for production."
   },
   "kpis": {
-    "total_calls_analyzed": 3,
-    "avg_handle_time_seconds": 142.0,
-    "avg_handle_time_minutes": 2.4,
-    "fcr_rate_pct": 0.0,
-    "avoidable_call_rate_pct": 33.3,
-    "self_serve_deflection_pct": 33.3,
-    "agentic_ai_resolvable_pct": 33.3,
-    "proactive_outreach_pct": 0.0,
-    "all_issues_resolved_pct": 0.0,
-    "escalation_rate_pct": 33.3,
-    "upsell_attempted_pct": 33.3,
-    "upsell_conversion_pct": 100.0,
-    "sentiment_improved_pct": 100.0,
-    "agent_tool_struggle_pct": 0.0,
-    "multi_issue_call_pct": 0.0,
-    "avg_issues_per_call": 1.0,
-    "avg_hold_time_seconds": 0.0,
-    "avg_hold_count": 0.0,
-    "avg_empathy_statements": 1.3
+    "total_calls_analyzed": 30,
+    "avg_handle_time_seconds": 167.8,
+    "avg_handle_time_minutes": 2.8,
+    "fcr_rate_pct": 50.0,
+    "avoidable_call_rate_pct": 3.3,
+    "self_serve_deflection_pct": 6.7,
+    "agentic_ai_resolvable_pct": 6.7,
+    "proactive_outreach_pct": 3.3,
+    "all_issues_resolved_pct": 50.0,
+    "escalation_rate_pct": 23.3,
+    "upsell_attempted_pct": 13.3,
+    "upsell_conversion_pct": 50.0,
+    "sentiment_improved_pct": 66.7,
+    "agent_tool_struggle_pct": 10.0,
+    "multi_issue_call_pct": 6.7,
+    "avg_issues_per_call": 1.1,
+    "avg_hold_time_seconds": 2.9,
+    "avg_hold_count": 0.2,
+    "avg_empathy_statements": 2.0
   },
   "phase_avg_seconds": {
-    "Welcome & Auth": 12.0,
-    "Discovery": 41.7,
-    "Diagnosis": 33.0,
-    "Resolution": 59.0,
-    "Hold": 0.0,
-    "Upsell": 13.3,
-    "Closing": 9.3
+    "Welcome & Auth": 21.8,
+    "Discovery": 42.8,
+    "Diagnosis": 22.0,
+    "Resolution": 42.3,
+    "Hold": 2.9,
+    "Upsell": 4.5,
+    "Closing": 19.3
   },
   "distributions": {
     "issue_category": {
-      "technical": 3
+      "technical": 18,
+      "billing": 4,
+      "plan": 4,
+      "device": 3,
+      "account": 3
     },
     "cost_driver": {
-      "technical": 100.0
+      "technical": 50.0,
+      "billing": 13.3,
+      "device": 10.0,
+      "account": 10.0,
+      "plan_change": 6.7,
+      "plan": 6.7,
+      "information_only": 3.3
     },
     "agent_skill": {
-      "adequate": 50.0,
-      "proficient": 50.0
+      "adequate": 51.7,
+      "proficient": 44.8,
+      "needs_improvement": 3.4
     },
     "customer_sentiment_start": {
-      "negative": 66.7,
-      "frustrated": 33.3
+      "neutral": 46.7,
+      "frustrated": 30.0,
+      "negative": 13.3,
+      "concerned": 6.7,
+      "worried": 3.3
     },
     "customer_sentiment_end": {
-      "neutral": 66.7,
-      "positive": 33.3
+      "positive": 43.3,
+      "neutral": 40.0,
+      "frustrated": 13.3,
+      "appreciative": 3.3
     },
     "handle_time_efficiency": {
-      "average": 50.0,
-      "efficient": 50.0
+      "average": 55.2,
+      "efficient": 41.4,
+      "inefficient": 3.4
     },
     "self_serve_channel": {
-      "website": 100.0
+      "none": 81.5,
+      "app": 11.1,
+      "website": 3.7,
+      "IVR": 3.7
     },
     "repeat_call_risk": {
+      "low": 53.3,
       "medium": 33.3,
-      "low": 33.3,
-      "high": 33.3
+      "high": 13.3
     },
-    "agent_disproportionate_phase": {},
+    "agent_disproportionate_phase": {
+      "discovery": 37.0,
+      "welcome": 14.8,
+      "resolution": 14.8,
+      "closing": 11.1,
+      "none": 11.1,
+      "diagnosis": 11.1
+    },
     "upsell_outcome": {
-      "not_attempted": 66.7,
-      "accepted": 33.3
+      "not_attempted": 86.7,
+      "accepted": 6.7,
+      "declined": 3.3,
+      "pending": 3.3
     },
     "resolution_method_issue1": {
-      "troubleshooting": 50.0,
-      "escalated": 50.0
+      "agent_action": 44.8,
+      "escalated": 24.1,
+      "unresolved": 13.8,
+      "workaround": 10.3,
+      "troubleshooting": 3.4,
+      "self_serve_guidance": 3.4
     },
-    "account_type": {}
+    "account_type": {
+      "unknown": 100.0
+    }
   },
   "cost_levers": {
     "cost_per_call_usd": 6.0,
     "monthly_volume_estimate": 100000,
     "baseline_monthly_cost_usd": 600000,
-    "self_serve_savings_usd": 169830,
-    "agentic_ai_savings_usd": 139860,
-    "proactive_care_savings_usd": 0,
-    "total_savings_opportunity_usd": 309690,
-    "savings_pct_of_baseline": 51.6
+    "self_serve_savings_usd": 34170,
+    "agentic_ai_savings_usd": 28140,
+    "proactive_care_savings_usd": 11880,
+    "total_savings_opportunity_usd": 74190,
+    "savings_pct_of_baseline": 12.4
+  },
+  "token_usage": {
+    "model": "gemini-2.5-flash-lite",
+    "provider": "Google AI Studio",
+    "calls_with_usage": 27,
+    "calls_missing_usage": 3,
+    "total_prompt_tokens": 84931,
+    "total_completion_tokens": 44203,
+    "total_tokens": 129134,
+    "avg_prompt_tokens_per_call": 3146.0,
+    "avg_completion_tokens_per_call": 1637.0,
+    "avg_total_tokens_per_call": 4783.0,
+    "total_cost_usd": 0.0262,
+    "avg_cost_per_call_usd": 0.000969,
+    "price_input_per_mtok_usd": 0.1,
+    "price_output_per_mtok_usd": 0.4,
+    "free_tier_note": "Free up to 500 req/day via Google AI Studio. Paid tier pricing shown above.",
+    "pricing_note": "Gemini 2.5 Flash Lite paid tier pricing as of 2026-Q2. At 100K calls/mo avg 4,783 tokens/call, monthly inference cost \u2248 $96.94 USD."
   }
 }
