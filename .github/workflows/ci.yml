@@ -59,6 +59,8 @@ jobs:
             pipeline/memory.py \
             pipeline/tools.py \
             pipeline/orchestrator.py \
+            pipeline/security.py \
+            pipeline/vector_memory.py \
             pipeline/graph.py \
             pipeline/agents/__init__.py \
             pipeline/agents/data_agent.py \

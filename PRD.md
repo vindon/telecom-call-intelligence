@@ -166,15 +166,15 @@ This platform applies a 6-agent LangGraph pipeline to 100% of call transcripts, 
 |---------|-------|--------|
 | v0.1 — Proof of concept | Basic pipeline: fetch → analyze → dashboard | Complete |
 | v1.0 — Production | Batch system, checkpoint, token tracking, QA audit, ARCHITECTURE.md | Complete |
-| v2.0 — Agentic AI | 6-agent LangGraph pipeline, governance, memory, tool registry, orchestrator, 149 tests, CI | **Complete** |
-| v2.1 — Prompt tuning | QA-driven prompt improvements, A/B test on extracted field accuracy | Planned |
-| v3.0 — Enterprise | Real transcript ingestion (S3/Snowflake/ACD), agent ID mapping, CRM FCR validation | Planned |
+| v2.0 — Agentic AI | 6-agent LangGraph pipeline, governance, memory, tool registry, orchestrator, 149 tests, CI | Complete |
+| v3.0 — Agentic Patterns | ReAct loop, Chain-of-Thought, deliberation loop, vector memory, 5-component security, approval gate, 198 tests | **Complete** |
+| v4.0 — Enterprise | Real transcript ingestion (S3/Snowflake/ACD), agent ID mapping, CRM FCR validation | Planned |
 
 ---
 
-## 11. Out-of-scope for v2.0
+## 11. Out-of-scope for v3.0
 
-Items explicitly deferred to v3.0:
+Items explicitly deferred to v4.0:
 - Webhook / event-driven trigger (call analysed within seconds of completion)
 - Multi-model comparison (GPT-4o vs Gemini on same transcripts)
 - Confidence scoring per extracted field (pipeline-level QA is in place)

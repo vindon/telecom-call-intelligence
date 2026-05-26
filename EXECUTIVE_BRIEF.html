@@ -901,7 +901,7 @@ footer {
 <!-- ── Hero ─────────────────────────────────────── -->
 <section class="hero">
   <div class="hero-content">
-    <div class="hero-label">Executive Brief · 2025</div>
+    <div class="hero-label">Executive Brief · 2026</div>
     <h1>Telecom Call <em>Intelligence</em><br>Platform</h1>
     <p class="hero-subtitle">
       An agentic AI system that reads every customer care call,<br>
@@ -1089,16 +1089,18 @@ footer {
 <section id="architecture">
   <div class="page">
     <div class="section-eyebrow">03 — Agent Architecture</div>
-    <h2>Five-node <em>LangGraph</em> pipeline<br>orchestrating every step</h2>
+    <h2>Seven-node <em>LangGraph</em> pipeline<br>with agentic control loops</h2>
     <p>
       The system is implemented as a LangGraph state graph — an agentic orchestration pattern
       where each node is a discrete, auditable step. State accumulates through the graph and
-      every intermediate output is traceable. The pipeline runs end-to-end in under 10 minutes
-      for 100 calls on a standard MacBook, using Groq's free inference tier.
+      every intermediate output is traceable. Two Gemini 2.5 Flash Lite calls per run:
+      one for ReAct-guided extraction and one for the InsightsAgent deliberation loop.
+      The pipeline is CI-verified across 198 unit tests and secured with a five-component
+      security layer at every agent boundary.
     </p>
 
     <div class="arch-wrapper" style="margin-top: 36px;">
-      <div class="arch-flow">
+      <div class="arch-flow" style="min-width: 1200px;">
 
         <div class="arch-node">
           <div class="arch-box">
@@ -1115,19 +1117,8 @@ footer {
           <div class="arch-box">
             <span class="arch-icon">📥</span>
             <div class="arch-node-num">NODE 1</div>
-            <div class="arch-node-title">Fetch</div>
-            <div class="arch-node-sub">Stream 100 convs.<br>Group turns<br>Format timestamps</div>
-          </div>
-        </div>
-
-        <div class="arch-arrow">→</div>
-
-        <div class="arch-node">
-          <div class="arch-box">
-            <span class="arch-icon">✅</span>
-            <div class="arch-node-num">NODE 2</div>
-            <div class="arch-node-title">Validate</div>
-            <div class="arch-node-sub">Length check<br>Turn count<br>Schema guard</div>
+            <div class="arch-node-title">DataIngestion</div>
+            <div class="arch-node-sub">Stream · Group turns<br>PII scan<br>Format timestamps</div>
           </div>
         </div>
 
@@ -1136,9 +1127,20 @@ footer {
         <div class="arch-node">
           <div class="arch-box" style="border-color: rgba(201,168,76,0.4);">
             <span class="arch-icon">🤖</span>
-            <div class="arch-node-num" style="color:var(--gold-pale);">NODE 3</div>
-            <div class="arch-node-title">Analyze</div>
-            <div class="arch-node-sub">Groq · Llama 3.3 70B<br>70-field JSON<br>per transcript</div>
+            <div class="arch-node-num" style="color:var(--gold-pale);">NODE 2</div>
+            <div class="arch-node-title">Extraction + ReAct</div>
+            <div class="arch-node-sub">Gemini 2.5 Flash Lite<br>70-field JSON<br>CoT + gap-fill loop</div>
+          </div>
+        </div>
+
+        <div class="arch-arrow">→</div>
+
+        <div class="arch-node">
+          <div class="arch-box">
+            <span class="arch-icon">✅</span>
+            <div class="arch-node-num">NODE 3</div>
+            <div class="arch-node-title">Quality</div>
+            <div class="arch-node-sub">100-pt QA score<br>Enum validation<br>FCR consistency</div>
           </div>
         </div>
 
@@ -1148,8 +1150,30 @@ footer {
           <div class="arch-box">
             <span class="arch-icon">📊</span>
             <div class="arch-node-num">NODE 4</div>
-            <div class="arch-node-title">Aggregate</div>
+            <div class="arch-node-title">Aggregation</div>
             <div class="arch-node-sub">KPI computation<br>Cost levers<br>Distributions</div>
+          </div>
+        </div>
+
+        <div class="arch-arrow">→</div>
+
+        <div class="arch-node">
+          <div class="arch-box" style="border-color: rgba(201,168,76,0.4);">
+            <span class="arch-icon">🧠</span>
+            <div class="arch-node-num" style="color:var(--gold-pale);">NODE 5</div>
+            <div class="arch-node-title">Insights + Deliberation</div>
+            <div class="arch-node-sub">Gemini 2.5 Flash Lite<br>Analyze → Critique<br>→ Synthesize</div>
+          </div>
+        </div>
+
+        <div class="arch-arrow">→</div>
+
+        <div class="arch-node">
+          <div class="arch-box">
+            <span class="arch-icon">🔐</span>
+            <div class="arch-node-num">NODE 6</div>
+            <div class="arch-node-title">Approval Gate</div>
+            <div class="arch-node-sub">Human sign-off<br>Auto-approve CI<br>Audit logged</div>
           </div>
         </div>
 
@@ -1158,9 +1182,9 @@ footer {
         <div class="arch-node">
           <div class="arch-box">
             <span class="arch-icon">💾</span>
-            <div class="arch-node-num">NODE 5</div>
+            <div class="arch-node-num">NODE 7</div>
             <div class="arch-node-title">Export</div>
-            <div class="arch-node-sub">CSV · JSON<br>summary.json<br>Run manifest</div>
+            <div class="arch-node-sub">CSV · JSON<br>summary.json<br>Audit trail</div>
           </div>
         </div>
 
@@ -1168,8 +1192,8 @@ footer {
 
       <div class="arch-bottom-row">
         <div class="arch-dashboard">
-          📈 Streamlit Executive Dashboard
-          <span>KPI Cards · Phase Waterfall · Cost Levers · Deflection Matrix · Agent Heatmap</span>
+          📈 Streamlit Executive Dashboard — 7 Sections
+          <span>KPI Cards · Cost Opportunity · Phase Waterfall · Issue Mix · Agent &amp; Sentiment · Upsell · Executive Action Plan</span>
         </div>
       </div>
     </div>
@@ -1180,19 +1204,20 @@ footer {
         <p style="max-width:100%; font-size:13px; margin:0;">
           LangGraph provides a stateful, auditable graph execution model. Each node
           receives the accumulated state and returns an updated version — no hidden side effects.
-          The graph is trivially extensible: add a validation node, a human review gate,
-          or a database sink between any two existing nodes without restructuring the pipeline.
+          The 7-node graph includes conditional routing (QualityGate bypasses aggregation on
+          catastrophic failure), a human approval gate before export, and LangSmith tracing.
           State is fully inspectable at every step, which matters for enterprise audit trails.
         </p>
       </div>
       <div class="card">
-        <h3>Why Groq + Llama 3.3 70B?</h3>
+        <h3>Why Gemini 2.5 Flash Lite?</h3>
         <p style="max-width:100%; font-size:13px; margin:0;">
-          Groq's free inference tier provides 30 requests/minute and 14,400 requests/day —
-          more than sufficient for 100 calls with a 2-second inter-call delay.
-          Llama 3.3 70B with a 128K context window handles long transcripts without truncation
-          and produces consistent JSON at temperature 0.1. Zero API cost makes this
-          accessible for prototyping and SME deployments without cloud budget approval.
+          Google AI Studio's free tier provides 15 requests/minute — sufficient for one 20-call
+          batch per day on the free tier; upgrade to <code>gemini-2.0-flash-lite</code> (1,500 RPD)
+          for multi-batch production runs. <code>thinking_budget=0</code> prevents thinking tokens
+          from consuming the extraction budget. Chain-of-Thought reasoning is injected into the
+          JSON schema itself, producing step-by-step reasoning before every field extraction
+          with no additional API calls.
         </p>
       </div>
     </div>
@@ -1495,18 +1520,18 @@ footer {
       The architecture is designed for portability — swap any layer without restructuring the pipeline.
     </p>
 
-    <div class="tech-grid" style="margin-top: 36px;">
+    <div class="tech-grid" style="margin-top: 36px; grid-template-columns: repeat(4, 1fr);">
       <div class="tech-card">
         <div class="tech-layer">Orchestration</div>
         <div class="tech-name">LangGraph</div>
-        <div class="tech-detail">Stateful agentic pipeline. 5-node directed graph with full state traceability at each step.</div>
+        <div class="tech-detail">Stateful agentic pipeline. 7-node directed graph with conditional routing, human approval gate, and LangSmith tracing.</div>
         <div class="tech-badge">Open Source</div>
       </div>
 
       <div class="tech-card">
         <div class="tech-layer">Inference</div>
-        <div class="tech-name">Groq + Llama 3.3 70B</div>
-        <div class="tech-detail">128K context · 30 req/min free tier · Temperature 0.1 for consistent JSON extraction.</div>
+        <div class="tech-name">Gemini 2.5 Flash Lite</div>
+        <div class="tech-detail">Google AI Studio · 15 RPM free tier · thinking_budget=0 · temperature 0.1 extraction / 0.3 insights · ReAct + CoT built in.</div>
         <div class="tech-badge">Free Tier</div>
       </div>
 
@@ -1520,36 +1545,36 @@ footer {
       <div class="tech-card">
         <div class="tech-layer">Dashboard</div>
         <div class="tech-name">Streamlit + Plotly</div>
-        <div class="tech-detail">Executive dashboard. 1-click deploy to Streamlit Cloud. No frontend build step required.</div>
+        <div class="tech-detail">7-section executive dashboard · traffic-signal action plan · Inter font · light professional theme · free cloud deploy.</div>
         <div class="tech-badge">Free Deploy</div>
       </div>
 
       <div class="tech-card">
         <div class="tech-layer">Processing</div>
         <div class="tech-name">pandas + numpy</div>
-        <div class="tech-detail">KPI aggregation from 100 JSON results. json_normalize for CSV flattening and ACD validation.</div>
+        <div class="tech-detail">KPI aggregation · json_normalize for CSV flattening · cosine similarity for vector memory retrieval.</div>
         <div class="tech-badge">Open Source</div>
       </div>
 
       <div class="tech-card">
-        <div class="tech-layer">Runtime</div>
-        <div class="tech-name">Python 3.11</div>
-        <div class="tech-detail">macOS Apple Silicon native (M1/M2/M3/M5). Homebrew package management. ARM64 compatible.</div>
-        <div class="tech-badge">ARM64 Native</div>
+        <div class="tech-layer">Security</div>
+        <div class="tech-name">5-Component Security Layer</div>
+        <div class="tech-detail">InputSanitizer · OutputSanitizer · AgentScopeGuard · SecretGuard · RateLimiter — protecting every agent boundary.</div>
+        <div class="tech-badge">Production Grade</div>
       </div>
 
       <div class="tech-card">
-        <div class="tech-layer">Prompt Layer</div>
-        <div class="tech-name">70-Field Extraction Prompt</div>
-        <div class="tech-detail">Versioned system prompt. JSON schema enforced. Null discipline. Phase segmentation rules.</div>
-        <div class="tech-badge">Proprietary</div>
+        <div class="tech-layer">Memory</div>
+        <div class="tech-name">Vector Memory Store</div>
+        <div class="tech-detail">Gemini text-embedding-004 (768-dim) · numpy cosine similarity · top-K historical run retrieval · TF-IDF offline fallback.</div>
+        <div class="tech-badge">Semantic Search</div>
       </div>
 
       <div class="tech-card">
-        <div class="tech-layer">Validation</div>
-        <div class="tech-name">CSV Export + ACD Cross-Check</div>
-        <div class="tech-detail">Per-call CSV with 70 columns. Validate FCR, phase durations, and hold counts against ACD records.</div>
-        <div class="tech-badge">Audit Ready</div>
+        <div class="tech-layer">Quality &amp; CI</div>
+        <div class="tech-name">198-Test Suite + ruff</div>
+        <div class="tech-detail">pytest · 198 unit tests · &lt;6 second run · pre-commit hooks · GitHub Actions CI · mypy type checking.</div>
+        <div class="tech-badge">CI Verified</div>
       </div>
     </div>
   </div>
@@ -1566,21 +1591,22 @@ footer {
     <div class="grid-3" style="margin-top: 36px;">
       <div class="card">
         <div style="font-size: 36px; margin-bottom: 16px;">⚡</div>
-        <h3>Open-Source LLMs Are Ready</h3>
+        <h3>Foundation Models Are Enterprise-Ready</h3>
         <p style="max-width:100%; font-size:13px;">
-          Llama 3.3 70B, Gemma 3, and Qwen 2.5 have crossed the threshold where structured
-          JSON extraction from long documents is reliable at temperature 0.1. Twelve months ago,
-          this required GPT-4. Today it runs free on Groq.
-          The cost barrier to deploying transcript intelligence has effectively collapsed.
+          Gemini 2.5 Flash Lite, Claude, and GPT-4o have crossed the threshold where
+          structured JSON extraction from long call transcripts is reliable, auditable, and
+          cost-effective at scale. Twelve months ago, this required bespoke ML pipelines.
+          Today it runs on Google AI Studio's free tier for prototyping and pennies per
+          thousand calls in production.
         </p>
       </div>
       <div class="card">
         <div style="font-size: 36px; margin-bottom: 16px;">🤖</div>
         <h3>Agentic AI Is Production-Ready</h3>
         <p style="max-width:100%; font-size:13px;">
-          LangGraph, CrewAI, and similar frameworks have matured to the point where
-          a 5-node pipeline with retry logic, state management, and auditability
-          can be built and deployed in days, not months.
+          LangGraph, ReAct loops, and deliberation patterns have matured to the point where
+          a 7-node pipeline with retry logic, state management, security, and auditability
+          can be built and CI-verified in days, not months.
           Telecom operators that build this intelligence layer now have a 2–3 year advantage
           over those waiting for a vendor to package it.
         </p>
@@ -1619,16 +1645,16 @@ footer {
 
     <div class="roadmap" style="margin-top: 40px;">
       <div class="roadmap-phase active">
-        <div class="roadmap-phase-num">Phase I · Now</div>
+        <div class="roadmap-phase-num">Phase I · Complete</div>
         <div class="roadmap-phase-title">Intelligence Foundation</div>
-        <div class="roadmap-phase-time">Open-source · Free-tier inference</div>
+        <div class="roadmap-phase-time">v3.0 · Production-grade · 198 CI tests</div>
         <ul class="roadmap-items">
-          <li>100-call pipeline on HuggingFace data</li>
-          <li>LangGraph orchestration (5 nodes)</li>
-          <li>Groq + Llama 3.3 70B extraction</li>
-          <li>70-field JSON schema per call</li>
-          <li>Streamlit executive dashboard</li>
-          <li>CSV export for ACD validation</li>
+          <li>7-node LangGraph pipeline, fully CI-verified</li>
+          <li>Gemini 2.5 Flash Lite · ReAct + CoT extraction</li>
+          <li>InsightsAgent 3-pass deliberation loop</li>
+          <li>5-component security layer at agent boundaries</li>
+          <li>Vector memory with semantic retrieval</li>
+          <li>Executive dashboard — 7 sections, traffic-signal actions</li>
         </ul>
       </div>
 
@@ -1672,9 +1698,9 @@ footer {
     </div>
   </div>
   <div class="footer-meta">
-    <div>Stack: LangGraph · Groq · Llama 3.3 70B · Streamlit</div>
+    <div>Stack: LangGraph · Gemini 2.5 Flash Lite · Streamlit</div>
     <div style="margin-top: 4px;">Dataset: talkmap/telecom-conversation-corpus · MIT</div>
-    <div style="margin-top: 4px;">© 2025 · Executive Brief v1.0</div>
+    <div style="margin-top: 4px;">© 2026 · Executive Brief v3.0</div>
   </div>
 </footer>
 
