@@ -6,6 +6,25 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [3.0.1] — 2026-05-26
+
+### Fixed
+
+- **ReAct quota circuit breaker** (`pipeline/analyzer.py`, `pipeline/agents/extraction_agent.py`) — module-level `_react_quota_exhausted` flag trips on the first 429 `ClientError` inside `gap_fill_transcript()`; all subsequent gap-fill calls return `first_pass` immediately, preserving daily quota for main extraction across batches. `ExtractionAgent._react_loop()` also short-circuits the full loop when the flag is already set.
+- **Free-tier quota documentation** — corrected `pipeline/config.py` comment and `CLAUDE.md` from wrong "500 RPD" to accurate **20 RPD / 15 RPM** for `gemini-2.5-flash-lite`. Added note recommending `gemini-2.0-flash-lite` (1 500 RPD) for multi-batch production runs.
+
+### Changed
+
+- **Dashboard rebuilt** (`dashboard/app.py`) — complete redesign from dark hacker theme to professional executive-grade light theme:
+  - **Hero banner**: dark navy-to-blue gradient (`#0F172A → #1E40AF`) with circular ambient highlights; title "**Telecom Call Intelligence**"; subtitle "Customer Call Metadata Segmentation"; white tagline for Cost-to-Serve / Phase Intelligence / Agentic AI Opportunity Sizing
+  - **Typography**: Inter 800-weight, 2.6rem KPI values with tight letter-spacing; all section sizes increased
+  - **KPI cards**: white with coloured 4px top-accent border, drop shadow, hover lift
+  - **Charts**: white background, `#F1F5F9` gridlines, 14px semibold titles — all Plotly charts on light
+  - **Traffic signal action table**: custom HTML table replaces `st.dataframe`; glowing CSS dots — 🔴 CRITICAL / 🟡 HIGH / 🟢 QUICK WIN — with pill badges and priority legend
+  - **7 sections**: Core KPIs · Cost Opportunity · Phase & Waterfall · Issue Mix & Deflection · Agent & Sentiment · Upsell Intelligence · Executive Action Plan
+
+---
+
 ## [3.0.0] — 2026-05-26
 
 ### Added — Autonomous Agentic Patterns

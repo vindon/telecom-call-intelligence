@@ -94,6 +94,7 @@ This is not a tutorial pipeline. Every component reflects how autonomous agentic
 | **Dynamic routing** | LangGraph `add_conditional_edges` — quality gate failure bypasses aggregation, insights, and approval | Pipeline always completes, even under catastrophic extraction failure |
 | **Checkpoint/resume** | Each API call persisted immediately to `outputs/.checkpoint_{key}.jsonl` | Kill a 100-call job at call 73 — restart and it picks up from 74 |
 | **198 unit tests** | Security, governance, memory, orchestrator, tools, config, graph — all tested without API calls | CI runs in under 6 seconds; tests gate every push |
+| **Quota circuit breaker** | `_react_quota_exhausted` flag in `analyzer.py` trips on first 429 in gap-fill; disables all subsequent gap-fill retries for the remainder of the run | Free-tier 20 RPD is preserved for primary extraction across all batches |
 
 ---
 
@@ -185,7 +186,7 @@ telecom-call-intelligence/
 │   ├── test_graph.py
 │   └── test_security.py     ← 49 security tests
 │
-├── dashboard/app.py         ← Streamlit executive dashboard (9 panels)
+├── dashboard/app.py         ← Streamlit executive dashboard (7 sections, traffic-signal action plan)
 ├── prompts/system_prompt.txt ← 70-field extraction schema
 │
 ├── run_pipeline.py          ← Single-batch entry point
@@ -253,19 +254,23 @@ The 7-node architecture is designed for this. Only `data_agent.py` changes when 
 
 ---
 
-## Dashboard panels
+## Dashboard — Telecom Call Intelligence
 
-| Panel | What it shows |
-|-------|--------------|
-| Executive KPIs | AHT, FCR, avoidable call rate, escalation rate, sentiment lift |
-| Cost-to-Serve Levers | Monthly savings from self-serve, agentic AI, proactive outreach |
-| AI Resolvability | % of calls fully handleable by an AI agent |
-| Phase Breakdown | Where handle time is spent — greeting, issue, resolution, wrap-up |
-| Cost Waterfall | Baseline → optimised cost with each lever applied |
-| Deflection Opportunity | Self-serve + agentic AI + proactive care eligibility |
-| Agent Performance | Skill distribution, tool struggle, repeat call risk |
-| Sentiment Analysis | Customer sentiment at call start vs. end |
-| Token Usage | Inference cost per run, per-call average, monthly projection |
+The executive dashboard (`dashboard/app.py`) is a full professional light-theme Streamlit app with 7 sections. It reads `outputs/summary.json` on every load and falls back to built-in demo data when no pipeline output is present.
+
+```
+streamlit run dashboard/app.py   # http://localhost:8501
+```
+
+| Section | What it shows |
+|---------|--------------|
+| **Core Performance KPIs** | FCR, AHT, escalation rate, sentiment improvement, issues resolved, agent tool struggle — 6 large metric cards |
+| **Cost-to-Serve Opportunity** | Total savings, self-serve deflection, agentic AI automation, proactive outreach — monthly estimates at $6/call |
+| **Phase Breakdown & Cost Waterfall** | Time per call phase (bar) + baseline → optimised cost (waterfall) side by side |
+| **Issue Distribution & Automation Opportunity** | Issue category donut + deflection/automation opportunity bar chart |
+| **Agent Performance & Customer Sentiment** | Skill rating bar · sentiment start vs. end grouped bar · repeat call risk donut |
+| **Upsell & Revenue Intelligence** | Upsell outcome donut + attempted/conversion KPI cards |
+| **Executive Action Plan** | Custom HTML table with glowing traffic signal lights — 🔴 CRITICAL / 🟡 HIGH / 🟢 QUICK WIN — each row has scope, estimated monthly impact, and recommended next step |
 
 ---
 

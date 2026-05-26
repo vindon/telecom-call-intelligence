@@ -77,7 +77,7 @@ HuggingFace Streaming Dataset
 | **QA Scoring** | Custom 100-pt model | Completeness(30) + Enum validity(25) + Consistency(25) + Plausibility(20) |
 | **Vector memory** | numpy cosine similarity | Zero extra dependencies; interface-compatible with ChromaDB/Pinecone swap |
 | **Tracing** | LangSmith (optional) | `LANGCHAIN_TRACING_V2=true` activates full node-level trace capture |
-| **Dashboard** | Streamlit + Plotly | Python-native; reads `summary.json` |
+| **Dashboard** | Streamlit + Plotly | Professional light theme; reads `summary.json`; 7 sections including traffic-signal executive action plan |
 
 ---
 
@@ -111,8 +111,10 @@ The standard Reason → Act → Observe loop, applied per-transcript:
 
 Key functions in `pipeline/analyzer.py`:
 - `score_field_coverage(result)` — returns 0–100 field coverage score
-- `gap_fill_transcript(client, system_prompt, transcript, first_pass)` — targeted retry, merges only null fields
+- `gap_fill_transcript(client, system_prompt, transcript, first_pass)` — targeted retry, merges only null fields; sets module-level `_react_quota_exhausted = True` on first 429 to preserve daily quota for remaining batches
 - `_build_gap_fill_message(transcript, missing_fields)` — focused prompt for missing fields only
+
+**Quota circuit breaker:** `_react_quota_exhausted` (module-level bool in `analyzer.py`) prevents gap-fill calls from consuming the free-tier 20 RPD limit needed for primary extraction. Once tripped, `gap_fill_transcript()` returns `first_pass` immediately; `ExtractionAgent._react_loop()` also short-circuits the full loop.
 
 ### Chain-of-Thought — Both LLM Agents
 
@@ -475,7 +477,7 @@ telecom-call-intelligence/
 │   ├── test_tools.py
 │   ├── test_graph.py
 │   └── test_security.py       ← 49 security tests
-├── dashboard/app.py           ← Streamlit dashboard (9 panels)
+├── dashboard/app.py           ← Streamlit executive dashboard (7 sections, light theme)
 ├── run_pipeline.py
 ├── run_batches.py
 ├── merge_outputs.py
