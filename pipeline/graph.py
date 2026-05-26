@@ -8,11 +8,16 @@ Architecture
 ------------
   DataIngestionAgent   →  ExtractionAgent   →  QualityAgent
                                                      │
-  ExportAgent          ←  InsightsAgent     ←  AggregationAgent
+  ExportAgent   ←  [ApprovalGate]  ←  InsightsAgent  ←  AggregationAgent
 
 Agents are decoupled — each receives the full PipelineState and returns
 an updated copy. Adding, replacing, or parallelising agents requires only
 changes to this file.
+
+LangSmith tracing
+-----------------
+Set LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY in .env to enable
+full LangSmith trace capture for every pipeline run.
 
 State schema
 ------------
@@ -20,6 +25,8 @@ Every field is explicitly typed in PipelineState. Agents add their own
 keys; callers should treat unknown keys as optional/forward-compatible.
 """
 
+import os
+import sys
 from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
@@ -32,11 +39,36 @@ from pipeline.agents import (
     InsightsAgent,
     QualityAgent,
 )
+from pipeline.config import (
+    APPROVAL_TIMEOUT_S,
+    LANGSMITH_PROJECT,
+    REQUIRE_HUMAN_APPROVAL,
+)
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
 
 log = get_logger(__name__)
+
+
+# ── LangSmith tracing setup ───────────────────────────────────────────
+
+def _configure_tracing() -> None:
+    """
+    Activate LangSmith tracing if the env vars are present.
+    LangGraph auto-traces every node when LANGCHAIN_TRACING_V2=true.
+    """
+    if os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true":
+        if not os.environ.get("LANGCHAIN_API_KEY"):
+            log.warning(
+                "[Tracing] LANGCHAIN_TRACING_V2=true but LANGCHAIN_API_KEY not set — tracing disabled"
+            )
+            return
+        os.environ.setdefault("LANGCHAIN_PROJECT", LANGSMITH_PROJECT)
+        log.info("[Tracing] LangSmith active — project='%s'", os.environ["LANGCHAIN_PROJECT"])
+    else:
+        log.debug("[Tracing] LangSmith not configured (set LANGCHAIN_TRACING_V2=true to enable)")
+
 
 # ── Agent singletons (stateless — safe to share across invocations) ───
 _data_agent        = DataIngestionAgent()
@@ -69,11 +101,13 @@ class PipelineState(TypedDict):
     validation_errors:     list
     failed_call_ids:       list
     token_usage:           dict
+    react_stats:           dict   # ReAct loop coverage improvement telemetry
+    approval_granted:      bool   # human approval gate result
 
 
 # ── Node wrappers (thin console-printing shims around each agent) ─────
 
-def _banner(step: int, total: int, label: str) -> None:
+def _banner(step: int | str, total: int | str, label: str) -> None:
     print("\n" + "═" * 60)
     print(f"  AGENT {step}/{total} │ {label}")
     print("═" * 60)
@@ -166,6 +200,73 @@ def insights_node(state: PipelineState) -> PipelineState:
     return result
 
 
+def approval_gate_node(state: PipelineState) -> PipelineState:
+    """
+    Human-in-the-loop approval gate before export.
+
+    Enabled by REQUIRE_HUMAN_APPROVAL=True in config. Presents a KPI summary
+    and waits for explicit operator confirmation before the pipeline writes
+    any outputs. Auto-approves after APPROVAL_TIMEOUT_S seconds (configurable).
+
+    When disabled (default), this node is a transparent pass-through so it
+    costs nothing in CI or automated batch runs.
+    """
+    _banner("▶", 6, "ApprovalGate — Human Sign-off Before Export")
+
+    if not REQUIRE_HUMAN_APPROVAL:
+        log.debug("[ApprovalGate] Disabled — auto-passing")
+        return {**state, "approval_granted": True}
+
+    kpis = state.get("aggregated_metrics", {}).get("kpis", {})
+    print(f"\n  FCR: {kpis.get('fcr_rate_pct', 'N/A')}%  "
+          f"AHT: {kpis.get('avg_handle_time_minutes', 'N/A')} min  "
+          f"AI-resolvable: {kpis.get('agentic_ai_resolvable_pct', 'N/A')}%")
+    print(f"\n  Insights source : {state.get('agent_insights', {}).get('source', 'unknown')}")
+    print(f"  Deliberation    : {state.get('agent_insights', {}).get('deliberation_passes', 0)} passes")
+
+    AUDIT_LOG.record_governance(
+        check="human_approval_gate", passed=False,
+        details={"status": "awaiting_input", "timeout_s": APPROVAL_TIMEOUT_S},
+    )
+
+    timeout = APPROVAL_TIMEOUT_S
+    prompt  = f"\n  Approve export? [y/N] (auto-approve in {timeout}s): " if timeout > 0 \
+              else "\n  Approve export? [y/N]: "
+
+    import select
+    granted = False
+    try:
+        if timeout > 0:
+            print(prompt, end="", flush=True)
+            ready, _, _ = select.select([sys.stdin], [], [], timeout)
+            if ready:
+                answer = sys.stdin.readline().strip().lower()
+                granted = answer in ("y", "yes")
+            else:
+                print("\n  ⏱  Timeout — auto-approving")
+                granted = True
+        else:
+            answer  = input(prompt).strip().lower()
+            granted = answer in ("y", "yes")
+    except (EOFError, OSError):
+        # Non-interactive environment (CI, subprocess) — auto-approve
+        granted = True
+
+    status = "approved" if granted else "rejected"
+    log.info("[ApprovalGate] Export %s", status)
+    print(f"  {'✓ Export approved' if granted else '✗ Export rejected — pipeline halted'}")
+
+    AUDIT_LOG.record_governance(
+        check="human_approval_gate", passed=granted,
+        details={"status": status},
+    )
+
+    if not granted:
+        raise RuntimeError("Export rejected by operator at approval gate")
+
+    return {**state, "approval_granted": True}
+
+
 def export_node(state: PipelineState) -> PipelineState:
     _banner(6, 6, "ExportAgent — CSV · JSON · QA Report · Insights · Manifest")
     result = _export_agent.run(state)
@@ -183,29 +284,37 @@ def export_node(state: PipelineState) -> PipelineState:
 
 def build_pipeline() -> object:
     """
-    Compile and return the 6-agent LangGraph pipeline.
+    Compile and return the 7-node LangGraph pipeline.
 
-    Normal path:   ingest → extract → quality → aggregate → insights → export → END
+    Normal path:   ingest → extract → quality → aggregate → insights → approval → export → END
     Emergency path (quality gate failure):
                    ingest → extract → quality → export → END
     """
-    # Load agent memory at pipeline build time so InsightsAgent has context
+    _configure_tracing()
+
+    # Load flat + vector memory at build time so InsightsAgent has full context
     MEMORY.load()
+    try:
+        from pipeline.vector_memory import VECTOR_STORE
+        VECTOR_STORE.load()
+    except Exception as exc:
+        log.debug("[build_pipeline] Vector memory load skipped: %s", exc)
 
     graph = StateGraph(PipelineState)
 
-    graph.add_node("ingest",     ingest_node)
-    graph.add_node("extract",    extract_node)
-    graph.add_node("quality",    quality_node)
-    graph.add_node("aggregate",  aggregate_node)
-    graph.add_node("insights",   insights_node)
-    graph.add_node("export",     export_node)
+    graph.add_node("ingest",    ingest_node)
+    graph.add_node("extract",   extract_node)
+    graph.add_node("quality",   quality_node)
+    graph.add_node("aggregate", aggregate_node)
+    graph.add_node("insights",  insights_node)
+    graph.add_node("approval",  approval_gate_node)
+    graph.add_node("export",    export_node)
 
     graph.set_entry_point("ingest")
     graph.add_edge("ingest",    "extract")
     graph.add_edge("extract",   "quality")
 
-    # Dynamic routing: quality gate failure → skip aggregate + insights
+    # Dynamic routing: quality gate failure → skip aggregate + insights + approval
     graph.add_conditional_edges(
         "quality",
         _route_after_quality,
@@ -213,7 +322,8 @@ def build_pipeline() -> object:
     )
 
     graph.add_edge("aggregate", "insights")
-    graph.add_edge("insights",  "export")
+    graph.add_edge("insights",  "approval")
+    graph.add_edge("approval",  "export")
     graph.add_edge("export",    END)
 
     return graph.compile()

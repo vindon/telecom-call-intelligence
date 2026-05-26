@@ -2,9 +2,10 @@
 # NOTE: google-generativeai is deprecated; use google-genai
 google-genai>=1.0.0
 
-# LangGraph orchestration
+# LangGraph orchestration + LangSmith tracing
 langgraph>=0.2.0
 langchain-core>=0.3.0
+langsmith>=0.1.0
 
 # HuggingFace dataset loading
 datasets>=2.20.0

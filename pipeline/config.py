@@ -54,3 +54,30 @@ MIN_TURN_COUNT       = 4
 QA_HIGH_THRESHOLD  = 85   # ≥85 → HIGH grade (production-ready)
 QA_PASS_THRESHOLD  = 60   # ≥60 → MEDIUM grade (usable)
 RUN_HISTORY_LIMIT  = 50   # max runs kept in agent memory
+
+# ── ReAct / agentic control loops ─────────────────────────────────────
+REACT_MAX_ITERATIONS     = 2     # extra Reason→Act→Observe cycles per extraction
+REACT_QUALITY_THRESHOLD  = 70   # trigger re-query if field-coverage score < this
+
+# ── InsightsAgent deliberation ─────────────────────────────────────────
+DELIBERATION_ENABLED     = True  # Analyze → Critique → Synthesize passes
+
+# ── Parallel extraction ────────────────────────────────────────────────
+MAX_CONCURRENT_EXTRACTIONS = 1   # 1 = serial (free-tier safe); raise on paid tier
+
+# ── Human approval gate ────────────────────────────────────────────────
+REQUIRE_HUMAN_APPROVAL   = False  # pause before export for explicit human sign-off
+APPROVAL_TIMEOUT_S       = 60    # seconds before auto-approve (0 = block indefinitely)
+
+# ── Observability / tracing ────────────────────────────────────────────
+LANGSMITH_PROJECT        = "telecom-call-intelligence"
+
+# ── Vector memory ─────────────────────────────────────────────────────
+VECTOR_MEMORY_ENABLED    = True
+VECTOR_MEMORY_PATH       = OUTPUT_DIR / "vector_memory"
+VECTOR_MEMORY_TOP_K      = 3    # top-K similar historical runs to retrieve
+
+# ── Security ──────────────────────────────────────────────────────────
+MAX_TRANSCRIPT_CHARS     = 50_000  # hard cap; beyond this is suspicious
+MAX_FIELD_STRING_LEN     = 2_000   # per-field string limit in LLM output
+MAX_RESPONSE_BYTES       = 32_768  # max LLM JSON response size (32 KB)

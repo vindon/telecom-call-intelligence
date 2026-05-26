@@ -39,15 +39,23 @@ from pipeline.config import (
     EXTRACTION_TEMPERATURE as TEMPERATURE,
 )
 from pipeline.config import (
+    MAX_CONCURRENT_EXTRACTIONS,
+    MAX_RESPONSE_BYTES,
+    PROMPT_PATH,
+)
+from pipeline.config import (
     MAX_OUTPUT_TOKENS as MAX_TOKENS,
 )
 from pipeline.config import (
     OUTPUT_DIR as CHECKPOINT_DIR,
 )
-from pipeline.config import (
-    PROMPT_PATH,
-)
 from pipeline.logger import get_logger
+from pipeline.security import (
+    GEMINI_RATE_LIMITER,
+    INPUT_SANITIZER,
+    OUTPUT_SANITIZER,
+    SECRET_GUARD,
+)
 
 log = get_logger(__name__)
 
@@ -62,10 +70,16 @@ def load_system_prompt() -> str:
 # ── Message builder ───────────────────────────────────────────────────
 
 def _build_user_message(transcript: dict) -> str:
+    # The leading _cot_reasoning instruction implements Chain-of-Thought:
+    # the LLM reasons through the call before committing to field values,
+    # which measurably reduces extraction errors on ambiguous transcripts.
     return (
         "Analyze the following telecom customer care call transcript and extract "
-        "all metadata according to your instructions. "
-        "Output only the JSON object — no other text.\n\n"
+        "all metadata according to your instructions.\n\n"
+        "IMPORTANT: The first field in your JSON output MUST be `_cot_reasoning` — "
+        "a 2-3 sentence step-by-step analysis covering: (1) the main customer issue, "
+        "(2) whether it was resolved and how, (3) the customer sentiment trajectory. "
+        "This reasoning MUST appear before all other fields in the JSON object.\n\n"
         "---\n\n"
         "CALL METADATA:\n"
         f"Call ID: {transcript['call_id']}\n"
@@ -76,6 +90,21 @@ def _build_user_message(transcript: dict) -> str:
         "Channel: voice\n\n"
         "---\n\n"
         f"TRANSCRIPT:\n{transcript['transcript_text']}"
+    )
+
+
+def _build_gap_fill_message(transcript: dict, missing_fields: list[str]) -> str:
+    """
+    Targeted re-query prompt for the ReAct observe→reason step.
+    Only asks for fields identified as missing or null in the first pass.
+    """
+    fields_str = ", ".join(f"`{f}`" for f in missing_fields)
+    return (
+        "The previous extraction left some fields null. Focus ONLY on extracting "
+        f"the following missing fields from this transcript: {fields_str}.\n\n"
+        "Output a JSON object containing ONLY those fields — nothing else.\n\n"
+        "---\n\n"
+        f"TRANSCRIPT:\n{transcript['transcript_text'][:8000]}"
     )
 
 
@@ -131,8 +160,12 @@ def analyze_transcript(
     """
     call_id_short = transcript["call_id"][:12]
 
+    # Sanitize input before it reaches the LLM
+    transcript = INPUT_SANITIZER.sanitize_transcript(transcript)
+
     for attempt in range(max_retries):
         try:
+            GEMINI_RATE_LIMITER.acquire()
             response = client.models.generate_content(
                 model=MODEL,
                 contents=_build_user_message(transcript),
@@ -145,7 +178,12 @@ def analyze_transcript(
                 ),
             )
 
+            # Guard against response bombs and secret leakage before parsing
+            SECRET_GUARD.assert_no_secrets_in_output(response.text)
+            OUTPUT_SANITIZER.check_response_size(response.text, limit=MAX_RESPONSE_BYTES)
+
             result = json.loads(response.text)
+            result  = OUTPUT_SANITIZER.sanitize_extraction_result(result)
 
             # Inject token usage
             if response.usage_metadata:
@@ -209,6 +247,81 @@ def analyze_transcript(
             time.sleep(3)
 
     return None
+
+
+# ── ReAct: targeted gap-fill call ────────────────────────────────────
+
+# Fields whose absence meaningfully degrades downstream KPI quality
+_CRITICAL_FIELDS: list[str] = [
+    "issue_category",
+    "fcr",
+    "resolution_status",
+    "customer_sentiment_start",
+    "customer_sentiment_end",
+    "total_duration_seconds",
+    "all_issues_resolved",
+]
+
+
+def score_field_coverage(result: dict) -> int:
+    """
+    Return a 0–100 field-coverage score: percentage of critical fields
+    that are non-null in `result`. Used as the ReAct 'Observe' step.
+    """
+    if not result:
+        return 0
+    present = sum(1 for f in _CRITICAL_FIELDS if result.get(f) not in (None, "", 0))
+    return round(present / len(_CRITICAL_FIELDS) * 100)
+
+
+def gap_fill_transcript(
+    client: genai.Client,
+    system_prompt: str,
+    transcript: dict,
+    first_pass: dict,
+) -> dict:
+    """
+    ReAct 'Act (retry)' step: identify missing critical fields from the
+    first pass and make a targeted second call to fill them in.
+    Returns a merged dict (first_pass values preserved where retry returns null).
+    """
+    missing = [f for f in _CRITICAL_FIELDS if first_pass.get(f) in (None, "", 0)]
+    if not missing:
+        return first_pass
+
+    call_id_short = transcript.get("call_id", "?")[:12]
+    log.info("[ReAct] call %s: gap-fill for %d missing fields: %s",
+             call_id_short, len(missing), missing)
+
+    try:
+        GEMINI_RATE_LIMITER.acquire()
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=_build_gap_fill_message(transcript, missing),
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="application/json",
+                temperature=TEMPERATURE,
+                max_output_tokens=1024,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+        SECRET_GUARD.assert_no_secrets_in_output(response.text)
+        retry_result = json.loads(response.text)
+        retry_result = OUTPUT_SANITIZER.sanitize_extraction_result(retry_result)
+
+        # Merge: only fill nulls — never overwrite good values from first pass
+        merged = dict(first_pass)
+        for field, val in retry_result.items():
+            if merged.get(field) in (None, "", 0) and val not in (None, "", 0):
+                merged[field] = val
+        log.info("[ReAct] call %s: gap-fill improved coverage %d → %d",
+                 call_id_short, score_field_coverage(first_pass), score_field_coverage(merged))
+        return merged
+
+    except Exception as exc:
+        log.warning("[ReAct] gap-fill failed for call %s: %s", call_id_short, str(exc)[:120])
+        return first_pass
 
 
 # ── Batch orchestration ───────────────────────────────────────────────
