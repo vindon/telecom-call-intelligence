@@ -6,6 +6,43 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [3.0.0] — 2026-05-26
+
+### Added — Autonomous Agentic Patterns
+
+- **ReAct extraction loop** (`pipeline/agents/extraction_agent.py`, `pipeline/analyzer.py`) — per-transcript Observe → Reason → Act control loop; `score_field_coverage()` scores critical field presence after each extraction; `gap_fill_transcript()` issues a targeted retry prompt for null fields only; up to `REACT_MAX_ITERATIONS` extra passes per transcript; `react_stats` injected into `PipelineState` for telemetry
+- **Chain-of-Thought prompts** — `_cot_reasoning` added as the mandatory first field in all LLM JSON responses; forces step-by-step reasoning before field extraction (ExtractionAgent) and before recommendations (InsightsAgent); zero extra API calls, works natively with `response_mime_type="application/json"`
+- **InsightsAgent deliberation loop** (`pipeline/agents/insights_agent.py`) — 3-pass self-reflection cycle replacing the single-pass LLM call: Pass 1 Analyze (CoT, temp=0.3), Pass 2 Critique (self-grades each recommendation A/B/C on data-groundedness, specificity, non-duplication; temp=0.1), Pass 3 Synthesize (rewrites weak recommendations using critique; temp=0.3); graceful per-pass degradation; `deliberation_passes` and `critique` quality grade added to `agent_insights`; fixes the duplicate `rule_based_fallback` recommendation bug from v2.0
+- **Vector memory** (`pipeline/vector_memory.py`) — semantic long-term memory using Gemini `text-embedding-004` (768-dim) with numpy cosine similarity; `VectorMemoryStore.add_run()` embeds each run's KPI summary; `query()` / `format_context()` retrieve top-K most similar historical runs for InsightsAgent context injection; TF-IDF bag-of-words fallback when API key unavailable (offline/test mode); persists to `outputs/vector_memory/` as `vectors.npy` + `index.json`; interface-compatible with ChromaDB/Pinecone swap
+- **Security layer** (`pipeline/security.py`) — five components protecting every agent boundary:
+  - `InputSanitizer` — 10 prompt injection patterns (DAN, jailbreak, XML role injection, Llama template injection, instruction override), 50 000-char token bomb cap, null byte / encoding attack cleanup, secret pattern redaction in source transcripts
+  - `OutputSanitizer` — code execution patterns (`__import__`, `eval`, `exec`, `subprocess`, XSS) → `[CONTENT_FILTERED]`; response bomb check (32 KB cap); per-field string length cap (2 000 chars); secret redaction in LLM output fields
+  - `AgentScopeGuard` — per-agent authorized tool set; cross-agent tool hijacking raises `SecurityViolation` before invocation
+  - `SecretGuard` — Google/OpenAI API key, JWT, Bearer token, and password patterns scrubbed from state serialisation, log messages, and raw LLM responses; `assert_no_secrets_in_output()` called on every Gemini response before JSON parse
+  - `RateLimiter` — sliding-window 15 req/60 s; `GEMINI_RATE_LIMITER.acquire()` called before every Gemini API call in `analyzer.py` and `insights_agent.py`; prevents runaway consumption from ReAct loops or injected loops
+- **`SecurityViolation` exception** — typed exception with `check` and `detail` attributes; raised by all security components for uniform handling
+- **Human approval gate** (`pipeline/graph.py` — `approval_gate_node`) — 7th node inserted between InsightsAgent and ExportAgent; `REQUIRE_HUMAN_APPROVAL=False` (default) is a transparent pass-through; when `True`, displays KPI summary + deliberation source, prompts `y/N` with configurable `APPROVAL_TIMEOUT_S` auto-approve; non-interactive environments (CI, EOF) auto-approve silently; rejection raises `RuntimeError` and halts cleanly; `approval_granted` added to `PipelineState`
+- **LangSmith tracing** — `_configure_tracing()` called at `build_pipeline()` time; LangGraph auto-traces all 7 nodes when `LANGCHAIN_TRACING_V2=true` and `LANGCHAIN_API_KEY` are set; `LANGSMITH_PROJECT` constant in `pipeline/config.py`
+- **49 new unit tests** (`tests/test_security.py`) — full coverage of all five security components; zero API calls; all 198 tests pass in < 6 seconds
+
+### Changed
+
+- **Pipeline nodes** — 6 → 7; `approval_gate_node` inserted between `insights` and `export`; `_banner()` signature updated to accept `str | int` for step label
+- **`PipelineState`** — two new fields: `react_stats` (ReAct telemetry dict), `approval_granted` (bool)
+- **`pipeline/config.py`** — 12 new constants: `REACT_MAX_ITERATIONS`, `REACT_QUALITY_THRESHOLD`, `DELIBERATION_ENABLED`, `MAX_CONCURRENT_EXTRACTIONS`, `REQUIRE_HUMAN_APPROVAL`, `APPROVAL_TIMEOUT_S`, `LANGSMITH_PROJECT`, `VECTOR_MEMORY_ENABLED`, `VECTOR_MEMORY_PATH`, `VECTOR_MEMORY_TOP_K`, `MAX_TRANSCRIPT_CHARS`, `MAX_FIELD_STRING_LEN`, `MAX_RESPONSE_BYTES`
+- **`pipeline/analyzer.py`** — `_build_user_message()` updated with `_cot_reasoning` CoT instruction; `INPUT_SANITIZER.sanitize_transcript()` and `GEMINI_RATE_LIMITER.acquire()` added to `analyze_transcript()`; `SECRET_GUARD` and `OUTPUT_SANITIZER` checks on every Gemini response; `_build_gap_fill_message()`, `score_field_coverage()`, `gap_fill_transcript()` added for ReAct
+- **`pipeline/agents/extraction_agent.py`** — complete rewrite to add `_react_loop()` wrapping `analyze_batch()`; `SCOPE_GUARD.check()` called at agent start; `react_stats` returned in state
+- **`pipeline/agents/insights_agent.py`** — complete rewrite with `_deliberation_loop()`, `_single_pass_llm()`, `_gemini_call()`, `_build_analyze_prompt()`, `_kpi_context()`, `_get_rich_context()`; three new prompt templates (`ANALYZE_PROMPT`, `CRITIQUE_PROMPT`, `SYNTHESIZE_PROMPT`); vector store retrieval in `_get_rich_context()`; `OUTPUT_SANITIZER.sanitize_insights()` on all outputs; `SECRET_GUARD` and `GEMINI_RATE_LIMITER` on all Gemini calls
+- **`pipeline/graph.py`** — `_configure_tracing()` added; `VECTOR_STORE.load()` called at build time; `approval_gate_node` wired between `insights` and `export`
+- **`requirements.txt`** — `langsmith>=0.1.0` added
+- **Test count** — 149 → 198
+
+### Fixed
+
+- **InsightsAgent duplicate recommendations** — the v2.0 rule-based fallback padded with repeated "Implement Continuous Monitoring" entries; the deliberation loop produces 5 distinct, data-grounded recommendations; rule-based fallback also fixed to avoid duplicates
+
+---
+
 ## [2.0.0] — 2026-05-18
 
 ### Added — Agentic AI Architecture
