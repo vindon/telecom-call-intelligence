@@ -1,12 +1,12 @@
 # Telecom Call Intelligence
 
-> A production-grade **multi-agent AI pipeline** that turns raw telecom call transcripts into executive-ready intelligence — extracting 70+ structured fields per call, scoring extraction quality inline, aggregating KPIs, and generating LLM-powered strategic recommendations — fully automated, end to end.
+> A production-grade **autonomous multi-agent AI pipeline** that turns raw telecom call transcripts into executive-ready intelligence — extracting 70+ structured fields per call using ReAct control loops, scoring quality inline, running a self-reflective deliberation cycle for strategic recommendations, and securing every stage against prompt injection and data leakage — fully automated, end to end.
 
 [![CI](https://github.com/vindon/telecom-call-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/vindon/telecom-call-intelligence/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph-4A90D9)
 ![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash%20Lite-4285F4?logo=google&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-149%20passing-22C55E)
+![Tests](https://img.shields.io/badge/Tests-198%20passing-22C55E)
 ![License](https://img.shields.io/badge/License-Proprietary-DC2626)
 
 ---
@@ -26,28 +26,41 @@ HuggingFace Corpus (3.7M turns · 200K conversations)
            │
            ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│              LangGraph StateGraph  ·  Multi-Agent Pipeline v2.0      │
+│            LangGraph StateGraph  ·  Multi-Agent Pipeline v3.0        │
 │                                                                      │
-│  ┌───────────────────┐      ┌───────────────────┐                   │
-│  │ DataIngestion     │─────▶│  Extraction       │                   │
-│  │ Agent  (1 of 6)   │      │  Agent  (2 of 6)  │                   │
-│  │ stream · validate │      │  Gemini · 70 fields│                  │
-│  │ PII scan · audit  │      │  checkpoint/resume │                   │
-│  └───────────────────┘      └────────┬──────────┘                   │
-│                                      │                               │
-│                                      ▼                               │
+│  ┌───────────────────┐      ┌────────────────────────────────────┐   │
+│  │ DataIngestion     │─────▶│  Extraction Agent  (2/7)           │   │
+│  │ Agent  (1/7)      │      │  Gemini · 70 fields · CoT prompt   │   │
+│  │ stream · validate │      │  ┌─────── ReAct loop ────────────┐ │   │
+│  │ PII scan · audit  │      │  │ Observe: field coverage score │ │   │
+│  └───────────────────┘      │  │ Reason: identify null fields  │ │   │
+│                             │  │ Act:    targeted gap-fill call│ │   │
+│                             │  └───────────────────────────────┘ │   │
+│                             └──────────────┬───────────────────── ┘  │
+│                                            │                         │
+│                                            ▼                         │
 │  ┌───────────────────┐      ┌───────────────────┐                   │
 │  │  Aggregation      │◀─────│  Quality          │                   │
-│  │  Agent  (4 of 6)  │      │  Agent  (3 of 6)  │                   │
+│  │  Agent  (4/7)     │      │  Agent  (3/7)     │                   │
 │  │  KPIs · cost levers│     │  100-pt QA model  │                   │
 │  └────────┬──────────┘      │  dynamic routing  │                   │
 │           │                 └───────────────────┘                   │
 │           ▼                                                          │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │  Insights Agent  (5/7)  · Vector memory retrieval             │  │
+│  │  ┌───────── Deliberation loop (self-reflection) ────────────┐ │  │
+│  │  │  Pass 1  Analyze   : CoT KPI analysis → initial insights │ │  │
+│  │  │  Pass 2  Critique  : self-grade each recommendation       │ │  │
+│  │  │  Pass 3  Synthesize: rewrite weak recommendations         │ │  │
+│  │  └──────────────────────────────────────────────────────────┘ │  │
+│  └───────────────────────────┬───────────────────────────────────┘  │
+│                              │                                       │
+│                              ▼                                       │
 │  ┌───────────────────┐      ┌───────────────────┐                   │
-│  │  Insights         │─────▶│  Export           │                   │
-│  │  Agent  (5 of 6)  │      │  Agent  (6 of 6)  │                   │
-│  │  Gemini · strategy│      │  CSV · JSON       │                   │
-│  │  LLM + fallback   │      │  manifest · audit │                   │
+│  │  Approval Gate    │─────▶│  Export           │                   │
+│  │  (6/7)            │      │  Agent  (7/7)     │                   │
+│  │  human sign-off   │      │  CSV · JSON       │                   │
+│  │  auto-approve CI  │      │  manifest · audit │                   │
 │  └───────────────────┘      └────────┬──────────┘                   │
 └───────────────────────────────────── │ ─────────────────────────────┘
                                        │
@@ -56,26 +69,31 @@ HuggingFace Corpus (3.7M turns · 200K conversations)
                             Streamlit Executive Dashboard
 ```
 
-**Normal path:** all 6 agents run in sequence.
-**Quality gate failure path:** QualityAgent routes directly to ExportAgent, skipping aggregation and insights — the pipeline always completes with an audit trail.
+**Normal path:** all 7 nodes run in sequence, including the self-reflection deliberation loop.
+**Quality gate failure path:** QualityAgent routes directly to ExportAgent — the pipeline always completes with an audit trail.
 
 ---
 
 ## What makes this production-grade
 
-This is not a tutorial pipeline. Every component reflects how agentic AI systems are built in enterprise environments.
+This is not a tutorial pipeline. Every component reflects how autonomous agentic AI systems are built in enterprise environments.
 
 | Component | What it does | Why it matters |
 |-----------|-------------|----------------|
-| **Governance layer** | `BudgetGuard` (hard cost cap), `QualityGate` (extraction quality threshold), `PIIScanner` (6 PII pattern types, auto-redact), `AuditLog` (append-only event trace) | Compliance, safety, and cost control without manual intervention |
-| **Agent memory** | Persistent cross-run JSON store — FCR trends, failure patterns, quota events, model performance | Each run learns from previous ones; InsightsAgent injects historical context into its LLM prompt |
-| **Tool registry** | Formal JSON-schema definitions for all 5 agent operations; uniform audit trail; LLM-discoverable via `REGISTRY.manifest()` | Enables future LLM-driven tool selection; swappable implementations for testing |
-| **Orchestrator** | `WorkPlanner` (batch planning), `AgentHealthMonitor` (per-agent success tracking), adaptive retry, process isolation | A crashed batch cannot corrupt others; health degradation triggers alerts |
-| **Dynamic routing** | LangGraph `add_conditional_edges` — quality gate failure bypasses aggregation and insights | Pipeline completes even under catastrophic extraction failure |
+| **ReAct extraction loop** | Observe (field-coverage score) → Reason (identify null critical fields) → Act (targeted gap-fill call) — up to `REACT_MAX_ITERATIONS` per transcript | Industry-standard agentic control loop; demonstrably improves extraction quality on ambiguous transcripts |
+| **Chain-of-Thought prompts** | `_cot_reasoning` as the first JSON field forces the LLM to articulate its reasoning before committing to field values | Measurably reduces hallucination on enum and boolean fields without extra API calls |
+| **Deliberation loop** | InsightsAgent runs 3 Gemini passes: Analyze (CoT) → Critique (self-reflection) → Synthesize (rewrite weak recommendations) | Self-reflective pattern ensures board-ready, data-grounded recommendations rather than generic platitudes |
+| **Vector memory** | Gemini `text-embedding-004` embeds each run's KPI summary; numpy cosine similarity retrieves the top-K most similar historical runs | Semantic long-term memory — InsightsAgent receives relevant historical context, not just averages |
+| **Security layer** | `InputSanitizer` (injection, encoding, secrets), `OutputSanitizer` (code execution, response bombs), `AgentScopeGuard` (per-agent tool access control), `SecretGuard` (key leakage), `RateLimiter` (API consumption cap) | Production systems face real attacks; this handles prompt injection, jailbreak attempts, cross-agent tool hijacking, and secret exfiltration |
+| **Human approval gate** | Configurable `approval_gate_node` before export; auto-approves in CI, interactive prompt with timeout in production | Prevents fully-autonomous export without human review in regulated or high-stakes deployments |
+| **LangSmith tracing** | One-env-var activation (`LANGCHAIN_TRACING_V2=true`); LangGraph auto-traces every node | Full observability across all 7 nodes and both LLM agents |
+| **Governance layer** | `BudgetGuard` (hard cost cap), `QualityGate` (extraction quality threshold), `PIIScanner` (6 PII types, auto-redact), `AuditLog` (append-only event trace) | Compliance, safety, and cost control without manual intervention |
+| **Agent memory** | Flat JSON cross-run store + semantic vector store — FCR trends, failure patterns, quota events, model performance | Each run learns from previous ones; context injected into InsightsAgent prompt |
+| **Tool registry** | Formal JSON-schema definitions for all 5 agent operations; uniform audit trail; LLM-discoverable | Enables future LLM-driven tool selection; swappable implementations for testing |
+| **Orchestrator** | `WorkPlanner`, `AgentHealthMonitor`, adaptive retry, process isolation | A crashed batch cannot corrupt others; health degradation triggers alerts |
+| **Dynamic routing** | LangGraph `add_conditional_edges` — quality gate failure bypasses aggregation, insights, and approval | Pipeline always completes, even under catastrophic extraction failure |
 | **Checkpoint/resume** | Each API call persisted immediately to `outputs/.checkpoint_{key}.jsonl` | Kill a 100-call job at call 73 — restart and it picks up from 74 |
-| **Dual LLM agents** | ExtractionAgent (per-call JSON, temp=0.1) and InsightsAgent (cross-call strategy, temp=0.3) | Different roles, different temperatures, different prompts — not one model doing everything |
-| **149 unit tests** | Governance, memory, orchestrator, tools, config, graph — all tested without API calls | CI runs in under 1 second; tests gate every push |
-| **thinking_budget=0** | Disables Gemini 2.5 thinking step | Prevents thinking tokens consuming the output budget; required for 70-field JSON to fit in one response |
+| **198 unit tests** | Security, governance, memory, orchestrator, tools, config, graph — all tested without API calls | CI runs in under 6 seconds; tests gate every push |
 
 ---
 
@@ -90,7 +108,7 @@ This is not a tutorial pipeline. Every component reflects how agentic AI systems
 | Avg QA score | 85–92 / 100 |
 | Pipeline runtime | ~8 min (5 × 20 batches, 2s inter-call delay) |
 | Checkpoint overhead | Zero — resume is instantaneous |
-| Test suite | 149 tests, < 1 second |
+| Test suite | 198 tests, < 6 seconds |
 
 ---
 
@@ -106,7 +124,8 @@ python -m venv .venv && source .venv/bin/activate
 make install-dev          # installs prod + dev deps + pre-commit hooks
 
 cp .env.example .env
-# Set GEMINI_API_KEY in .env
+# Required: GEMINI_API_KEY
+# Optional: LANGCHAIN_TRACING_V2=true + LANGCHAIN_API_KEY  (LangSmith tracing)
 
 make run                  # 3-call smoke test (~30 seconds)
 make run-batches          # 100-call production run (5 × 20 batches)
@@ -118,7 +137,7 @@ streamlit run dashboard/app.py   # executive dashboard
 ## Developer commands
 
 ```bash
-make test          # 149 unit tests — no API calls required
+make test          # 198 unit tests — no API calls required
 make lint          # ruff linter across all source files
 make check         # lint + type-check + test (full pre-push gate)
 make test-cov      # tests with HTML coverage report
@@ -135,32 +154,36 @@ telecom-call-intelligence/
 │
 ├── pipeline/
 │   ├── config.py            ← Single source of truth for all constants
+│   ├── security.py          ← InputSanitizer, OutputSanitizer, AgentScopeGuard,
+│   │                            SecretGuard, RateLimiter — full security layer
+│   ├── vector_memory.py     ← Semantic KPI memory (Gemini embeddings + cosine similarity)
 │   ├── agents/
-│   │   ├── data_agent.py    ← Agent 1: DataIngestionAgent
-│   │   ├── extraction_agent.py  ← Agent 2: ExtractionAgent (Gemini)
+│   │   ├── data_agent.py        ← Agent 1: DataIngestionAgent
+│   │   ├── extraction_agent.py  ← Agent 2: ExtractionAgent (Gemini + ReAct loop)
 │   │   ├── quality_agent.py     ← Agent 3: QualityAgent (100-pt QA)
 │   │   ├── aggregation_agent.py ← Agent 4: AggregationAgent (KPIs)
-│   │   ├── insights_agent.py    ← Agent 5: InsightsAgent (Gemini + fallback)
+│   │   ├── insights_agent.py    ← Agent 5: InsightsAgent (deliberation loop)
 │   │   └── export_agent.py      ← Agent 6: ExportAgent (CSV/JSON/audit)
-│   ├── graph.py             ← LangGraph StateGraph (6 nodes, conditional routing)
+│   ├── graph.py             ← LangGraph StateGraph (7 nodes, conditional routing,
+│   │                            approval gate, LangSmith tracing)
 │   ├── orchestrator.py      ← WorkPlanner, AgentHealthMonitor, retry logic
 │   ├── governance.py        ← BudgetGuard, QualityGate, PIIScanner, AuditLog
-│   ├── memory.py            ← Persistent cross-run agent memory
+│   ├── memory.py            ← Persistent cross-run agent memory (flat JSON)
 │   ├── tools.py             ← Formal tool registry with JSON schemas
-│   ├── analyzer.py          ← Gemini API client (checkpoint, backoff, tokens)
+│   ├── analyzer.py          ← Gemini API client (CoT, ReAct, checkpoint, backoff)
 │   ├── aggregator.py        ← KPI computation + cost-lever estimates
 │   ├── hf_loader.py         ← HuggingFace streaming + offset batching
 │   ├── token_tracker.py     ← Per-call token cost accounting
 │   └── logger.py            ← Structured logging (INFO→stdout, DEBUG→file)
 │
-├── tests/                   ← 149 unit tests (no API calls)
-│   ├── conftest.py
+├── tests/                   ← 198 unit tests (no API calls)
 │   ├── test_config.py
 │   ├── test_governance.py
 │   ├── test_memory.py
 │   ├── test_orchestrator.py
 │   ├── test_tools.py
-│   └── test_graph.py
+│   ├── test_graph.py
+│   └── test_security.py     ← 49 security tests
 │
 ├── dashboard/app.py         ← Streamlit executive dashboard (9 panels)
 ├── prompts/system_prompt.txt ← 70-field extraction schema
@@ -175,7 +198,7 @@ telecom-call-intelligence/
 ├── CLAUDE.md                ← AI assistant guide for this repo
 ├── ARCHITECTURE.md          ← Full technical reference
 ├── SECURITY.md              ← Threat model, PII policy, disclosure process
-└── CHANGELOG.md             ← Versioned history (v0.1 → v1.0 → v2.0)
+└── CHANGELOG.md             ← Versioned history (v0.1 → v1.0 → v2.0 → v3.0)
 ```
 
 ---
@@ -192,6 +215,20 @@ telecom-call-intelligence/
 | **Commercial** | `upsell_attempted`, `upsell_success`, `cross_sell_opportunity` |
 | **Operations** | `cost_driver`, `agent_professionalism`, `tool_struggle_detected` |
 | **Phase durations** | `greeting_s`, `issue_s`, `resolution_s`, `wrap_up_s` |
+
+---
+
+## Agentic patterns implemented
+
+| Pattern | File | Description |
+|---------|------|-------------|
+| **ReAct** | `extraction_agent.py`, `analyzer.py` | Reason→Act→Observe loop with targeted gap-fill retries |
+| **Chain-of-Thought** | `analyzer.py`, `insights_agent.py` | `_cot_reasoning` field in all LLM prompts |
+| **Self-reflection / deliberation** | `insights_agent.py` | Analyze → Critique → Synthesize (3 Gemini passes) |
+| **Semantic long-term memory** | `vector_memory.py` | Cosine similarity over Gemini-embedded KPI histories |
+| **Tool access control** | `security.py` | `AgentScopeGuard` with per-agent authorized tool sets |
+| **Human-in-the-loop** | `graph.py` | Configurable approval gate before autonomous export |
+| **Distributed tracing** | `graph.py` | LangSmith integration via `LANGCHAIN_TRACING_V2` |
 
 ---
 
@@ -212,7 +249,7 @@ telecom-call-intelligence/
 # prompts/system_prompt.txt → intent, cost_driver, etc.
 ```
 
-The 6-agent architecture is designed for this. Only `data_agent.py` changes when you swap data sources. Everything downstream — QA, aggregation, insights, export — is data-source agnostic.
+The 7-node architecture is designed for this. Only `data_agent.py` changes when you swap data sources. Everything downstream — QA, aggregation, insights, export — is data-source agnostic.
 
 ---
 
@@ -242,17 +279,17 @@ The 6-agent architecture is designed for this. Only `data_agent.py` changes when
 
 ## Further reading
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — Multi-agent design, LangGraph state schema, orchestrator, governance layer
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — Multi-agent design, agentic control loops, security layer, state schema
 - [`SECURITY.md`](SECURITY.md) — Threat model, PII handling, vulnerability disclosure
-- [`CHANGELOG.md`](CHANGELOG.md) — Version history from v0.1.0 through v2.0.0
+- [`CHANGELOG.md`](CHANGELOG.md) — Version history from v0.1.0 through v3.0.0
 
 ---
 
 ## Built by
 
-**Vinoth N** — AI systems builder with hands-on experience designing and shipping production-grade agentic AI pipelines.
+**Vinoth N** — AI systems engineer with hands-on experience designing and shipping production-grade autonomous agentic pipelines.
 
-This project demonstrates end-to-end ownership of an agentic AI system: architecture design, multi-agent orchestration, governance and safety layers, LLM prompt engineering, quality assurance, observability, and developer tooling — built to the standards a Series A company would actually ship.
+This project demonstrates end-to-end ownership of a v3.0 autonomous multi-agent system: ReAct control loops, Chain-of-Thought prompting, self-reflective deliberation, semantic vector memory, multi-layer security hardening, LangGraph orchestration, LLM prompt engineering, quality assurance, observability, and developer tooling — built to the standards a Series A company would actually ship.
 
 **Open to partnerships:**
 
