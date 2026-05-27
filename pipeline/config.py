@@ -20,8 +20,8 @@ from pathlib import Path
 # ── Model ──────────────────────────────────────────────────────────────
 # Free-tier limits (2026-05): gemini-2.5-flash-lite = 20 RPD / 15 RPM.
 # Switch to gemini-2.0-flash-lite (1 500 RPD / 30 RPM) for larger batch runs.
-EXTRACTION_MODEL       = "gemini-2.5-flash-lite"
-INSIGHTS_MODEL         = "gemini-2.5-flash-lite"
+EXTRACTION_MODEL       = "gemini-2.0-flash-lite"
+INSIGHTS_MODEL         = "gemini-2.0-flash-lite"
 MAX_OUTPUT_TOKENS      = 8192
 EXTRACTION_TEMPERATURE = 0.1   # near-deterministic for structured extraction
 INSIGHTS_TEMPERATURE   = 0.3   # slightly creative for strategic recommendations
@@ -44,7 +44,8 @@ DEFAULT_MAX_RETRIES    = 2
 OUTPUT_DIR  = Path("outputs")
 MEMORY_PATH = OUTPUT_DIR / "agent_memory.json"
 PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "system_prompt.txt"
-HF_DATASET  = "talkmap/telecom-conversation-corpus"
+HF_DATASET      = "talkmap/telecom-conversation-corpus"
+LOCAL_CSV_PATH  = Path("telecom_200k.csv")   # auto-detected; falls back to HF if absent
 
 # ── Governance ─────────────────────────────────────────────────────────
 BUDGET_USD    = 5.00   # hard-stop per run
