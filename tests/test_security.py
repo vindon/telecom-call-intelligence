@@ -25,7 +25,6 @@ from pipeline.security import (
     SecurityViolation,
 )
 
-
 # ── SecurityViolation ─────────────────────────────────────────────────
 
 class TestSecurityViolation:
