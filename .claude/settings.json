@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; case \"$f\" in *.py) cd /Users/vinoth/project/telecom-call-intelligence && .venv/bin/ruff format \"$f\" 2>/dev/null; .venv/bin/ruff check --fix \"$f\" 2>/dev/null;; esac; exit 0"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; if echo \"$f\" | grep -qE '(\\.env$|outputs/.*\\.(json|csv)$)'; then echo \"Protected file blocked: $f\" >&2; exit 1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
