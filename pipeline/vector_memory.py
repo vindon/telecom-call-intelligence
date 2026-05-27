@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -74,8 +75,6 @@ def _embed_tfidf(texts: list[str], vocab: dict[str, int] | None = None) -> tuple
     Returns (matrix, vocab) so the same vocab can be reused across calls.
     """
     tokenise = lambda t: re.sub(r"[^a-z0-9%.]", " ", t.lower()).split()  # noqa: E731
-
-    import re
 
     if vocab is None:
         all_tokens: set[str] = set()

@@ -12,6 +12,7 @@ Falls back to built-in DEMO DATA so the dashboard works on GitHub
 without running the pipeline.
 """
 
+import html
 import json
 from pathlib import Path
 
@@ -591,9 +592,9 @@ def main():
     meta  = data["meta"]
 
     n_calls  = meta["total_calls_analyzed"]
-    run_date = meta.get("analysis_timestamp", "")[:10]
-    model    = meta.get("model", "gemini-2.5-flash-lite")
-    provider = meta.get("inference_provider", "Google AI Studio")
+    run_date = html.escape(meta.get("analysis_timestamp", "")[:10])
+    model    = html.escape(meta.get("model", "gemini-2.5-flash-lite"))
+    provider = html.escape(meta.get("inference_provider", "Google AI Studio"))
 
     # ── Hero banner ───────────────────────────────────────────────────
     badge_cls  = "demo" if is_demo else ""
@@ -866,7 +867,7 @@ def main():
     st.markdown(
         f"<div class='dash-footer'>"
         f"<span>Telecom Call Intelligence &nbsp;·&nbsp; Customer Call Metadata Segmentation"
-        f" &nbsp;·&nbsp; {n_calls:,} calls analysed &nbsp;·&nbsp; {meta['dataset']}</span>"
+        f" &nbsp;·&nbsp; {n_calls:,} calls analysed &nbsp;·&nbsp; {html.escape(meta['dataset'])}</span>"
         f"<span>{provider} &nbsp;·&nbsp; {model} &nbsp;·&nbsp; {run_date}</span>"
         f"</div>",
         unsafe_allow_html=True,

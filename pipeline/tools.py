@@ -140,7 +140,14 @@ def _export_results(results: list, metrics: dict, output_dir: str) -> dict:
     import json
     from datetime import datetime
     from pathlib import Path
-    p = Path(output_dir)
+    p = Path(output_dir).resolve()
+    allowed = Path("outputs").resolve()
+    try:
+        p.relative_to(allowed)
+    except ValueError:
+        raise ValueError(
+            f"output_dir '{output_dir}' is outside the allowed outputs directory"
+        )
     p.mkdir(exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = p / f"tool_export_{ts}.json"
