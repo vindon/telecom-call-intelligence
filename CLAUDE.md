@@ -39,6 +39,8 @@ Key files:
 - `pipeline/graph.py` — LangGraph 6-node pipeline with conditional routing
 - `pipeline/orchestrator.py` — batch work planning, health monitoring, retry
 - `pipeline/governance.py` — BudgetGuard, QualityGate, PIIScanner, AuditLog
+- `pipeline/security.py` — InputSanitizer, OutputSanitizer, AgentScopeGuard, SecretGuard, RateLimiter
+- `pipeline/token_tracker.py` — Gemini token accounting and cost estimation
 - `pipeline/memory.py` — persistent cross-run agent memory (`outputs/agent_memory.json`)
 - `pipeline/tools.py` — formal JSON-schema tool registry (5 tools)
 - `pipeline/agents/` — one file per agent
@@ -49,7 +51,7 @@ Key files:
 
 ```bash
 make install-dev    # install all deps (prod + dev)
-make test           # run 149-test suite
+make test           # run 198-test suite
 make test-fast      # skip @slow and @integration tests
 make lint           # ruff linter
 make check          # lint + type-check + test (full gate)
@@ -57,6 +59,20 @@ make run            # 3-call smoke test
 make run-batches    # 100-call production run (5×20 batches)
 make dashboard      # Streamlit dashboard on localhost:8501
 ```
+
+> **Screenshotting the dashboard:** headless Chrome `--screenshot` captures before React hydrates → blank frame. Use Playwright instead:
+> ```bash
+> .venv/bin/python -c "
+> from playwright.sync_api import sync_playwright
+> with sync_playwright() as p:
+>     b = p.chromium.launch(); pg = b.new_page(viewport={'width':1400,'height':900})
+>     pg.goto('http://localhost:8501/', wait_until='networkidle'); pg.wait_for_timeout(3000)
+>     pg.screenshot(path='/tmp/dashboard.png'); b.close()"
+> ```
+
+### Claude Code hooks (auto-active)
+- **Pre-write guard**: blocks any Edit/Write to `.env` or `outputs/*.json|csv`
+- **Post-write formatter**: runs `ruff format` + `ruff check --fix` on every `.py` save
 
 ---
 
@@ -78,7 +94,7 @@ make dashboard      # Streamlit dashboard on localhost:8501
 - Current model: `gemini-2.5-flash-lite` (defined in `pipeline/config.py` as `EXTRACTION_MODEL` and `INSIGHTS_MODEL`)
 - `thinking_budget=0` — **must not be removed**. Without it, thinking tokens consume the token budget and JSON output is truncated.
 - `max_output_tokens=8192` — sized to fit the 70-field extraction JSON; do not reduce.
-- Free tier: `gemini-2.5-flash-lite` = **20 RPD / 15 RPM** (enough for one 20-call batch per day). For larger runs switch to `gemini-2.0-flash-lite` (1 500 RPD / 30 RPM) by updating `EXTRACTION_MODEL` and `INSIGHTS_MODEL` in `pipeline/config.py`. Daily quota resets at midnight Pacific.
+- Free tier: `gemini-2.5-flash-lite` = **500 RPD / 15 RPM** (Google AI Studio; last verified 2026-Q2). For larger runs switch to `gemini-2.0-flash-lite` (1 500 RPD / 30 RPM) by updating `EXTRACTION_MODEL` and `INSIGHTS_MODEL` in `pipeline/config.py`. Daily quota resets at midnight Pacific.
 
 ### Adding new agents
 1. Create `pipeline/agents/your_agent.py` with a stateless class + `run(state: dict) -> dict`
@@ -105,8 +121,8 @@ make dashboard      # Streamlit dashboard on localhost:8501
 ## Running Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -v          # all 149 tests
+.venv/bin/python -m pytest tests/ -v          # all 198 tests
 .venv/bin/python -m pytest tests/ -m "not slow"  # skip API tests
 ```
 
-Expected: **149 passed** in < 2 seconds. If a test fails, check whether config.py constants changed or a governance threshold was adjusted.
+Expected: **198 passed** in < 2 seconds. If a test fails, check whether config.py constants changed or a governance threshold was adjusted.
