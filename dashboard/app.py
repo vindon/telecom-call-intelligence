@@ -382,6 +382,26 @@ def load_summary() -> tuple[dict, bool]:
     return DEMO_DATA, True
 
 
+def load_run_history() -> list[dict]:
+    """Return run_history from agent_memory.json, newest-first, or [] if unavailable."""
+    path = Path("outputs/agent_memory.json")
+    if not path.exists():
+        return []
+    try:
+        with open(path) as f:
+            mem = json.load(f)
+        runs = mem.get("run_history", [])
+        for r in runs:
+            ts = r.get("timestamp", "")
+            if len(ts) == 15 and ts[8] == "_":
+                r["_dt"] = f"{ts[:4]}-{ts[4:6]}-{ts[6:8]} {ts[9:11]}:{ts[11:13]}"
+            else:
+                r["_dt"] = ts
+        return sorted(runs, key=lambda r: r.get("_dt", ""))
+    except Exception:
+        return []
+
+
 def _compute_cost_levers(kpis: dict) -> dict:
     cpp, vol = 6.0, 100_000
     base = cpp * vol
@@ -548,6 +568,31 @@ def chart_deflection(kpis: dict) -> go.Figure:
         yaxis=dict(ticksuffix="%", gridcolor="#F1F5F9", zeroline=False,
                    range=[0, max(vals)*1.42], tickfont=dict(color="#64748B", size=11)),
         showlegend=False, bargap=0.4,
+    ))
+    return fig
+
+
+def chart_trend(runs: list[dict], field: str, label: str, unit: str,
+                target: float | None, color: str, target_color: str = "#94A3B8") -> go.Figure:
+    xs = [r["_dt"] for r in runs]
+    ys = [r.get(field) for r in runs]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=xs, y=ys, mode="lines+markers",
+        line=dict(color=color, width=2.5),
+        marker=dict(size=7, color=color),
+        hovertemplate=f"%{{x}}<br>{label}: %{{y}}{unit}<extra></extra>",
+    ))
+    if target is not None:
+        fig.add_hline(y=target, line_dash="dot", line_color=target_color, line_width=1.5,
+                      annotation_text=f"Target {target}{unit}",
+                      annotation_font_size=10, annotation_font_color=target_color)
+    fig.update_layout(**_lay(
+        title=_title(label),
+        height=220,
+        xaxis=dict(showticklabels=len(xs) > 1, tickfont=dict(size=9)),
+        yaxis=dict(title=unit if unit else None),
+        margin=dict(l=32, r=16, t=44, b=32),
     ))
     return fig
 
@@ -861,6 +906,72 @@ def main():
       <tbody>{rows_html}</tbody>
     </table>
     """, unsafe_allow_html=True)
+
+    # ── Section 8: Performance Trends ────────────────────────────────
+    runs = load_run_history()
+    section("Performance Trends Across Runs")
+
+    if len(runs) < 2:
+        st.markdown(
+            "<div class='insight-box'>Run the pipeline at least twice to see trend charts. "
+            f"{'1 run recorded so far.' if len(runs) == 1 else 'No runs recorded yet.'}</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.plotly_chart(
+                chart_trend(runs, "fcr_rate_pct", "First Call Resolution", "%", 75, GREEN),
+                use_container_width=True,
+            )
+        with c2:
+            st.plotly_chart(
+                chart_trend(runs, "aht_minutes", "Avg Handle Time", " min", 6, AMBER),
+                use_container_width=True,
+            )
+        with c3:
+            st.plotly_chart(
+                chart_trend(runs, "qa_avg_score", "QA Score", "", 85, BLUE),
+                use_container_width=True,
+            )
+
+        cum = {}
+        try:
+            mem_path = Path("outputs/agent_memory.json")
+            if mem_path.exists():
+                with open(mem_path) as f:
+                    cum = json.load(f).get("cumulative", {})
+        except Exception:
+            pass
+
+        latest = runs[-1]
+        prev   = runs[-2]
+        fcr_delta = latest.get("fcr_rate_pct", 0) - prev.get("fcr_rate_pct", 0)
+        aht_delta = latest.get("aht_minutes",  0) - prev.get("aht_minutes",  0)
+        qa_delta  = latest.get("qa_avg_score", 0) - prev.get("qa_avg_score", 0)
+
+        def _delta_str(v: float, higher_is_good: bool) -> str:
+            sign = "+" if v >= 0 else ""
+            arrow = ("↑" if v >= 0 else "↓")
+            color = "color:#059669" if (v >= 0) == higher_is_good else "color:#DC2626"
+            return f"<span style='{color};font-weight:600'>{arrow} {sign}{v:.1f}</span>"
+
+        total_runs   = len(runs)
+        total_calls  = cum.get("total_calls_analyzed", sum(r.get("n_analyzed", 0) for r in runs))
+        total_cost   = cum.get("total_cost_usd",  sum(r.get("total_cost_usd", 0) for r in runs))
+        insights_src = latest.get("insights_source", "unknown")
+
+        st.markdown(f"""
+        <div class="insight-box">
+          <strong>Trend Summary:</strong> &nbsp;
+          {total_runs} runs · {total_calls:,} calls analysed · ${total_cost:.4f} total cost &nbsp;|&nbsp;
+          Latest vs prior run —
+          FCR {_delta_str(fcr_delta, True)} pp &nbsp;·&nbsp;
+          AHT {_delta_str(aht_delta, False)} min &nbsp;·&nbsp;
+          QA {_delta_str(qa_delta, True)} pts &nbsp;·&nbsp;
+          Insights source: <strong>{html.escape(insights_src)}</strong>
+        </div>
+        """, unsafe_allow_html=True)
 
     # ── Footer ────────────────────────────────────────────────────────
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
