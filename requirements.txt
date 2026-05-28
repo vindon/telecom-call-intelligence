@@ -25,6 +25,10 @@ numpy>=1.26.0
 streamlit>=1.35.0
 plotly>=5.22.0
 
+# FastAPI wrapper
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+
 # Utilities
 python-dotenv>=1.0.0
 tqdm>=4.66.0
