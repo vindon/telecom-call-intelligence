@@ -109,6 +109,41 @@ Output exactly this structure. All keys must be present.
   "services_mentioned": "<pipe-separated list | null>",
   "account_type": "<prepaid | postpaid | business | unknown | null>",
 
+  "product_1_name": "<string | null>",
+  "product_1_category": "<device | plan | add-on | roaming | insurance | accessory | service | null>",
+  "product_1_context": "<customer_inquiry | agent_offer | complaint | comparison | null>",
+  "product_1_phase": "<discovery | diagnosis | resolution | upsell | closing | null>",
+  "product_1_first_mentioned": "<HH:MM:SS | null>",
+  "product_1_outcome": "<information_provided | upsell_accepted | upsell_declined | complaint_raised | not_pursued | null>",
+
+  "product_2_name": "<string | null>",
+  "product_2_category": "<device | plan | add-on | roaming | insurance | accessory | service | null>",
+  "product_2_context": "<customer_inquiry | agent_offer | complaint | comparison | null>",
+  "product_2_phase": "<discovery | diagnosis | resolution | upsell | closing | null>",
+  "product_2_first_mentioned": "<HH:MM:SS | null>",
+  "product_2_outcome": "<information_provided | upsell_accepted | upsell_declined | complaint_raised | not_pursued | null>",
+
+  "product_3_name": "<string | null>",
+  "product_3_category": "<device | plan | add-on | roaming | insurance | accessory | service | null>",
+  "product_3_context": "<customer_inquiry | agent_offer | complaint | comparison | null>",
+  "product_3_phase": "<discovery | diagnosis | resolution | upsell | closing | null>",
+  "product_3_first_mentioned": "<HH:MM:SS | null>",
+  "product_3_outcome": "<information_provided | upsell_accepted | upsell_declined | complaint_raised | not_pursued | null>",
+
+  "product_4_name": "<string | null>",
+  "product_4_category": "<device | plan | add-on | roaming | insurance | accessory | service | null>",
+  "product_4_context": "<customer_inquiry | agent_offer | complaint | comparison | null>",
+  "product_4_phase": "<discovery | diagnosis | resolution | upsell | closing | null>",
+  "product_4_first_mentioned": "<HH:MM:SS | null>",
+  "product_4_outcome": "<information_provided | upsell_accepted | upsell_declined | complaint_raised | not_pursued | null>",
+
+  "product_5_name": "<string | null>",
+  "product_5_category": "<device | plan | add-on | roaming | insurance | accessory | service | null>",
+  "product_5_context": "<customer_inquiry | agent_offer | complaint | comparison | null>",
+  "product_5_phase": "<discovery | diagnosis | resolution | upsell | closing | null>",
+  "product_5_first_mentioned": "<HH:MM:SS | null>",
+  "product_5_outcome": "<information_provided | upsell_accepted | upsell_declined | complaint_raised | not_pursued | null>",
+
   "upsell_attempted": false,
   "upsell_offer_details": "<string | null>",
   "upsell_relevant_to_eligibility": false,
@@ -166,8 +201,123 @@ Output exactly this structure. All keys must be present.
 3. Phase durations must be calculated from timestamps and expressed as integers in seconds.
 4. pipe-separated lists use | with no spaces around it.
 5. Populate issue_1 through issue_5 sequentially. Set unused issue fields to null.
-6. agent_skill_rating: base on troubleshooting accuracy, tool proficiency, time efficiency, communication quality.
-7. agentic_ai_resolvable: assess whether an autonomous AI agent with API access could have resolved this without human involvement.
-8. proactive_outreach_applicable: determine whether a system-initiated notification could have prevented this call entirely.
+6. agent_skill_rating: score holistically across four dimensions — weight them equally:
+    - Troubleshooting accuracy: did the agent follow the correct diagnostic path first time, or did they try wrong steps?
+    - Tool proficiency: did the agent use systems confidently and quickly, or did they hesitate, go on hold to look things up, or make errors?
+    - Handle time efficiency: was the call duration appropriate for the issue complexity (see rule 13)?
+    - Communication quality: clear explanations, correct use of hold/mute etiquette, empathy where appropriate, no dead air
+    Grades:
+    - "proficient"         → strong across all four; correct path, confident tools, efficient time, clear communication
+    - "adequate"           → mostly correct with minor inefficiencies; one dimension below standard but not severely
+    - "needs_improvement"  → significant failure in one or more dimensions: wrong troubleshooting path, tool struggle causing hold time, poor communication, or excessive AHT without justification
+
+7. agentic_ai_resolvable: [superseded by rule 14 — do not use]
+
+8. proactive_outreach_applicable: set true if a system-generated notification could have prevented this call entirely.
+   Qualifying triggers (system detects the signal BEFORE the customer calls):
+    - Network outage or degradation detected in customer's area
+    - Bill significantly higher than previous month (usage spike, roaming charges)
+    - Data or credit balance near exhaustion
+    - Payment overdue or direct debit about to fail
+    - Scheduled maintenance affecting the customer's service
+    - Contract or plan expiring within 30 days
+    - Device order dispatched / delivery delayed
+    - Travel pass about to expire while customer is roaming
+   Do NOT set true for: complaints, disputes, complex faults, or issues that require customer-initiated action only.
+   Always populate proactive_outreach_trigger with the specific system signal that would have fired.
+
 9. fcr_indicator: true ONLY if issue resolved in this call with no indication customer needs to call back.
+
 10. All timestamps must follow HH:MM:SS using the transcript's own time reference.
+
+11. account_type: infer from contextual signals — do NOT default to "unknown" without checking:
+    - "postpaid"  → customer receives a monthly bill, mentions charges/invoice, billing cycle, or direct debit
+    - "prepaid"   → customer mentions top-up, recharge, credit balance, pay-as-you-go, or running out of credit
+    - "business"  → agent says "business account", or customer mentions company name, fleet, corporate, or employees
+    - "unknown"   → use only when none of the above signals are present anywhere in the transcript
+
+12. repeat_call_risk: assess likelihood the customer will call back about the same issue:
+    - "high"   → escalation required, issue unresolved, customer expressed dissatisfaction, or customer explicitly mentioned calling back
+    - "medium" → issue partially resolved, workaround provided instead of a fix, or customer uncertain about resolution
+    - "low"    → issue fully resolved, customer satisfied, FCR confirmed, no open actions remaining
+
+13. handle_time_efficiency: score based on total call duration relative to issue complexity:
+    - "efficient"   → resolved in under 3 minutes, or complex issue resolved under 5 minutes with no wasted time
+    - "average"     → 3–6 minutes, or time was proportionate to the issue complexity
+    - "inefficient" → exceeded 6 minutes, or time was lost to holds, tool struggles, repeated clarifications, or wrong troubleshooting paths
+
+14. agentic_ai_resolvable: set true ONLY for DETERMINISTIC issues — tasks with a single, predictable outcome that an
+    autonomous AI agent with CRM/billing/network API access can execute end-to-end without human judgment.
+
+    DETERMINISTIC (set true) — outcome is always the same regardless of customer specifics:
+    - Order status check (device, SIM, accessory, upgrade order)
+    - Plan enquiry (current plan details, inclusions, data balance, expiry)
+    - Trade-in status (what stage is my trade-in at)
+    - Travel pass enquiry (active passes, coverage, cost, expiry)
+    - Making a payment (bill payment, top-up, recharge)
+    - Balance or usage check (data, calls, SMS remaining)
+    - Network or outage status in customer's area
+    - Bill explanation (itemised charges, billing cycle dates)
+    - Direct debit setup, update, or cancellation
+    - Address or contact detail update
+    - International roaming rates lookup
+    - Voicemail or call forwarding setup
+    - SIM activation (new or replacement SIM, no fraud indicators)
+    - Device unlock eligibility check
+
+    NON-DETERMINISTIC (set false) — outcome depends on judgment, investigation, or negotiation:
+    - Billing disputes or unexplained charge investigations
+    - Complex or intermittent network/coverage faults
+    - Device hardware faults requiring diagnosis
+    - Complaints, escalations, or expressions of intent to leave
+    - Fraud investigations or account security concerns
+    - Vulnerable customer situations requiring empathy and discretion
+    - Plan negotiations or retention offers
+    - Legal, deceased estate, or compliance-related requests
+
+15. could_be_self_served: set true if the customer could have resolved this WITHOUT calling, using an existing digital channel.
+    Note — this is distinct from agentic_ai_resolvable: self-serve means the CUSTOMER does it themselves;
+    agentic AI means the AI does it on their behalf.
+
+    Set true for:
+    - Anything answerable via the app, website, IVR, or chatbot (balance, bill, order status, plan info, payments)
+    - FAQs or how-to guides covering the customer's exact question (device setup, roaming settings, voicemail)
+    - Self-service tools the customer was unaware of or not directed to
+
+    Set false for:
+    - Issues requiring agent system access (provisioning, account overrides, credits)
+    - Disputes, complaints, or sensitive account situations
+    - Complex technical faults needing diagnosis beyond self-help steps
+    - Any case where the customer attempted self-serve first and it failed
+
+    Always populate self_serve_channel_applicable with the most suitable channel when true.
+
+16. product_1 through product_5: populate sequentially for every distinct product, plan, add-on, or service mentioned.
+    Set unused slots to null for all six sub-fields.
+
+    Field-by-field guidance:
+    - product_N_name        → the specific name as mentioned (e.g. "iPhone 15 Pro", "Unlimited Plus Plan", "International Roaming Pack")
+    - product_N_category    → classify as: device (handsets, tablets, wearables), plan (mobile/data plans, bundles),
+                              add-on (bolt-ons, extras, top-ups), roaming (roaming packs, travel passes),
+                              insurance (device protection, warranty), accessory (cases, chargers, cables),
+                              service (streaming, cloud storage, tech support, VAS)
+    - product_N_context     → why it surfaced:
+                                customer_inquiry  = customer asked about it
+                                agent_offer       = agent proactively introduced it
+                                complaint         = customer complained about it
+                                comparison        = compared to another product
+    - product_N_phase       → which call phase it was first raised in (discovery / diagnosis / resolution / upsell / closing)
+    - product_N_first_mentioned → timestamp (HH:MM:SS) when the product was first named in the transcript
+    - product_N_outcome     → what happened:
+                                information_provided  = details given, no sale/complaint
+                                upsell_accepted       = customer agreed to take it
+                                upsell_declined       = customer declined the offer
+                                complaint_raised      = customer expressed a problem with it
+                                not_pursued           = mentioned in passing, no follow-up
+
+    Distinguishing products from the flat list fields:
+    - products_discussed    → pipe-separated names of ALL products mentioned (quick reference list)
+    - plans_discussed       → pipe-separated plan names only
+    - services_mentioned    → pipe-separated ancillary services only
+    The product_N_* fields carry the STRUCTURED detail; the flat list fields carry the quick summary.
+    Both must be populated consistently — every product in product_N_name must also appear in products_discussed.
