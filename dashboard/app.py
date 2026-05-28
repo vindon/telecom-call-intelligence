@@ -1,6 +1,6 @@
 """
 dashboard/app.py — Telecom Call Intelligence
-Executive brief: makes the case for autonomous AI resolution of contact centre calls.
+Narrative: transcript analysis → where time goes → which contacts are avoidable → autonomous resolution case.
 
 Run:  streamlit run dashboard/app.py
 """
@@ -39,8 +39,6 @@ st.markdown("""
   }
   .hero-title { font-size:2.8rem; font-weight:900; color:#fff; letter-spacing:-0.03em; margin:0 0 6px; }
   .hero-sub   { font-size:1rem;  font-weight:400; color:#93C5FD; margin:0; }
-  .hero-stat  { font-size:3.6rem; font-weight:900; color:#34D399; letter-spacing:-0.04em; line-height:1; }
-  .hero-stat-label { font-size:0.95rem; color:#93C5FD; font-weight:500; }
   .hero-badge {
     display:inline-block; padding:4px 14px; border-radius:20px; font-size:0.7rem;
     font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
@@ -54,21 +52,11 @@ st.markdown("""
     border-bottom: 1px solid #E2E8F0;
   }
 
-  /* KPI card */
-  .kcard {
-    background:#fff; border-radius:12px; padding:22px 20px 18px;
-    box-shadow:0 1px 3px rgba(15,23,42,.07);
-    border-left:4px solid #E2E8F0;
+  /* Phase legend chips */
+  .phase-chip {
+    display:inline-block; padding:3px 10px; border-radius:12px;
+    font-size:0.7rem; font-weight:700; margin-right:6px; margin-bottom:4px;
   }
-  .kcard.green  { border-left-color:#059669; }
-  .kcard.red    { border-left-color:#DC2626; }
-  .kcard.amber  { border-left-color:#D97706; }
-  .kcard.teal   { border-left-color:#0D9488; }
-  .kcard.purple { border-left-color:#7C3AED; }
-  .kcard.blue   { border-left-color:#2563EB; }
-  .kcard-val   { font-size:2.4rem; font-weight:800; color:#0F172A; letter-spacing:-0.03em; line-height:1.1; margin:6px 0 4px; }
-  .kcard-label { font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#64748B; }
-  .kcard-delta { font-size:0.72rem; color:#94A3B8; margin-top:5px; }
 
   /* Segment block */
   .seg {
@@ -168,6 +156,28 @@ PLOTLY = dict(
     paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
     font=dict(family="Inter, sans-serif", color="#334155", size=12),
 )
+
+# Phase metadata: (display label, color, type label)
+PHASE_META = {
+    "Welcome & Auth": ("#94A3B8", "Overhead"),
+    "Discovery":      ("#F59E0B", "AI Opportunity"),
+    "Diagnosis":      ("#F97316", "AI Opportunity"),
+    "Resolution":     ("#10B981", "Value Delivery"),
+    "Hold":           ("#EF4444", "Waste — Eliminate"),
+    "Upsell":         ("#3B82F6", "Revenue"),
+    "Closing":        ("#94A3B8", "Overhead"),
+}
+PHASE_ORDER = ["Welcome & Auth", "Discovery", "Diagnosis", "Resolution", "Hold", "Upsell", "Closing"]
+
+# Issue category → primary resolution tier
+ISSUE_TIER = {
+    "billing":     ("Agentic AI",  PURPLE),
+    "technical":   ("Proactive",   TEAL),
+    "plan":        ("Agentic AI",  PURPLE),
+    "account":     ("Agentic AI",  PURPLE),
+    "device":      ("Agentic AI",  BLUE),
+    "information": ("Agentic AI",  PURPLE),
+}
 
 # ── Benchmark targets ─────────────────────────────────────────────────
 BENCHMARKS = [
@@ -276,8 +286,70 @@ def _cost_levers(kpis: dict) -> dict:
 
 # ── Charts ────────────────────────────────────────────────────────────
 
+def chart_phases(phase_seconds: dict) -> go.Figure:
+    """Horizontal bar — avg seconds per phase in call-sequence order."""
+    total = sum(phase_seconds.values()) or 1
+    phases = [p for p in PHASE_ORDER if p in phase_seconds]
+    secs   = [phase_seconds[p] for p in phases]
+    pcts   = [s / total * 100 for s in secs]
+    colors = [PHASE_META.get(p, ("#94A3B8", ""))[0] for p in phases]
+    types  = [PHASE_META.get(p, ("", "Other"))[1] for p in phases]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=phases, x=secs, orientation="h",
+        marker=dict(color=colors, line_width=0),
+        text=[f"  {s}s  ·  {p:.0f}%" for s, p in zip(secs, pcts)],
+        textposition="inside", insidetextanchor="start",
+        textfont=dict(color="white", size=11, family="Inter"),
+        customdata=[[t, f"{p:.0f}"] for t, p in zip(types, pcts)],
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Avg: %{x}s &nbsp;·&nbsp; %{customdata[1]}% of call time<br>"
+            "<i>%{customdata[0]}</i><extra></extra>"
+        ),
+    ))
+    fig.update_layout(
+        **PLOTLY,
+        height=310,
+        xaxis=dict(title="Average seconds per call", gridcolor="#F1F5F9",
+                   zeroline=False, ticksuffix="s"),
+        yaxis=dict(categoryorder="array", categoryarray=list(reversed(phases))),
+        margin=dict(l=10, r=70, t=10, b=44),
+    )
+    return fig
+
+
+def chart_issue_mix(issue_dist: dict, n_calls: int) -> go.Figure:
+    """Horizontal bar — issue categories by call volume, colored by resolution tier."""
+    cats  = sorted(issue_dist.items(), key=lambda x: -x[1])
+    total = sum(v for _, v in cats) or 1
+
+    labels = [c.title() for c, _ in cats]
+    values = [v for _, v in cats]
+    colors = [ISSUE_TIER.get(c, ("", SLATE))[1] for c, _ in cats]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=labels, x=values, orientation="h",
+        marker=dict(color=colors, line_width=0),
+        text=[f"  {v}  ({v/total*100:.0f}%)" for v in values],
+        textposition="inside", insidetextanchor="start",
+        textfont=dict(color="white", size=11, family="Inter"),
+        hovertemplate="<b>%{y}</b><br>%{x} calls in sample<extra></extra>",
+    ))
+    fig.update_layout(
+        **PLOTLY,
+        height=280,
+        xaxis=dict(title=f"Calls (sample n={n_calls})", gridcolor="#F1F5F9", zeroline=False),
+        yaxis=dict(),
+        margin=dict(l=10, r=70, t=10, b=44),
+    )
+    return fig
+
+
 def chart_segment_bar(proactive: float, digital: float, human: float, n: int) -> go.Figure:
-    """Single stacked horizontal bar — the three segments at a glance."""
+    """Single stacked horizontal bar — the three resolution segments."""
     p_n, d_n = round(n * proactive / 100), round(n * digital / 100)
     h_n = n - p_n - d_n
     fig = go.Figure()
@@ -339,13 +411,6 @@ def _sec(label: str) -> None:
     st.markdown(f'<div class="section-label">{label}</div>', unsafe_allow_html=True)
 
 
-def _kcard(val: str, label: str, color: str = "", delta: str = "") -> str:
-    d = f'<div class="kcard-delta">{delta}</div>' if delta else ""
-    return (f'<div class="kcard {color}">'
-            f'<div class="kcard-label">{label}</div>'
-            f'<div class="kcard-val">{val}</div>{d}</div>')
-
-
 def _seg(badge: str, badge_bg: str, badge_fg: str, pct: float, n: int,
          money: str, money_color: str, desc: str) -> str:
     return (
@@ -364,16 +429,15 @@ def _dot(cls: str) -> str:
 
 
 def _pill(priority: str) -> str:
-    m = {"Critical": ("dot-red", "pill-crit", "CRITICAL"),
-         "High":     ("dot-amber","pill-high", "HIGH"),
-         "Quick Win":("dot-green","pill-quick","QUICK WIN")}
+    m = {"Critical": ("dot-red",   "pill-crit",  "CRITICAL"),
+         "High":     ("dot-amber", "pill-high",  "HIGH"),
+         "Quick Win":("dot-green", "pill-quick", "QUICK WIN")}
     dc, pc, lbl = m.get(priority, ("dot-green", "pill-quick", priority.upper()))
     return f'<span class="pill {pc}"><span class="dot {dc}"></span>{lbl}</span>'
 
 
 # ── Automation roadmap builder ────────────────────────────────────────
 
-# Intents that map to each issue category with automation type and effort
 _INTENTS = {
     "billing":     [("Bill explanation & itemised charges", "Agentic AI",  "Low",    0.10),
                     ("Payment / direct debit setup",        "Agentic AI",  "Low",    0.06),
@@ -402,12 +466,11 @@ def _build_roadmap(issue_categories: dict, cost_per_call: float, monthly_vol: in
     total_calls = sum(issue_categories.values()) or 1
     rows = []
     for cat, cat_count in issue_categories.items():
-        intents = _INTENTS.get(cat, [])
-        for intent, tier, effort, share in intents:
+        for intent, tier, effort, share in _INTENTS.get(cat, []):
             if tier == "Human Agent":
                 continue
-            est_calls   = round(monthly_vol * (cat_count / total_calls) * share)
-            est_saving  = est_calls * cost_per_call
+            est_calls  = round(monthly_vol * (cat_count / total_calls) * share)
+            est_saving = est_calls * cost_per_call
             rows.append({
                 "intent": intent, "tier": tier, "effort": effort,
                 "monthly_calls": est_calls, "monthly_saving": est_saving,
@@ -420,17 +483,18 @@ def _build_roadmap(issue_categories: dict, cost_per_call: float, monthly_vol: in
 
 def main():
     data, is_demo = load_summary()
-    kpis = data["kpis"]
-    cl   = data["cost_levers"]
-    meta = data["meta"]
-    dist = data["distributions"]
+    kpis   = data["kpis"]
+    cl     = data["cost_levers"]
+    meta   = data["meta"]
+    dist   = data["distributions"]
+    phases = data.get("phase_avg_seconds", {})
 
     n_calls  = meta["total_calls_analyzed"]
     run_date = html.escape(meta.get("analysis_timestamp", "")[:10])
     model    = html.escape(meta.get("model", ""))
     provider = html.escape(meta.get("inference_provider", ""))
 
-    # ── Segment arithmetic ────────────────────────────────────────────
+    # Segment arithmetic
     proactive_pct = float(kpis.get("proactive_outreach_pct",    0))
     selfserve_pct = float(kpis.get("self_serve_deflection_pct", 0))
     agentic_pct   = float(kpis.get("agentic_ai_resolvable_pct", 0))
@@ -441,8 +505,16 @@ def main():
     vol           = cl["monthly_volume_estimate"]
     total_opp     = cl["total_savings_opportunity_usd"]
 
+    # Phase insight stats
+    total_secs = sum(phases.values()) or 1
+    diag_secs  = phases.get("Diagnosis", 0)
+    disc_secs  = phases.get("Discovery", 0)
+    hold_secs  = phases.get("Hold", 0)
+    ai_phase_pct = (diag_secs + disc_secs + hold_secs) / total_secs * 100
+    aht_min  = kpis.get("avg_handle_time_minutes", total_secs / 60)
+
     # ── Hero ──────────────────────────────────────────────────────────
-    badge = "DEMO DATA" if is_demo else "LIVE DATA"
+    badge     = "DEMO DATA" if is_demo else "LIVE DATA"
     badge_cls = "badge-demo" if is_demo else "badge-live"
     st.markdown(f"""
     <div class="hero">
@@ -450,21 +522,15 @@ def main():
                   flex-wrap:wrap;gap:20px;">
         <div>
           <div class="hero-title">Telecom Call Intelligence</div>
-          <div class="hero-sub">Autonomous Resolution Opportunity — Contact Centre Analysis</div>
-          <div style="margin-top:20px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
-            <span class="hero-stat">{total_auto:.0f}%</span>
-            <div>
-              <div class="hero-stat-label">of contacts are candidates for autonomous resolution</div>
-              <div style="font-size:0.82rem;color:#64748B;margin-top:2px;">
-                {n_calls:,} calls analysed &nbsp;·&nbsp; ${total_opp/1000:.0f}K/month opportunity
-              </div>
-            </div>
+          <div class="hero-sub">
+            What are customers calling about — and can autonomous AI prevent them from needing to?
           </div>
         </div>
         <div style="text-align:right;">
           <span class="hero-badge {badge_cls}">{badge}</span>
-          <div style="font-size:0.75rem;color:#475569;margin-top:8px;line-height:1.8;">
-            {run_date}<br>{provider}<br>{model}
+          <div style="font-size:0.75rem;color:#CBD5E1;margin-top:10px;line-height:1.9;">
+            <strong style="color:#E2E8F0;">{n_calls:,} calls analysed</strong><br>
+            {run_date} &nbsp;·&nbsp; {provider}<br>{model}
           </div>
         </div>
       </div>
@@ -473,53 +539,125 @@ def main():
 
     if is_demo:
         st.markdown("""<div class="callout" style="margin-top:14px;">
-          <strong>Demo mode.</strong> Run <code>python run_pipeline.py</code> to load live results.
+          <strong>Demo mode.</strong> Run <code>python run_pipeline.py</code> to replace this with live results.
         </div>""", unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════
-    # 1 — TODAY'S BASELINE
+    # 1 — CALL DNA: WHERE IS TIME GOING?
     # ═══════════════════════════════════════════════════════════════
-    _sec("1 — Current State")
+    _sec("1 — Call DNA: Where Is Agent Time Going?")
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    pairs = [
-        (c1, f"${cl['baseline_monthly_cost_usd']/1000:.0f}K",
-              "Monthly Contact Cost", "red",
-              f"${cpp:.2f}/call × {vol:,}/mo"),
-        (c2, f"{kpis['fcr_rate_pct']:.0f}%",
-              "First Call Resolution", "amber",
-              "Target ≥ 75%"),
-        (c3, f"{kpis['escalation_rate_pct']:.0f}%",
-              "Escalation Rate", "red",
-              "Target < 10%"),
-        (c4, f"{kpis['avg_handle_time_minutes']:.1f} min",
-              "Avg Handle Time", "amber",
-              "Industry avg: 6–8 min"),
-        (c5, f"{kpis['avoidable_call_rate_pct']:.0f}%",
-              "Avoidable Call Rate", "purple",
-              "Calls that shouldn't have happened"),
-    ]
-    for col, val, lbl, clr, dlt in pairs:
-        with col:
-            st.markdown(_kcard(val, lbl, clr, dlt), unsafe_allow_html=True)
+    c1, c2 = st.columns([6, 4])
+
+    with c1:
+        st.markdown(
+            "<div style='font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:6px;'>"
+            "Average time per phase across all calls</div>",
+            unsafe_allow_html=True,
+        )
+        # Phase colour legend
+        legend_html = ""
+        for phase, (color, ptype) in PHASE_META.items():
+            if phase in phases:
+                legend_html += (
+                    f'<span class="phase-chip" '
+                    f'style="background:{color}22;color:{color};border:1px solid {color}55;">'
+                    f'{ptype}</span>'
+                )
+        # Deduplicate legend by type
+        seen, legend_chips = set(), ""
+        for phase in phases:
+            color, ptype = PHASE_META.get(phase, ("#94A3B8", "Overhead"))
+            if ptype not in seen:
+                seen.add(ptype)
+                legend_chips += (
+                    f'<span class="phase-chip" '
+                    f'style="background:{color}22;color:{color};border:1px solid {color}55;">'
+                    f'{ptype}</span>'
+                )
+        st.markdown(f"<div style='margin-bottom:8px;'>{legend_chips}</div>", unsafe_allow_html=True)
+        st.plotly_chart(chart_phases(phases), use_container_width=True)
+
+    with c2:
+        st.markdown(
+            "<div style='font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:6px;'>"
+            "What are customers calling about?</div>",
+            unsafe_allow_html=True,
+        )
+        ic = dist.get("issue_category", {})
+        # Issue tier legend
+        seen_tiers, tier_chips = set(), ""
+        for cat in ic:
+            tier, color = ISSUE_TIER.get(cat, ("Other", SLATE))
+            if tier not in seen_tiers:
+                seen_tiers.add(tier)
+                tier_chips += (
+                    f'<span class="phase-chip" '
+                    f'style="background:{color}22;color:{color};border:1px solid {color}55;">'
+                    f'{tier}</span>'
+                )
+        st.markdown(f"<div style='margin-bottom:8px;'>{tier_chips}</div>", unsafe_allow_html=True)
+        if ic:
+            st.plotly_chart(chart_issue_mix(ic, n_calls), use_container_width=True)
+
+    # Phase insight callout
+    diag_pct = diag_secs / total_secs * 100
+    disc_pct = disc_secs / total_secs * 100
+    hold_pct = hold_secs / total_secs * 100
+    st.markdown(f"""
+    <div class="callout amber">
+      <strong>Diagnosis, Discovery &amp; Hold consume {ai_phase_pct:.0f}% of every call</strong>
+      &nbsp;({diag_pct:.0f}% Diagnosis &nbsp;+&nbsp; {disc_pct:.0f}% Discovery
+      &nbsp;+&nbsp; {hold_pct:.0f}% Hold) &nbsp;—&nbsp; average call length: {aht_min:.1f} min.
+      <br>These are the phases AI agents directly compress or eliminate:
+      proactive alerts remove the Discovery phase before the call starts;
+      knowledge-grounded agents cut Diagnosis time in half;
+      instant AI lookup eliminates Hold entirely.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Disproportionate phase signal
+    disp     = dist.get("agent_disproportionate_phase", {})
+    diag_ovr = float(disp.get("diagnosis", 0))
+    disc_ovr = float(disp.get("discovery", 0))
+    if diag_ovr + disc_ovr > 15:
+        st.markdown(f"""
+        <div class="callout" style="margin-top:8px;">
+          <strong>Phase imbalance detected:</strong> &nbsp;
+          {diag_ovr:.0f}% of calls had agents over-indexed in Diagnosis and
+          {disc_ovr:.0f}% in Discovery — signalling knowledge gaps and tooling friction.
+          These are the highest-value targets for autonomous agent assistance.
+        </div>
+        """, unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════
-    # 2 — THE AUTOMATION OPPORTUNITY
+    # 2 — THE RESOLUTION OPPORTUNITY
     # ═══════════════════════════════════════════════════════════════
-    _sec("2 — Autonomous Resolution Opportunity")
+    _sec("2 — Autonomous Resolution: Insights from the Calls")
+
+    st.markdown(
+        f"<div style='font-size:0.88rem;color:#475569;margin-bottom:18px;line-height:1.7;'>"
+        f"From <strong>{n_calls:,} calls analysed</strong>, the pipeline classified every contact "
+        f"by whether it could have been prevented, automated, or genuinely required a human agent. "
+        f"<strong>{total_auto:.0f}%</strong> of contacts are candidates for autonomous resolution.</div>",
+        unsafe_allow_html=True,
+    )
 
     c1, c2, c3 = st.columns(3)
     digital_savings = cl["self_serve_savings_usd"] + cl["agentic_ai_savings_usd"]
-    residual = cl["baseline_monthly_cost_usd"] - total_opp
+    residual        = cl["baseline_monthly_cost_usd"] - total_opp
 
     with c1:
         st.markdown(_seg(
             badge="PREVENT", badge_bg="#CCFBF1", badge_fg="#0F766E",
             pct=proactive_pct, n=round(n_calls * proactive_pct / 100),
-            money=f"${cl['proactive_care_savings_usd']/1000:.0f}K / month" if cl["proactive_care_savings_usd"] > 0 else "Opportunity not yet captured",
+            money=(f"${cl['proactive_care_savings_usd']/1000:.0f}K / month"
+                   if cl["proactive_care_savings_usd"] > 0
+                   else "Opportunity not yet captured"),
             money_color=TEAL,
-            desc="System can detect and notify before the customer calls — network outage, "
-                 "bill spike, data near exhaustion, payment failing.",
+            desc="Customer shouldn't have needed to call. Detect the trigger first — "
+                 "network outage, bill spike, data exhaustion — and push a proactive alert. "
+                 "Eliminates the contact entirely.",
         ), unsafe_allow_html=True)
     with c2:
         st.markdown(_seg(
@@ -527,9 +665,9 @@ def main():
             pct=digital_pct, n=round(n_calls * digital_pct / 100),
             money=f"${digital_savings/1000:.0f}K / month",
             money_color=PURPLE,
-            desc=f"Deterministic issues an AI agent can resolve end-to-end: "
-                 f"plan enquiry, bill explanation, order status, payments, balance checks. "
-                 f"({selfserve_pct:.0f}% self-serve · {agentic_pct:.0f}% full AI agent)",
+            desc=(f"Deterministic issue — an AI agent resolves end-to-end: "
+                  f"bill explanation, plan enquiry, order status, payments, balance check. "
+                  f"({selfserve_pct:.0f}% self-serve · {agentic_pct:.0f}% full AI agent)"),
         ), unsafe_allow_html=True)
     with c3:
         st.markdown(_seg(
@@ -538,7 +676,7 @@ def main():
             money=f"${residual/1000:.0f}K / month — irreducible",
             money_color=BLUE,
             desc="Complex faults, billing disputes, complaints, retention — "
-                 "judgment-intensive situations that require an empathetic skilled agent. "
+                 "judgment-intensive situations that need an empathetic skilled agent. "
                  "Focus your human investment here.",
         ), unsafe_allow_html=True)
 
@@ -551,20 +689,19 @@ def main():
     annual = total_opp * 12
     st.markdown(f"""
     <div class="callout green" style="margin-top:4px;">
-      <strong>Automation business case:</strong> &nbsp;
-      {total_auto:.0f}% of current contact volume ({round(vol * total_auto / 100):,} calls/month) is
-      addressable through autonomous AI — proactive alerts and AI agent resolution.
-      At ${cpp:.2f}/call that's <strong>${total_opp/1000:.0f}K/month · ${annual/1e6:.1f}M/year</strong>
-      in recoverable cost, before any customer experience benefit is counted.
+      <strong>Business case from {n_calls:,} calls:</strong> &nbsp;
+      {total_auto:.0f}% of contact volume ({round(vol * total_auto / 100):,} calls/month at scale)
+      is addressable through autonomous AI.
+      At ${cpp:.2f}/call that is <strong>${total_opp/1000:.0f}K/month · ${annual/1e6:.1f}M/year</strong>
+      in recoverable cost — before any customer experience or NPS benefit is counted.
     </div>
     """, unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════
-    # 3 — AUTOMATION ROADMAP: WHICH AGENTS TO BUILD FIRST
+    # 3 — WHICH AGENTS TO BUILD
     # ═══════════════════════════════════════════════════════════════
-    _sec("3 — Which AI Agents to Build — Prioritised by ROI")
+    _sec("3 — Which AI Agents to Build — Prioritised by Monthly Saving")
 
-    ic   = dist.get("issue_category", {})
     rows = _build_roadmap(ic, cpp, vol)
 
     if rows:
@@ -605,35 +742,29 @@ def main():
 
         st.markdown(
             f"<p style='font-size:0.71rem;color:#94A3B8;margin-top:8px;'>"
-            f"Call volumes estimated from analysis ({n_calls} calls) extrapolated to "
-            f"{vol:,} monthly volume. Total addressable saving: "
-            f"<strong>${total_roadmap_saving/1000:.0f}K/month</strong>. "
-            f"Validate intents against your live IVR taxonomy before build.</p>",
+            f"Volumes estimated from {n_calls}-call analysis extrapolated to {vol:,}/month. "
+            f"Total addressable saving: <strong>${total_roadmap_saving/1000:.0f}K/month</strong>. "
+            f"Validate against your live IVR taxonomy before build.</p>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            '<div class="callout">No issue category data available. '
-            "Run the pipeline to populate the roadmap.</div>",
+            '<div class="callout">No issue category data. Run the pipeline to populate the roadmap.</div>',
             unsafe_allow_html=True,
         )
 
     # ═══════════════════════════════════════════════════════════════
     # 4 — BENCHMARK SCORECARD
     # ═══════════════════════════════════════════════════════════════
-    _sec("4 — Actual vs Industry Benchmark")
-
-    c1, c2 = st.columns([1, 1])
+    _sec("4 — Performance vs Industry Benchmark")
 
     def _score_rows(fields):
         out = ""
         for lbl, field, target, unit, hb in fields:
             actual = float(kpis.get(field, 0))
-            if hb:
-                gap, on = actual - target, actual >= target
-            else:
-                gap, on = target - actual, actual <= target
-            close = abs(actual - target) / (target or 1) < 0.20
+            gap    = (actual - target) if hb else (target - actual)
+            on     = gap >= 0
+            close  = abs(actual - target) / (target or 1) < 0.20
             if on:
                 dot, gc = "dot-green", "#059669"
                 gs = f"▲ +{abs(gap):.1f}{unit}"
@@ -661,6 +792,7 @@ def main():
               "</tr></thead>")
 
     mid = len(BENCHMARKS) // 2
+    c1, c2 = st.columns(2)
     with c1:
         st.markdown(
             f'<table class="score-table">{header}<tbody>'
@@ -685,13 +817,13 @@ def main():
         ("Critical", "Build Agentic AI Agents",
          f"{agentic_pct:.0f}% of calls automatable",
          f"${cl['agentic_ai_savings_usd']/1000:.0f}K / month",
-         "Build LangGraph agent flows for the top 5 intents in the roadmap above: plan enquiry, "
-         "bill explanation, service activation, order status, payments. Start with Low effort first."),
+         "Build LangGraph agent flows for the top 5 intents in the roadmap above. "
+         "Start Low-effort first: plan enquiry, bill explanation, service activation, order status, payments."),
         ("Critical", "Deploy Proactive Care Notifications",
          f"{proactive_pct:.0f}% of calls preventable",
          f"${cl['proactive_care_savings_usd']/1000:.0f}K / month",
-         "Wire event-driven alerts: network outage detected → SMS before customer calls. "
-         "Bill spike → push notification. Data near exhaustion → in-app alert. "
+         "Wire event-driven alerts: outage detected → SMS before customer calls; "
+         "bill spike → push notification; data near exhaustion → in-app alert. "
          "Eliminates the contact entirely."),
         ("High", "Redirect Self-Serve Eligible Calls to Digital",
          f"{selfserve_pct:.0f}% of calls deflectable",
@@ -702,11 +834,11 @@ def main():
          f"{human_pct:.0f}% genuinely needs agents",
          "Quality + NPS lift",
          "Once AI handles the automatable segment, agents focus entirely on disputes, complex faults, "
-         "and retention. Redeploy or right-size agent capacity against the residual human volume."),
+         "and retention. Right-size capacity against the residual human volume."),
         ("Quick Win", "Coach Agents on Diagnosis-Phase Tooling",
          f"{needs_imp:.0f}% agents rated Needs Improvement",
          "15–20% AHT reduction",
-         "Call analysis flags diagnosis-phase tool struggle as the primary AHT driver. "
+         "Diagnosis-phase tool struggle is the primary AHT driver from this analysis. "
          "Targeted knowledge-base and tooling coaching on top technical and billing categories."),
     ]
 
@@ -732,7 +864,7 @@ def main():
     """, unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════
-    # 6 — PERFORMANCE TRENDS (if data available)
+    # 6 — PERFORMANCE TRENDS (if multi-run data available)
     # ═══════════════════════════════════════════════════════════════
     runs = load_run_history()
     if len(runs) >= 2:
@@ -750,14 +882,15 @@ def main():
                                         "", 85, BLUE), use_container_width=True)
 
         latest, prev = runs[-1], runs[-2]
-        def _d(v, hg):
+
+        def _d(v: float, higher_good: bool) -> str:
             s = "+" if v >= 0 else ""
-            c = "#059669" if (v >= 0) == hg else "#DC2626"
+            c = "#059669" if (v >= 0) == higher_good else "#DC2626"
             return f"<span style='color:{c};font-weight:600;'>{'↑' if v>=0 else '↓'} {s}{v:.1f}</span>"
 
         st.markdown(f"""
         <div class="callout">
-          {len(runs)} runs · {sum(r.get('n_analyzed',0) for r in runs):,} calls &nbsp;|&nbsp;
+          {len(runs)} runs · {sum(r.get('n_analyzed', 0) for r in runs):,} calls &nbsp;|&nbsp;
           Latest vs prior —
           FCR {_d(latest.get('fcr_rate_pct',0)-prev.get('fcr_rate_pct',0), True)} pp &nbsp;·&nbsp;
           AHT {_d(latest.get('aht_minutes',0)-prev.get('aht_minutes',0), False)} min &nbsp;·&nbsp;
@@ -767,7 +900,7 @@ def main():
         """, unsafe_allow_html=True)
 
     # ── Footer ────────────────────────────────────────────────────────
-    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
     st.markdown(
         f"<div class='footer'>"
         f"<span>Telecom Call Intelligence &nbsp;·&nbsp; {n_calls:,} calls analysed "
