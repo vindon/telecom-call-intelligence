@@ -1,145 +1,193 @@
 {
   "meta": {
-    "total_calls_analyzed": 30,
-    "analysis_timestamp": "2026-05-26T15:30:51.688097",
+    "total_calls_analyzed": 20,
+    "analysis_timestamp": "2026-05-27T14:19:02.554371",
     "dataset": "talkmap/telecom-conversation-corpus",
     "model": "gemini-2.5-flash-lite",
     "inference_provider": "Google AI Studio",
     "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark. Replace with actual ACD data for production."
   },
   "kpis": {
-    "total_calls_analyzed": 30,
+    "total_calls_analyzed": 20,
     "avg_handle_time_seconds": 167.8,
     "avg_handle_time_minutes": 2.8,
-    "fcr_rate_pct": 50.0,
-    "avoidable_call_rate_pct": 3.3,
-    "self_serve_deflection_pct": 6.7,
-    "agentic_ai_resolvable_pct": 6.7,
-    "proactive_outreach_pct": 3.3,
-    "all_issues_resolved_pct": 50.0,
-    "escalation_rate_pct": 23.3,
-    "upsell_attempted_pct": 13.3,
-    "upsell_conversion_pct": 50.0,
-    "sentiment_improved_pct": 66.7,
-    "agent_tool_struggle_pct": 10.0,
-    "multi_issue_call_pct": 6.7,
-    "avg_issues_per_call": 1.1,
-    "avg_hold_time_seconds": 2.9,
-    "avg_hold_count": 0.2,
-    "avg_empathy_statements": 2.0
+    "fcr_rate_pct": 60.0,
+    "avoidable_call_rate_pct": 10.0,
+    "self_serve_deflection_pct": 10.0,
+    "agentic_ai_resolvable_pct": 15.0,
+    "proactive_outreach_pct": 0.0,
+    "all_issues_resolved_pct": 65.0,
+    "escalation_rate_pct": 25.0,
+    "upsell_attempted_pct": 5.0,
+    "upsell_conversion_pct": 100.0,
+    "sentiment_improved_pct": 80.0,
+    "agent_tool_struggle_pct": 5.0,
+    "multi_issue_call_pct": 0.0,
+    "avg_issues_per_call": 0.9,
+    "avg_hold_time_seconds": 1.2,
+    "avg_hold_count": 0.1,
+    "avg_empathy_statements": 1.6
   },
   "phase_avg_seconds": {
-    "Welcome & Auth": 21.8,
-    "Discovery": 42.8,
-    "Diagnosis": 22.0,
-    "Resolution": 42.3,
-    "Hold": 2.9,
-    "Upsell": 4.5,
-    "Closing": 19.3
+    "Welcome & Auth": 20.4,
+    "Discovery": 59.8,
+    "Diagnosis": 33.3,
+    "Resolution": 28.9,
+    "Hold": 1.2,
+    "Upsell": 1.4,
+    "Closing": 17.9
   },
   "distributions": {
     "issue_category": {
-      "technical": 18,
-      "billing": 4,
+      "technical": 9,
       "plan": 4,
-      "device": 3,
-      "account": 3
+      "billing": 2,
+      "information": 2,
+      "device": 1,
+      "other": 1
     },
     "cost_driver": {
-      "technical": 50.0,
-      "billing": 13.3,
-      "device": 10.0,
-      "account": 10.0,
-      "plan_change": 6.7,
-      "plan": 6.7,
-      "information_only": 3.3
+      "technical": 40.0,
+      "plan": 20.0,
+      "billing": 10.0,
+      "other": 10.0,
+      "device": 5.0,
+      "null": 5.0,
+      "information": 5.0,
+      "information_only": 5.0
     },
     "agent_skill": {
-      "adequate": 51.7,
-      "proficient": 44.8,
-      "needs_improvement": 3.4
+      "proficient": 60.0,
+      "adequate": 35.0,
+      "needs_improvement": 5.0
     },
     "customer_sentiment_start": {
-      "neutral": 46.7,
-      "frustrated": 30.0,
-      "negative": 13.3,
-      "concerned": 6.7,
-      "worried": 3.3
+      "neutral": 65.0,
+      "frustrated": 35.0
     },
     "customer_sentiment_end": {
-      "positive": 43.3,
-      "neutral": 40.0,
-      "frustrated": 13.3,
-      "appreciative": 3.3
+      "positive": 75.0,
+      "neutral": 20.0,
+      "distressed": 5.0
     },
     "handle_time_efficiency": {
-      "average": 55.2,
-      "efficient": 41.4,
-      "inefficient": 3.4
+      "efficient": 50.0,
+      "average": 45.0,
+      "inefficient": 5.0
     },
     "self_serve_channel": {
-      "none": 81.5,
-      "app": 11.1,
-      "website": 3.7,
-      "IVR": 3.7
+      "none": 78.9,
+      "website": 10.5,
+      "app": 10.5
     },
     "repeat_call_risk": {
-      "low": 53.3,
-      "medium": 33.3,
-      "high": 13.3
+      "low": 65.0,
+      "medium": 25.0,
+      "high": 10.0
     },
     "agent_disproportionate_phase": {
-      "discovery": 37.0,
-      "welcome": 14.8,
-      "resolution": 14.8,
-      "closing": 11.1,
-      "none": 11.1,
-      "diagnosis": 11.1
+      "discovery": 35.0,
+      "diagnosis": 25.0,
+      "none": 20.0,
+      "resolution": 15.0,
+      "welcome": 5.0
     },
     "upsell_outcome": {
-      "not_attempted": 86.7,
-      "accepted": 6.7,
-      "declined": 3.3,
-      "pending": 3.3
+      "not_attempted": 95.0,
+      "accepted": 5.0
     },
     "resolution_method_issue1": {
-      "agent_action": 44.8,
-      "escalated": 24.1,
-      "unresolved": 13.8,
-      "workaround": 10.3,
-      "troubleshooting": 3.4,
-      "self_serve_guidance": 3.4
+      "agent_action": 73.7,
+      "escalated": 15.8,
+      "unresolved": 10.5
     },
     "account_type": {
-      "unknown": 100.0
+      "unknown": 95.0,
+      "prepaid": 5.0
     }
   },
   "cost_levers": {
     "cost_per_call_usd": 6.0,
     "monthly_volume_estimate": 100000,
     "baseline_monthly_cost_usd": 600000,
-    "self_serve_savings_usd": 34170,
-    "agentic_ai_savings_usd": 28140,
-    "proactive_care_savings_usd": 11880,
-    "total_savings_opportunity_usd": 74190,
-    "savings_pct_of_baseline": 12.4
+    "self_serve_savings_usd": 51000,
+    "agentic_ai_savings_usd": 63000,
+    "proactive_care_savings_usd": 0,
+    "total_savings_opportunity_usd": 114000,
+    "savings_pct_of_baseline": 19.0
   },
   "token_usage": {
     "model": "gemini-2.5-flash-lite",
     "provider": "Google AI Studio",
-    "calls_with_usage": 27,
-    "calls_missing_usage": 3,
-    "total_prompt_tokens": 84931,
-    "total_completion_tokens": 44203,
-    "total_tokens": 129134,
-    "avg_prompt_tokens_per_call": 3146.0,
-    "avg_completion_tokens_per_call": 1637.0,
-    "avg_total_tokens_per_call": 4783.0,
-    "total_cost_usd": 0.0262,
-    "avg_cost_per_call_usd": 0.000969,
+    "calls_with_usage": 20,
+    "calls_missing_usage": 0,
+    "total_prompt_tokens": 62842,
+    "total_completion_tokens": 33423,
+    "total_tokens": 96265,
+    "avg_prompt_tokens_per_call": 3142.0,
+    "avg_completion_tokens_per_call": 1671.0,
+    "avg_total_tokens_per_call": 4813.0,
+    "total_cost_usd": 0.0197,
+    "avg_cost_per_call_usd": 0.000983,
     "price_input_per_mtok_usd": 0.1,
     "price_output_per_mtok_usd": 0.4,
     "free_tier_note": "Free up to 500 req/day via Google AI Studio. Paid tier pricing shown above.",
-    "pricing_note": "Gemini 2.5 Flash Lite paid tier pricing as of 2026-Q2. At 100K calls/mo avg 4,783 tokens/call, monthly inference cost \u2248 $96.94 USD."
+    "pricing_note": "Gemini 2.5 Flash Lite paid tier pricing as of 2026-Q2. At 100K calls/mo avg 4,813 tokens/call, monthly inference cost \u2248 $98.27 USD."
+  },
+  "qa_summary": {
+    "avg_score": 99.3,
+    "pass_rate_pct": 100.0,
+    "grade_HIGH": 20,
+    "grade_MEDIUM": 0,
+    "grade_LOW": 0,
+    "pct_HIGH": 100.0,
+    "pct_MEDIUM": 0.0,
+    "pct_LOW": 0.0
+  },
+  "agent_insights": {
+    "source": "rule_based_fallback",
+    "deliberation_passes": 0,
+    "executive_summary": "Analysis of 20 calls reveals an FCR of 60.0%, AHT of 2.8 min, and 10.0% avoidable call rate. 15.0% of volume is agentic AI-resolvable.",
+    "top_recommendations": [
+      {
+        "priority": 1,
+        "title": "Improve First Call Resolution",
+        "insight": "FCR of 60.0% is below the 70-80% industry benchmark.",
+        "estimated_impact": "Each 1% FCR improvement eliminates ~6 repeat calls per 100."
+      },
+      {
+        "priority": 5,
+        "title": "Reduce Escalation Rate",
+        "insight": "Escalation rate of 25.0% adds cost and reduces satisfaction.",
+        "estimated_impact": "Targeted coaching on top escalation triggers reduces rate by 20-30%."
+      },
+      {
+        "priority": 3,
+        "title": "Implement Continuous KPI Monitoring",
+        "insight": "Ongoing KPI tracking enables faster response to emerging trends.",
+        "estimated_impact": "Early detection of FCR dips prevents repeat-call spikes."
+      },
+      {
+        "priority": 4,
+        "title": "Implement Continuous KPI Monitoring",
+        "insight": "Ongoing KPI tracking enables faster response to emerging trends.",
+        "estimated_impact": "Early detection of FCR dips prevents repeat-call spikes."
+      },
+      {
+        "priority": 5,
+        "title": "Implement Continuous KPI Monitoring",
+        "insight": "Ongoing KPI tracking enables faster response to emerging trends.",
+        "estimated_impact": "Early detection of FCR dips prevents repeat-call spikes."
+      }
+    ],
+    "quick_wins": [
+      "Publish self-serve guides for the top 3 avoidable call reasons",
+      "Add real-time FCR coaching alerts to agent desktops",
+      "Route agentic-AI-resolvable intents to a chatbot pilot"
+    ],
+    "risk_flags": [
+      "FCR below 70%: 40% of customers may call back",
+      "Insufficient data for trend analysis \u2014 run more batches for confidence"
+    ]
   }
 }

@@ -28,10 +28,13 @@ import json
 import os
 
 from pipeline.config import (
+    CLAUDE_INSIGHTS_MODEL,
     DELIBERATION_ENABLED,
     INSIGHTS_MODEL,
     INSIGHTS_TEMPERATURE,
     MAX_OUTPUT_TOKENS,
+    NVIDIA_BASE_URL,
+    NVIDIA_INSIGHTS_MODEL,
 )
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
@@ -211,13 +214,27 @@ def _rule_based_insights(kpis: dict, qa_summary: dict, n_calls: int) -> dict:
             "insight": f"Escalation rate of {esc}% adds cost and reduces satisfaction.",
             "estimated_impact": "Targeted coaching on top escalation triggers reduces rate by 20-30%.",
         })
-    while len(recs) < 5:
-        recs.append({
-            "priority": len(recs) + 1,
+    _padding = [
+        {
             "title": "Implement Continuous KPI Monitoring",
             "insight": "Ongoing KPI tracking enables faster response to emerging trends.",
             "estimated_impact": "Early detection of FCR dips prevents repeat-call spikes.",
-        })
+        },
+        {
+            "title": "Expand Self-Serve Channel Coverage",
+            "insight": "Low self-serve adoption suggests gaps in digital deflection.",
+            "estimated_impact": "Each 5% deflection shift saves ~$30K/mo at 100K call volume.",
+        },
+        {
+            "title": "Strengthen Agent Coaching Programme",
+            "insight": "Consistent coaching on top failure patterns raises FCR and reduces AHT.",
+            "estimated_impact": "10% AHT reduction equates to ~$60K/mo in labour savings.",
+        },
+    ]
+    for pad in _padding:
+        if len(recs) >= 5:
+            break
+        recs.append({"priority": len(recs) + 1, **pad})
 
     return {
         "source": "rule_based_fallback",
@@ -321,17 +338,17 @@ class InsightsAgent:
 
         # ── Pass 1: Analyze (CoT) ────────────────────────────────────
         log.info("[%s] Deliberation Pass 1: Analyze (CoT)", self.name)
-        initial = self._gemini_call(
+        initial = self._llm_call(
             self._build_analyze_prompt(kpis, metrics, qa_rep, n_calls, historical_context),
             temperature=INSIGHTS_TEMPERATURE,
         )
         if initial is None:
             return None, 0
-        initial["source"] = "gemini_llm"
+        initial["source"] = "llm_single_pass"
 
         # ── Pass 2: Critique (self-reflection) ───────────────────────
         log.info("[%s] Deliberation Pass 2: Critique (self-reflection)", self.name)
-        critique = self._gemini_call(
+        critique = self._llm_call(
             CRITIQUE_PROMPT.format(
                 insights_json=json.dumps(initial, indent=2)[:3000],
                 **kpi_ctx,
@@ -344,7 +361,7 @@ class InsightsAgent:
 
         # ── Pass 3: Synthesize ───────────────────────────────────────
         log.info("[%s] Deliberation Pass 3: Synthesize", self.name)
-        final = self._gemini_call(
+        final = self._llm_call(
             SYNTHESIZE_PROMPT.format(
                 insights_json=json.dumps(initial, indent=2)[:2000],
                 critique_json=json.dumps(critique, indent=2)[:1500],
@@ -356,7 +373,7 @@ class InsightsAgent:
             log.warning("[%s] Synthesis pass failed — returning post-critique result", self.name)
             return initial, 2
 
-        final["source"]   = "gemini_llm_deliberated"
+        final["source"]   = "llm_deliberated"
         final["critique"] = critique.get("overall_quality", "unknown")
         log.info("[%s] Deliberation complete: quality=%s", self.name, final["critique"])
         return final, 3
@@ -371,18 +388,88 @@ class InsightsAgent:
         n_calls: int,
         historical_context: str,
     ) -> dict | None:
-        result = self._gemini_call(
+        result = self._llm_call(
             self._build_analyze_prompt(kpis, metrics, qa_rep, n_calls, historical_context),
             temperature=INSIGHTS_TEMPERATURE,
         )
         if result:
-            result["source"] = "gemini_llm"
+            result["source"] = "llm_single_pass"
         return result
 
     # ── Helpers ──────────────────────────────────────────────────────
 
+    def _llm_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
+        """Call NVIDIA first; fall back to Claude if NVIDIA is unavailable."""
+        result = self._nvidia_call(prompt, temperature)
+        if result is not None:
+            return result
+        log.info("[%s] NVIDIA unavailable — falling back to Claude", self.name)
+        return self._claude_call(prompt, temperature)
+
+    def _nvidia_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
+        """Call NVIDIA NIM API (OpenAI-compatible). Returns parsed dict or None."""
+        api_key = os.environ.get("NVIDIA_API_KEY")
+        if not api_key:
+            return None
+        try:
+            from openai import OpenAI
+
+            client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=api_key)
+            response = client.chat.completions.create(
+                model=NVIDIA_INSIGHTS_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                temperature=temperature,
+                max_tokens=MAX_OUTPUT_TOKENS,
+            )
+            raw = response.choices[0].message.content
+            SECRET_GUARD.assert_no_secrets_in_output(raw)
+            result = json.loads(raw)
+            return OUTPUT_SANITIZER.sanitize_insights(result)
+
+        except Exception as exc:
+            if "429" in str(exc):
+                log.warning("[%s] NVIDIA quota exhausted (429) — model=%s", self.name, NVIDIA_INSIGHTS_MODEL)
+            else:
+                log.warning("[%s] NVIDIA call failed (%s): %s", self.name, type(exc).__name__, exc)
+            return None
+
+    def _claude_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
+        """Call Anthropic Claude (fallback). Returns parsed dict or None."""
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            return None
+        try:
+            import anthropic
+
+            client = anthropic.Anthropic(api_key=api_key)
+            response = client.messages.create(
+                model=CLAUDE_INSIGHTS_MODEL,
+                max_tokens=MAX_OUTPUT_TOKENS,
+                temperature=temperature,
+                messages=[{"role": "user", "content": prompt}],
+                system="You are a strategic telecom analyst. Always respond with valid JSON only — no markdown fences, no prose.",
+            )
+            raw = response.content[0].text.strip()
+            # strip markdown fences if present (```json ... ```)
+            if raw.startswith("```"):
+                raw = raw.split("```", 2)[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.strip()
+            SECRET_GUARD.assert_no_secrets_in_output(raw)
+            result = json.loads(raw)
+            return OUTPUT_SANITIZER.sanitize_insights(result)
+
+        except Exception as exc:
+            if "429" in str(exc) or "rate" in str(exc).lower():
+                log.warning("[%s] Claude rate limited — model=%s", self.name, CLAUDE_INSIGHTS_MODEL)
+            else:
+                log.warning("[%s] Claude call failed (%s): %s", self.name, type(exc).__name__, exc)
+            return None
+
     def _gemini_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
-        """Make a single Gemini JSON-mode call. Returns parsed dict or None."""
+        """Call Gemini (last-resort fallback). Returns parsed dict or None."""
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             return None
@@ -407,7 +494,11 @@ class InsightsAgent:
             return OUTPUT_SANITIZER.sanitize_insights(result)
 
         except Exception as exc:
-            log.warning("[%s] Gemini call failed: %s", self.name, str(exc)[:120])
+            from google.genai import errors as _genai_errors
+            if isinstance(exc, _genai_errors.ClientError) and "429" in str(exc):
+                log.warning("[%s] Gemini quota exhausted (429) — model=%s", self.name, INSIGHTS_MODEL)
+            else:
+                log.warning("[%s] Gemini call failed (%s): %s", self.name, type(exc).__name__, exc)
             return None
 
     def _build_analyze_prompt(

@@ -19,9 +19,18 @@ from pathlib import Path
 
 # ── Model ──────────────────────────────────────────────────────────────
 # Free-tier limits (2026-05): gemini-2.5-flash-lite = 20 RPD / 15 RPM.
-# Switch to gemini-2.0-flash-lite (1 500 RPD / 30 RPM) for larger batch runs.
-EXTRACTION_MODEL       = "gemini-2.0-flash-lite"
-INSIGHTS_MODEL         = "gemini-2.0-flash-lite"
+# gemini-2.0-flash-lite = 1 500 RPD / 30 RPM (separate quota pool).
+# INSIGHTS_MODEL uses 2.0-flash-lite so it never competes with extraction quota:
+# a 20-call batch exhausts the 2.5-flash-lite 20 RPD limit, leaving nothing
+# for the 3 InsightsAgent deliberation passes.
+EXTRACTION_MODEL       = "gemini-2.5-flash-lite"
+INSIGHTS_MODEL         = "gemini-2.0-flash-lite"  # Gemini fallback
+
+# NVIDIA NIM — InsightsAgent primary provider (OpenAI-compatible API).
+# llama-3.1-nemotron-70b is NVIDIA's instruction-tuned flagship; strong
+# reasoning and reliable JSON output via response_format=json_object.
+NVIDIA_INSIGHTS_MODEL  = "meta/llama-3.3-70b-instruct"
+NVIDIA_BASE_URL        = "https://integrate.api.nvidia.com/v1"
 MAX_OUTPUT_TOKENS      = 8192
 EXTRACTION_TEMPERATURE = 0.1   # near-deterministic for structured extraction
 INSIGHTS_TEMPERATURE   = 0.3   # slightly creative for strategic recommendations
@@ -66,6 +75,9 @@ REACT_QUALITY_THRESHOLD  = 70   # trigger re-query if field-coverage score < thi
 
 # ── InsightsAgent deliberation ─────────────────────────────────────────
 DELIBERATION_ENABLED     = True  # Analyze → Critique → Synthesize passes
+
+# ── InsightsAgent Claude fallback ─────────────────────────────────────
+CLAUDE_INSIGHTS_MODEL    = "claude-haiku-4-5-20251001"  # fallback if NVIDIA unavailable
 
 # ── Parallel extraction ────────────────────────────────────────────────
 MAX_CONCURRENT_EXTRACTIONS = 1   # 1 = serial (free-tier safe); raise on paid tier

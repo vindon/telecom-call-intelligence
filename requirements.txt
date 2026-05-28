@@ -2,6 +2,12 @@
 # NOTE: google-generativeai is deprecated; use google-genai
 google-genai>=1.0.0
 
+# NVIDIA NIM API (OpenAI-compatible) — InsightsAgent primary provider
+openai>=1.0.0
+
+# Anthropic Claude — InsightsAgent fallback
+anthropic>=0.40.0
+
 # LangGraph orchestration + LangSmith tracing
 langgraph>=0.2.0
 langchain-core>=0.3.0
