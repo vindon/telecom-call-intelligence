@@ -1,6 +1,10 @@
 # Claude Code — Build Cost & Efficiency Analysis
 ## Telecom Call Intelligence Platform
 
+> **v4.0 status (2026-06-01):** The pipeline is now on Claude Haiku 4.5 (primary extraction) + NVIDIA NIM Llama 3.3 70B (insights) + full `DecisionLogger` traceability across all agents. Test suite: 224 tests. Backlog items B-01/B-02 are superseded — the model was switched to Claude Haiku rather than gemini-2.0-flash-lite. The historical analysis below documents the build cost through v3.0.
+
+---
+
 **Project period:** 2026-05-17 to 2026-05-26  
 **Model:** claude-sonnet-4-6  
 **Sessions:** 2  

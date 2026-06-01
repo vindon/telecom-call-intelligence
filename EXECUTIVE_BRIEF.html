@@ -1093,9 +1093,9 @@ footer {
     <p>
       The system is implemented as a LangGraph state graph — an agentic orchestration pattern
       where each node is a discrete, auditable step. State accumulates through the graph and
-      every intermediate output is traceable. Two Gemini 2.5 Flash Lite calls per run:
-      one for ReAct-guided extraction and one for the InsightsAgent deliberation loop.
-      The pipeline is CI-verified across 198 unit tests and secured with a five-component
+      every intermediate output is traceable. Claude Haiku 4.5 handles ReAct-guided extraction; NVIDIA NIM (Llama 3.3 70B)
+      powers the InsightsAgent deliberation loop, with Claude as automatic fallback.
+      The pipeline is CI-verified across 224 unit tests and secured with a five-component
       security layer at every agent boundary.
     </p>
 
@@ -1129,7 +1129,7 @@ footer {
             <span class="arch-icon">🤖</span>
             <div class="arch-node-num" style="color:var(--gold-pale);">NODE 2</div>
             <div class="arch-node-title">Extraction + ReAct</div>
-            <div class="arch-node-sub">Gemini 2.5 Flash Lite<br>70-field JSON<br>CoT + gap-fill loop</div>
+            <div class="arch-node-sub">Claude Haiku 4.5<br>70-field JSON<br>CoT + gap-fill loop</div>
           </div>
         </div>
 
@@ -1162,7 +1162,7 @@ footer {
             <span class="arch-icon">🧠</span>
             <div class="arch-node-num" style="color:var(--gold-pale);">NODE 5</div>
             <div class="arch-node-title">Insights + Deliberation</div>
-            <div class="arch-node-sub">Gemini 2.5 Flash Lite<br>Analyze → Critique<br>→ Synthesize</div>
+            <div class="arch-node-sub">NVIDIA NIM · Llama 70B<br>Analyze → Critique<br>→ Synthesize</div>
           </div>
         </div>
 
@@ -1184,7 +1184,7 @@ footer {
             <span class="arch-icon">💾</span>
             <div class="arch-node-num">NODE 7</div>
             <div class="arch-node-title">Export</div>
-            <div class="arch-node-sub">CSV · JSON<br>summary.json<br>Audit trail</div>
+            <div class="arch-node-sub">CSV · JSON · Decisions<br>summary.json<br>Audit trail</div>
           </div>
         </div>
 
@@ -1210,14 +1210,13 @@ footer {
         </p>
       </div>
       <div class="card">
-        <h3>Why Gemini 2.5 Flash Lite?</h3>
+        <h3>Why Claude Haiku 4.5?</h3>
         <p style="max-width:100%; font-size:13px; margin:0;">
-          Google AI Studio's free tier provides 15 requests/minute — sufficient for one 20-call
-          batch per day on the free tier; upgrade to <code>gemini-2.0-flash-lite</code> (1,500 RPD)
-          for multi-batch production runs. <code>thinking_budget=0</code> prevents thinking tokens
-          from consuming the extraction budget. Chain-of-Thought reasoning is injected into the
-          JSON schema itself, producing step-by-step reasoning before every field extraction
-          with no additional API calls.
+          Anthropic Claude Haiku 4.5 delivers superior JSON extraction accuracy at ~$0.0076/call.
+          Chain-of-Thought reasoning is injected directly into the JSON schema, producing
+          step-by-step reasoning before every field extraction with no additional API calls.
+          The model is hot-swappable: change <code>EXTRACTION_MODEL</code> in <code>config.py</code>
+          to switch to Gemini 2.0 Flash Lite ($0.0008/call) without touching any agent code.
         </p>
       </div>
     </div>
@@ -1529,10 +1528,10 @@ footer {
       </div>
 
       <div class="tech-card">
-        <div class="tech-layer">Inference</div>
-        <div class="tech-name">Gemini 2.5 Flash Lite</div>
-        <div class="tech-detail">Google AI Studio · 15 RPM free tier · thinking_budget=0 · temperature 0.1 extraction / 0.3 insights · ReAct + CoT built in.</div>
-        <div class="tech-badge">Free Tier</div>
+        <div class="tech-layer">Extraction Model</div>
+        <div class="tech-name">Claude Haiku 4.5</div>
+        <div class="tech-detail">Anthropic · 50 RPM · temperature 0.1 · ReAct + CoT + 70-field JSON · model-aware cost tracking via token_tracker.</div>
+        <div class="tech-badge">Plug-and-Play</div>
       </div>
 
       <div class="tech-card">
@@ -1572,8 +1571,8 @@ footer {
 
       <div class="tech-card">
         <div class="tech-layer">Quality &amp; CI</div>
-        <div class="tech-name">198-Test Suite + ruff</div>
-        <div class="tech-detail">pytest · 198 unit tests · &lt;6 second run · pre-commit hooks · GitHub Actions CI · mypy type checking.</div>
+        <div class="tech-name">224-Test Suite + ruff</div>
+        <div class="tech-detail">pytest · 224 unit tests · &lt;7 second run · pre-commit hooks · GitHub Actions CI · mypy type checking.</div>
         <div class="tech-badge">CI Verified</div>
       </div>
     </div>
@@ -1593,7 +1592,7 @@ footer {
         <div style="font-size: 36px; margin-bottom: 16px;">⚡</div>
         <h3>Foundation Models Are Enterprise-Ready</h3>
         <p style="max-width:100%; font-size:13px;">
-          Gemini 2.5 Flash Lite, Claude, and GPT-4o have crossed the threshold where
+          Claude Haiku 4.5, Gemini Flash, and GPT-4o have crossed the threshold where
           structured JSON extraction from long call transcripts is reliable, auditable, and
           cost-effective at scale. Twelve months ago, this required bespoke ML pipelines.
           Today it runs on Google AI Studio's free tier for prototyping and pennies per
@@ -1647,11 +1646,12 @@ footer {
       <div class="roadmap-phase active">
         <div class="roadmap-phase-num">Phase I · Complete</div>
         <div class="roadmap-phase-title">Intelligence Foundation</div>
-        <div class="roadmap-phase-time">v3.0 · Production-grade · 198 CI tests</div>
+        <div class="roadmap-phase-time">v4.0 · Production-grade · 224 CI tests</div>
         <ul class="roadmap-items">
           <li>7-node LangGraph pipeline, fully CI-verified</li>
-          <li>Gemini 2.5 Flash Lite · ReAct + CoT extraction</li>
-          <li>InsightsAgent 3-pass deliberation loop</li>
+          <li>Claude Haiku 4.5 · ReAct + CoT extraction</li>
+          <li>NVIDIA NIM (Llama 3.3 70B) insights · Claude fallback</li>
+          <li>Decision traceability — every agent decision recorded</li>
           <li>5-component security layer at agent boundaries</li>
           <li>Vector memory with semantic retrieval</li>
           <li>Executive dashboard — 7 sections, traffic-signal actions</li>
@@ -1698,9 +1698,9 @@ footer {
     </div>
   </div>
   <div class="footer-meta">
-    <div>Stack: LangGraph · Gemini 2.5 Flash Lite · Streamlit</div>
+    <div>Stack: LangGraph · Claude Haiku 4.5 · NVIDIA NIM · Streamlit</div>
     <div style="margin-top: 4px;">Dataset: talkmap/telecom-conversation-corpus · MIT</div>
-    <div style="margin-top: 4px;">© 2026 · Executive Brief v3.0</div>
+    <div style="margin-top: 4px;">© 2026 · Executive Brief v4.0</div>
   </div>
 </footer>
 

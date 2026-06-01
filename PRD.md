@@ -1,9 +1,9 @@
 # Product Requirements Document
 
 **Product:** Telecom Call Intelligence Platform
-**Version:** 2.0
+**Version:** 4.0
 **Status:** Production
-**Last updated:** 2026-05-18
+**Last updated:** 2026-06-01
 
 ---
 
@@ -11,7 +11,7 @@
 
 Contact centres are the highest-cost customer touchpoint in telecom. At $6.00 per interaction and millions of calls per month, even a 10% reduction in handle time or avoidable call volume translates to millions in annual savings — yet most operators analyse fewer than 5% of calls manually.
 
-This platform applies a 6-agent LangGraph pipeline to 100% of call transcripts, extracting 70+ structured metadata fields per call, scoring extraction quality inline, generating LLM-powered strategic recommendations, and delivering executive-ready KPIs via an analytics dashboard. It runs at < $0.0001 per call on the Gemini 2.5 Flash Lite free tier, making it accessible for both production deployments and exploratory analysis.
+This platform applies a 7-agent LangGraph pipeline to 100% of call transcripts, extracting 70+ structured metadata fields per call using Claude Haiku 4.5, scoring extraction quality inline, generating strategic recommendations via NVIDIA NIM (Llama 3.3 70B) with Claude fallback, and delivering executive-ready KPIs via an analytics dashboard. A full decision trace (`decisions_{ts}.json`) records every material agent decision for governance and auditability.
 
 ---
 
@@ -123,8 +123,8 @@ This platform applies a 6-agent LangGraph pipeline to 100% of call transcripts, 
 
 | Property | Target |
 |----------|--------|
-| **Throughput** | ~8 calls/min at Gemini free tier (2s inter-call delay, 15 RPM) |
-| **Cost** | < $0.0001 USD per call at Gemini 2.5 Flash Lite pricing |
+| **Throughput** | ~8 calls/min at Claude 50 RPM limit (2s inter-call delay); upgrade delay for higher volume |
+| **Cost** | ~$0.0076 USD per call at Claude Haiku 4.5 pricing; ~$0.0008/call if using Gemini 2.0 Flash Lite |
 | **Reproducibility** | Identical output for same `(offset, n, seed)` triple |
 | **Memory** | Bounded regardless of dataset size (streaming HF, never loads full corpus) |
 | **Reliability** | Zero calls lost on process kill (checkpoint saves after every successful call) |
@@ -136,10 +136,13 @@ This platform applies a 6-agent LangGraph pipeline to 100% of call transcripts, 
 
 ## 8. Technical Constraints
 
-- **Gemini free tier:** 15 RPM · 500 RPD shared across all `gemini-2.5-*` models; resets midnight Pacific
-- **LLM output format:** `response_mime_type="application/json"` enforces native JSON — no fence stripping required
+- **EXTRACTION_MODEL is the single switch** — changing it in `pipeline/config.py` propagates to the client, rate limiter, cost tracker, and startup key validator automatically
+- **Claude Haiku 4.5 rate limit:** 50 RPM (`CLAUDE_RATE_LIMITER`). For Gemini: 15 RPM (`GEMINI_RATE_LIMITER`)
+- **Gemini free tier (if switching):** 15 RPM · 500 RPD for `gemini-2.5-flash-lite`; use `gemini-2.0-flash-lite` (1,500 RPD) for multi-batch runs
+- **LLM output format:** `response_mime_type="application/json"` enforces native JSON on Gemini calls — no fence stripping required
 - **thinking_budget=0:** Must be set on all Gemini 2.5 calls — thinking tokens consume the output budget
 - **max_output_tokens=8192:** Required to fit the 70-field JSON in a single response
+- **NVIDIA NIM:** OpenAI-compatible endpoint at `https://integrate.api.nvidia.com/v1`; InsightsAgent auto-falls back to Claude if `NVIDIA_API_KEY` is absent
 - **pandas 3.x:** ISO 8601 timestamp parsing requires `format="mixed"` (see ARCHITECTURE.md)
 - **Plotly 6.7+:** `update_layout(**kwargs, key=value)` pattern raises `TypeError` — must split into two calls
 
@@ -155,7 +158,7 @@ This platform applies a 6-agent LangGraph pipeline to 100% of call transcripts, 
 | FCR consistency | fcr=True & escalation=True < 2% of calls | consistency dimension score |
 | Pipeline reliability | 0 records lost on clean run | checkpoint + manifest comparison |
 | Cost accuracy | Token cost within 5% of actual Gemini usage | `_total_tokens` vs AI Studio console |
-| Test coverage | 149 unit tests, all passing, < 1s runtime | `make test` |
+| Test coverage | 224 unit tests, all passing, < 7s runtime | `make test` |
 | Governance | 0 PII strings in LLM prompts | PIIScanner audit log |
 
 ---
@@ -167,14 +170,15 @@ This platform applies a 6-agent LangGraph pipeline to 100% of call transcripts, 
 | v0.1 — Proof of concept | Basic pipeline: fetch → analyze → dashboard | Complete |
 | v1.0 — Production | Batch system, checkpoint, token tracking, QA audit, ARCHITECTURE.md | Complete |
 | v2.0 — Agentic AI | 6-agent LangGraph pipeline, governance, memory, tool registry, orchestrator, 149 tests, CI | Complete |
-| v3.0 — Agentic Patterns | ReAct loop, Chain-of-Thought, deliberation loop, vector memory, 5-component security, approval gate, 198 tests | **Complete** |
-| v4.0 — Enterprise | Real transcript ingestion (S3/Snowflake/ACD), agent ID mapping, CRM FCR validation | Planned |
+| v3.0 — Agentic Patterns | ReAct loop, Chain-of-Thought, deliberation loop, vector memory, 5-component security, approval gate, 198 tests | Complete |
+| v4.0 — Plug-and-Play + Traceability | Claude Haiku 4.5 primary extraction, NVIDIA NIM insights, model-aware cost/validation, DecisionLogger across all agents, 224 tests | **Complete** |
+| v5.0 — Enterprise | Real transcript ingestion (S3/Snowflake/ACD), agent ID mapping, CRM FCR validation | Planned |
 
 ---
 
-## 11. Out-of-scope for v3.0
+## 11. Out-of-scope for v4.0
 
-Items explicitly deferred to v4.0:
+Items explicitly deferred to v5.0:
 - Webhook / event-driven trigger (call analysed within seconds of completion)
 - Multi-model comparison (GPT-4o vs Gemini on same transcripts)
 - Confidence scoring per extracted field (pipeline-level QA is in place)

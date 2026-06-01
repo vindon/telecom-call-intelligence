@@ -16,6 +16,7 @@ Then follow the 7-step checklist from CLAUDE.md exactly:
 - Stateless class with a `run(state: dict) -> dict` method
 - Return pattern: `return {**state, "new_key": new_value}` — never mutate state in place
 - No instance state between calls
+- **Required:** instrument with `DecisionLogger` — import from `pipeline.decision_log`, create at the start of `run()`, call `dl.log(decision_type, decision, reason, evidence={...})` for significant decisions, and return `"decision_log": dl.finalize()` in the state dict. See CLAUDE.md for the full list of named decision types.
 
 **Step 2** — Export from `pipeline/agents/__init__.py`:
 - Add the class to the existing import block
@@ -27,7 +28,7 @@ Then follow the 7-step checklist from CLAUDE.md exactly:
 
 **Step 4** — Create `tests/test_agents/test_{name}_agent.py`:
 - At minimum: one test for happy path, one for missing/empty state, one for edge case
-- Mark any test that makes a real Gemini API call with `@pytest.mark.slow`
+- Mark any test that makes a real API call (Claude or NVIDIA NIM) with `@pytest.mark.slow`
 - Do NOT mock `BudgetGuard`, `QualityGate`, `PIIScanner`, or `AuditLog` — they are fast pure Python
 
 **Step 5** — Register tools in `pipeline/tools.py` if the agent uses any new formal tools
