@@ -22,9 +22,9 @@ This pipeline analyses **100% of calls, automatically.** Every transcript become
 ## Live architecture
 
 ```
-HuggingFace Corpus (3.7M turns · 200K conversations)
-           │
-           ▼
+Local CSV (telecom_200k.csv — primary) · HuggingFace fallback (3.7M turns)
+                          │
+                          ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │            LangGraph StateGraph  ·  Multi-Agent Pipeline v3.0        │
 │                                                                      │
@@ -82,7 +82,7 @@ This is not a tutorial pipeline. Every component reflects how autonomous agentic
 |-----------|-------------|----------------|
 | **ReAct extraction loop** | Observe (field-coverage score) → Reason (identify null critical fields) → Act (targeted gap-fill call) — up to `REACT_MAX_ITERATIONS` per transcript | Industry-standard agentic control loop; demonstrably improves extraction quality on ambiguous transcripts |
 | **Chain-of-Thought prompts** | `_cot_reasoning` as the first JSON field forces the LLM to articulate its reasoning before committing to field values | Measurably reduces hallucination on enum and boolean fields without extra API calls |
-| **Deliberation loop** | InsightsAgent runs 3 Gemini passes: Analyze (CoT) → Critique (self-reflection) → Synthesize (rewrite weak recommendations) | Self-reflective pattern ensures board-ready, data-grounded recommendations rather than generic platitudes |
+| **Deliberation loop** | InsightsAgent runs 3 passes (NVIDIA NIM primary · Gemini fallback · Claude fallback): Analyze (CoT) → Critique (self-reflection) → Synthesize (rewrite weak recommendations) | Self-reflective pattern ensures board-ready, data-grounded recommendations rather than generic platitudes |
 | **Vector memory** | Gemini `text-embedding-004` embeds each run's KPI summary; numpy cosine similarity retrieves the top-K most similar historical runs | Semantic long-term memory — InsightsAgent receives relevant historical context, not just averages |
 | **Security layer** | `InputSanitizer` (injection, encoding, secrets), `OutputSanitizer` (code execution, response bombs), `AgentScopeGuard` (per-agent tool access control), `SecretGuard` (key leakage), `RateLimiter` (API consumption cap) | Production systems face real attacks; this handles prompt injection, jailbreak attempts, cross-agent tool hijacking, and secret exfiltration |
 | **Human approval gate** | Configurable `approval_gate_node` before export; auto-approves in CI, interactive prompt with timeout in production | Prevents fully-autonomous export without human review in regulated or high-stakes deployments |
@@ -264,13 +264,14 @@ streamlit run dashboard/app.py   # http://localhost:8501
 
 | Section | What it shows |
 |---------|--------------|
-| **Core Performance KPIs** | FCR, AHT, escalation rate, sentiment improvement, issues resolved, agent tool struggle — 6 large metric cards |
-| **Cost-to-Serve Opportunity** | Total savings, self-serve deflection, agentic AI automation, proactive outreach — monthly estimates at $6/call |
-| **Phase Breakdown & Cost Waterfall** | Time per call phase (bar) + baseline → optimised cost (waterfall) side by side |
-| **Issue Distribution & Automation Opportunity** | Issue category donut + deflection/automation opportunity bar chart |
-| **Agent Performance & Customer Sentiment** | Skill rating bar · sentiment start vs. end grouped bar · repeat call risk donut |
-| **Upsell & Revenue Intelligence** | Upsell outcome donut + attempted/conversion KPI cards |
-| **Executive Action Plan** | Custom HTML table with glowing traffic signal lights — 🔴 CRITICAL / 🟡 HIGH / 🟢 QUICK WIN — each row has scope, estimated monthly impact, and recommended next step |
+| **Hero** | Bold headline: "X out of every 100 customer contacts don't need a human agent" — based on live transcript analysis |
+| **Cost Panels** | Two side-by-side cards: *Insights from N Calls Analysed* (Cost to Serve / Sell / Retain breakdown, forecast at 100K volume) and *AI Recovery Opportunity* (autonomous resolution %, monthly saving vs baseline, annual recovery) |
+| **1 — The Evidence** | Issue category bar chart (what customers call about) + vertical phase-time chart (where agent time goes inside every call) |
+| **2 — Resolution Opportunity** | Three resolution segments — PREVENT (proactive outreach) · AUTOMATE (agentic AI / self-serve) · HUMAN REQUIRED — each with call count, monthly cost impact, and description |
+| **3 — Which AI Agents to Build** | Ranked roadmap table: call intent · calls/month estimate · resolution type · saving/month · build effort |
+| **4 — Actual Performance** | 6 metric cards: FCR, AHT, escalation rate, issues resolved, sentiment improved, avoidable call rate |
+| **5 — Prioritised Action Plan** | Traffic-signal action table — CRITICAL / HIGH / QUICK WIN — each row has initiative, scope, estimated monthly impact, and next step |
+| **6 — Performance Trends** | Multi-run trend charts (FCR, AHT, QA score) — visible when ≥ 2 pipeline runs exist |
 
 ---
 

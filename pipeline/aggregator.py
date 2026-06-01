@@ -21,6 +21,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
+from pipeline.config import EXTRACTION_MODEL
 from pipeline.token_tracker import token_summary as build_token_summary
 
 # ── Industry benchmark — replace with actual cost data ────────────────
@@ -181,8 +182,8 @@ def aggregate_metrics(results: list[dict]) -> dict:
             "total_calls_analyzed":  n,
             "analysis_timestamp":    datetime.now().isoformat(),
             "dataset":               "talkmap/telecom-conversation-corpus",
-            "model":                 "gemini-2.5-flash-lite",
-            "inference_provider":    "Google AI Studio",
+            "model":                 EXTRACTION_MODEL,
+            "inference_provider":    "Anthropic (Claude)" if EXTRACTION_MODEL.startswith("claude") else "Google AI Studio",
             "cost_benchmark_note": (
                 "Cost estimates use $6.00/call industry benchmark. "
                 "Replace with actual ACD data for production."

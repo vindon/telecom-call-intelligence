@@ -18,12 +18,10 @@ Groupings mirror the system architecture:
 from pathlib import Path
 
 # ── Model ──────────────────────────────────────────────────────────────
-# Free-tier limits (2026-05): gemini-2.5-flash-lite = 20 RPD / 15 RPM.
+# Free-tier limits (2026-05): gemini-2.5-flash-lite = 500 RPD / 15 RPM.
 # gemini-2.0-flash-lite = 1 500 RPD / 30 RPM (separate quota pool).
-# INSIGHTS_MODEL uses 2.0-flash-lite so it never competes with extraction quota:
-# a 20-call batch exhausts the 2.5-flash-lite 20 RPD limit, leaving nothing
-# for the 3 InsightsAgent deliberation passes.
-EXTRACTION_MODEL       = "gemini-2.5-flash-lite"
+# Claude Haiku is the primary extraction model; Gemini is fallback if ANTHROPIC_API_KEY absent.
+EXTRACTION_MODEL       = "claude-haiku-4-5-20251001"
 INSIGHTS_MODEL         = "gemini-2.0-flash-lite"  # Gemini fallback
 
 # NVIDIA NIM — InsightsAgent primary provider (OpenAI-compatible API).

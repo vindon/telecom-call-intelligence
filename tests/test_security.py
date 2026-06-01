@@ -12,6 +12,7 @@ import time
 import pytest
 
 from pipeline.security import (
+    CLAUDE_RATE_LIMITER,
     GEMINI_RATE_LIMITER,
     INPUT_SANITIZER,
     OUTPUT_SANITIZER,
@@ -171,6 +172,12 @@ class TestOutputSanitizer:
         assert "AIzaSy" not in out["note"]
         assert "[SECRET_REDACTED]" == out["note"]
 
+    def test_anthropic_key_in_field_redacted(self):
+        result = {"note": "Key is sk-ant-api03-FakeAnthropicKeyForTestingPurposesOnlyXYZ1234567890"}
+        out = self.san.sanitize_extraction_result(result)
+        assert "sk-ant" not in out["note"]
+        assert "[SECRET_REDACTED]" == out["note"]
+
     def test_sanitize_insights_non_dict_raises(self):
         with pytest.raises(SecurityViolation):
             self.san.sanitize_insights(["not", "a", "dict"])
@@ -298,6 +305,11 @@ class TestRateLimiter:
         assert GEMINI_RATE_LIMITER is not None
         assert GEMINI_RATE_LIMITER.max_calls == 15
         assert GEMINI_RATE_LIMITER.window_s == 60.0
+
+    def test_claude_rate_limiter_singleton(self):
+        assert CLAUDE_RATE_LIMITER is not None
+        assert CLAUDE_RATE_LIMITER.max_calls == 50
+        assert CLAUDE_RATE_LIMITER.window_s == 60.0
 
 
 # ── Module-level singletons ───────────────────────────────────────────

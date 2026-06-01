@@ -134,13 +134,20 @@ class ExtractionAgent:
 
         Returns (improved_results, stats_dict).
         """
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            return results, {"n_improved": 0, "n_gap_fills": 0, "avg_coverage_before": 0}
-
         try:
-            from google import genai
-            client        = genai.Client(api_key=api_key)
+            from pipeline.analyzer import _USE_CLAUDE
+            if _USE_CLAUDE:
+                import anthropic
+                api_key = os.environ.get("ANTHROPIC_API_KEY")
+                if not api_key:
+                    return results, {"n_improved": 0, "n_gap_fills": 0, "avg_coverage_before": 0}
+                client = anthropic.Anthropic(api_key=api_key)
+            else:
+                from google import genai
+                api_key = os.environ.get("GEMINI_API_KEY")
+                if not api_key:
+                    return results, {"n_improved": 0, "n_gap_fills": 0, "avg_coverage_before": 0}
+                client = genai.Client(api_key=api_key)
             system_prompt = load_system_prompt()
         except Exception as exc:
             log.warning("[%s] ReAct loop unavailable: %s", self.name, exc)

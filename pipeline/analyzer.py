@@ -1,21 +1,16 @@
 """
 analyzer.py  —  Node 3: Analyze
 ---------------------------------
-Sends each transcript to Gemini 2.5 Flash Lite via Google AI Studio and extracts
-structured JSON using the 70-field system prompt.
+Extracts structured JSON from telecom call transcripts.
 
-Why Gemini 2.5 Flash Lite
---------------------
-  • Native JSON mode (response_mime_type="application/json") guarantees valid JSON
-    output — no markdown fence stripping, no parse retries for format errors.
-  • 1,500 req/day · 15 RPM free tier — far more headroom than alternatives.
-  • 1M-token context window — handles the longest transcripts without truncation.
-  • Uses the current google-genai SDK (google-generativeai is deprecated).
+Provider hierarchy (set EXTRACTION_MODEL in config.py):
+  1. Claude Haiku (primary)  — ANTHROPIC_API_KEY required
+  2. Gemini 2.0 Flash Lite   — GEMINI_API_KEY required (fallback)
 
 Production features
 -------------------
-  Token tracking   : _prompt_tokens / _completion_tokens / _total_tokens from
-                     response.usage_metadata injected into every result dict.
+  Token tracking   : _prompt_tokens / _completion_tokens / _total_tokens
+                     injected into every result dict.
   Checkpoint saves : Each successful result appended to
                      outputs/.checkpoint_{key}.jsonl immediately after the call.
   Structured logs  : INFO → stdout, DEBUG → outputs/pipeline.log.
@@ -24,8 +19,10 @@ Production features
 
 import json
 import os
+import re
 import time
 from pathlib import Path
+from typing import Any
 
 from google import genai
 from google.genai import errors as genai_errors
@@ -51,11 +48,14 @@ from pipeline.config import (
 )
 from pipeline.logger import get_logger
 from pipeline.security import (
+    CLAUDE_RATE_LIMITER,
     GEMINI_RATE_LIMITER,
     INPUT_SANITIZER,
     OUTPUT_SANITIZER,
     SECRET_GUARD,
 )
+
+_USE_CLAUDE = MODEL.startswith("claude")
 
 log = get_logger(__name__)
 
@@ -144,111 +144,101 @@ def _append_checkpoint(key: str, result: dict) -> None:
         fh.write(json.dumps(result) + "\n")
 
 
+# ── Claude extraction helper ──────────────────────────────────────────
+
+def _parse_json_text(text: str) -> dict:
+    """Strip markdown fences if present, then parse JSON."""
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    return json.loads(text.strip())
+
+
+def _call_claude(client: Any, system_prompt: str, user_message: str, max_tokens: int) -> tuple[str, int, int]:
+    """Invoke Claude and return (text, input_tokens, output_tokens)."""
+    CLAUDE_RATE_LIMITER.acquire()
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=max_tokens,
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_message}],
+        temperature=TEMPERATURE,
+    )
+    text = response.content[0].text
+    return text, response.usage.input_tokens, response.usage.output_tokens
+
+
 # ── Core analysis ─────────────────────────────────────────────────────
 
 def analyze_transcript(
-    client: genai.Client,
+    client: Any,
     system_prompt: str,
     transcript: dict,
     max_retries: int = 3,
 ) -> dict | None:
     """
-    Analyze a single transcript via Gemini 2.5 Flash Lite.
-
-    Native JSON mode guarantees valid JSON responses.
-    Injects _prompt_tokens / _completion_tokens / _total_tokens from
-    response.usage_metadata into the returned dict.
+    Analyze a single transcript via Claude Haiku (primary) or Gemini (fallback).
 
     Returns:
-        Parsed result dict, or None on permanent failure.
+        Parsed result dict with _prompt_tokens/_completion_tokens/_total_tokens,
+        or None on permanent failure.
     """
     call_id_short = transcript["call_id"][:12]
-
-    # Sanitize input before it reaches the LLM
     transcript = INPUT_SANITIZER.sanitize_transcript(transcript)
 
     for attempt in range(max_retries):
         try:
-            GEMINI_RATE_LIMITER.acquire()
-            response = client.models.generate_content(
-                model=MODEL,
-                contents=_build_user_message(transcript),
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    response_mime_type="application/json",
-                    temperature=TEMPERATURE,
-                    max_output_tokens=MAX_TOKENS,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
-            )
-
-            # Guard against response bombs and secret leakage before parsing
-            SECRET_GUARD.assert_no_secrets_in_output(response.text)
-            OUTPUT_SANITIZER.check_response_size(response.text, limit=MAX_RESPONSE_BYTES)
-
-            result = json.loads(response.text)
-            result  = OUTPUT_SANITIZER.sanitize_extraction_result(result)
-
-            # Inject token usage
-            if response.usage_metadata:
-                result["_prompt_tokens"]     = response.usage_metadata.prompt_token_count
-                result["_completion_tokens"] = response.usage_metadata.candidates_token_count
-                result["_total_tokens"]      = response.usage_metadata.total_token_count
-                log.debug(
-                    "OK  %s  prompt=%d  completion=%d  total=%d",
-                    call_id_short,
-                    response.usage_metadata.prompt_token_count,
-                    response.usage_metadata.candidates_token_count,
-                    response.usage_metadata.total_token_count,
+            if _USE_CLAUDE:
+                text, in_tok, out_tok = _call_claude(
+                    client, system_prompt, _build_user_message(transcript), MAX_TOKENS
                 )
+            else:
+                GEMINI_RATE_LIMITER.acquire()
+                response = client.models.generate_content(
+                    model=MODEL,
+                    contents=_build_user_message(transcript),
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        response_mime_type="application/json",
+                        temperature=TEMPERATURE,
+                        max_output_tokens=MAX_TOKENS,
+                        thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    ),
+                )
+                text = response.text
+                in_tok  = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
+                out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
 
+            SECRET_GUARD.assert_no_secrets_in_output(text)
+            OUTPUT_SANITIZER.check_response_size(text, limit=MAX_RESPONSE_BYTES)
+
+            result = _parse_json_text(text)
+            result = OUTPUT_SANITIZER.sanitize_extraction_result(result)
+            result["_prompt_tokens"]     = in_tok
+            result["_completion_tokens"] = out_tok
+            result["_total_tokens"]      = in_tok + out_tok
+            log.debug("OK  %s  prompt=%d  completion=%d", call_id_short, in_tok, out_tok)
             return result
 
         except json.JSONDecodeError as exc:
-            log.warning(
-                "JSON parse error [%s] attempt %d/%d: %s",
-                call_id_short, attempt + 1, max_retries, exc,
-            )
+            log.warning("JSON parse error [%s] attempt %d/%d: %s", call_id_short, attempt + 1, max_retries, exc)
             if attempt == max_retries - 1:
                 return None
             time.sleep(2)
 
-        except genai_errors.ClientError as exc:
-            if exc.code == 429:
+        except Exception as exc:
+            exc_str = str(exc)
+            # Rate limit handling — both Claude and Gemini signal 429
+            if "429" in exc_str or "rate_limit" in exc_str.lower() or "overloaded" in exc_str.lower():
                 wait = 30 * (2 ** attempt)
-                log.warning(
-                    "Rate limit (Google AI Studio). Waiting %ds before retry %d/%d — %s",
-                    wait, attempt + 1, max_retries, str(exc.message)[:120],
-                )
+                log.warning("Rate limit [%s] attempt %d/%d. Waiting %ds — %s",
+                            call_id_short, attempt + 1, max_retries, wait, exc_str[:120])
                 time.sleep(wait)
             else:
-                log.warning(
-                    "Client error [%s] attempt %d/%d: HTTP %d — %s",
-                    call_id_short, attempt + 1, max_retries,
-                    exc.code, str(exc.message)[:120],
-                )
+                log.warning("Error [%s] attempt %d/%d: %s", call_id_short, attempt + 1, max_retries, exc_str[:120])
                 if attempt == max_retries - 1:
                     return None
                 time.sleep(5 * (attempt + 1))
-
-        except genai_errors.ServerError as exc:
-            wait = 10 * (attempt + 1)
-            log.warning(
-                "Server error [%s] attempt %d/%d: HTTP %d. Waiting %ds …",
-                call_id_short, attempt + 1, max_retries, exc.code, wait,
-            )
-            if attempt == max_retries - 1:
-                return None
-            time.sleep(wait)
-
-        except Exception as exc:
-            log.exception(
-                "Unexpected error [%s] attempt %d/%d: %s",
-                call_id_short, attempt + 1, max_retries, exc,
-            )
-            if attempt == max_retries - 1:
-                return None
-            time.sleep(3)
 
     return None
 
@@ -305,23 +295,28 @@ def gap_fill_transcript(
              call_id_short, len(missing), missing)
 
     try:
-        GEMINI_RATE_LIMITER.acquire()
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=_build_gap_fill_message(transcript, missing),
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                response_mime_type="application/json",
-                temperature=TEMPERATURE,
-                max_output_tokens=1024,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            ),
-        )
-        SECRET_GUARD.assert_no_secrets_in_output(response.text)
-        retry_result = json.loads(response.text)
+        gap_msg = _build_gap_fill_message(transcript, missing)
+        if _USE_CLAUDE:
+            text, _, _ = _call_claude(client, system_prompt, gap_msg, 1024)
+        else:
+            GEMINI_RATE_LIMITER.acquire()
+            response = client.models.generate_content(
+                model=MODEL,
+                contents=gap_msg,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="application/json",
+                    temperature=TEMPERATURE,
+                    max_output_tokens=1024,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+            text = response.text
+
+        SECRET_GUARD.assert_no_secrets_in_output(text)
+        retry_result = _parse_json_text(text)
         retry_result = OUTPUT_SANITIZER.sanitize_extraction_result(retry_result)
 
-        # Merge: only fill nulls — never overwrite good values from first pass
         merged = dict(first_pass)
         for field, val in retry_result.items():
             if merged.get(field) in (None, "", 0) and val not in (None, "", 0):
@@ -330,20 +325,13 @@ def gap_fill_transcript(
                  call_id_short, score_field_coverage(first_pass), score_field_coverage(merged))
         return merged
 
-    except genai_errors.ClientError as exc:
-        if exc.code == 429:
-            _react_quota_exhausted = True
-            log.warning(
-                "[ReAct] Daily quota exhausted — disabling gap-fill for remaining batches. "
-                "Main extraction quota is preserved."
-            )
-        else:
-            log.warning("[ReAct] gap-fill client error for call %s: HTTP %d — %s",
-                        call_id_short, exc.code, str(exc.message)[:120])
-        return first_pass
-
     except Exception as exc:
-        log.warning("[ReAct] gap-fill failed for call %s: %s", call_id_short, str(exc)[:120])
+        exc_str = str(exc)
+        if "429" in exc_str or "rate_limit" in exc_str.lower():
+            _react_quota_exhausted = True
+            log.warning("[ReAct] Quota exhausted — disabling gap-fill for remaining batches.")
+        else:
+            log.warning("[ReAct] gap-fill failed for call %s: %s", call_id_short, exc_str[:120])
         return first_pass
 
 
@@ -368,11 +356,18 @@ def analyze_batch(
     Returns:
         List of result dicts including _prompt_tokens / _completion_tokens / _total_tokens.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise OSError("GEMINI_API_KEY not set. Check your .env file.")
+    if _USE_CLAUDE:
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise OSError("ANTHROPIC_API_KEY not set. Check your .env file.")
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+    else:
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise OSError("GEMINI_API_KEY not set. Check your .env file.")
+        client = genai.Client(api_key=api_key)
 
-    client        = genai.Client(api_key=api_key)
     system_prompt = load_system_prompt()
 
     # ── Resume from checkpoint ───────────────────────────────────────
@@ -398,13 +393,11 @@ def analyze_batch(
         len(remaining), skipped, checkpoint_key or "none",
     )
 
-    print(f"\nAnalyzing {len(remaining)} transcripts with {MODEL} via Google AI Studio ...")
+    provider_label = "Anthropic (Claude)" if _USE_CLAUDE else "Google AI Studio"
+    print(f"\nAnalyzing {len(remaining)} transcripts with {MODEL} via {provider_label} ...")
     if skipped:
         print(f"  ↩ Resuming checkpoint '{checkpoint_key}' — {skipped} calls already done")
-    print(
-        f"Free tier: 15 RPM · {inter_call_delay}s delay · "
-        f"Est. {len(remaining) * (inter_call_delay + 3) / 60:.1f} min total\n"
-    )
+    print(f"Delay: {inter_call_delay}s · Est. {len(remaining) * (inter_call_delay + 3) / 60:.1f} min total\n")
 
     with tqdm(total=len(remaining), desc="Calls analyzed", unit="call") as pbar:
         for i, transcript in enumerate(remaining):

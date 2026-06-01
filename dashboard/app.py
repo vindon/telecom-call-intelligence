@@ -281,8 +281,8 @@ DEMO_DATA = {
         "total_calls_analyzed": 100,
         "analysis_timestamp": "2025-04-12T09:41:22.000000",
         "dataset": "talkmap/telecom-conversation-corpus",
-        "model": "gemini-2.5-flash-lite",
-        "inference_provider": "Google AI Studio",
+        "model": "claude-haiku-4-5-20251001",
+        "inference_provider": "Anthropic (Claude)",
     },
     "kpis": {
         "total_calls_analyzed": 100,

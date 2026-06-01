@@ -127,7 +127,7 @@ def ingest_node(state: PipelineState) -> PipelineState:
 
 
 def extract_node(state: PipelineState) -> PipelineState:
-    _banner(2, 6, "ExtractionAgent — Gemini 2.5 Flash Lite · Structured JSON")
+    _banner(2, 6, "ExtractionAgent — Claude Haiku · Structured JSON")
     return _extraction_agent.run(state)
 
 

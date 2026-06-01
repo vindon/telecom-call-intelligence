@@ -8,9 +8,10 @@ quality inline, synthesises KPIs, runs a self-reflective deliberation cycle for 
 recommendations, and secures every stage against prompt injection and data leakage.
 
 ```
-HuggingFace Streaming Dataset
-           │
-           ▼
+Local CSV (telecom_200k.csv — primary)   HuggingFace Stream (fallback)
+                          │                          │
+                          └────────────┬─────────────┘
+                                       ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │            LangGraph StateGraph  ·  Multi-Agent Pipeline v3.0       │
 │                                                                     │
@@ -69,15 +70,18 @@ HuggingFace Streaming Dataset
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
 | **Orchestration** | LangGraph `StateGraph` | Explicit state schema; each agent is a pure function; compiled graph is inspectable; `Send` API available for fan-out parallelism |
-| **LLM (Extraction)** | Gemini 2.5 Flash Lite | Native JSON mode; `thinking_budget=0` maximises output token budget for 70-field JSON; 15 RPM free tier |
-| **LLM (Insights)** | Gemini 2.5 Flash Lite | Three deliberation passes at different temperatures; `response_mime_type="application/json"` throughout |
+| **LLM (Extraction)** | Claude Haiku 4.5 (primary) / Gemini 2.0 Flash Lite (fallback) | Set `EXTRACTION_MODEL` in `config.py` to switch — all downstream pricing, provider labels, rate limiters, and API clients resolve automatically |
+| **LLM (Insights) — primary** | NVIDIA NIM `meta/llama-3.3-70b-instruct` | OpenAI-compatible API; reliable JSON via `response_format=json_object`; strong instruction-following for strategic recommendations |
+| **LLM (Insights) — Gemini fallback** | Gemini 2.0 Flash Lite | Activated when NVIDIA NIM unavailable; three deliberation passes; separate quota pool from extraction (1,500 RPD / 30 RPM) |
+| **LLM (Insights) — Anthropic fallback** | Claude Haiku 4.5 | Final fallback if both NVIDIA and Gemini are unavailable |
 | **LLM (Embeddings)** | Gemini `text-embedding-004` | 768-dim embeddings for vector memory; same API key, no extra library |
-| **Dataset** | HuggingFace `talkmap/telecom-conversation-corpus` | 3.73M turns, 200K conversations, MIT-licensed |
-| **Streaming** | `datasets` streaming mode | Never loads the full corpus into memory; bounded RAM regardless of corpus size |
+| **Dataset (primary)** | Local CSV `telecom_200k.csv` | 200K conversations pre-downloaded; zero-latency load; auto-detected by `hf_loader.py` |
+| **Dataset (fallback)** | HuggingFace `talkmap/telecom-conversation-corpus` | 3.73M turns, 200K conversations, MIT-licensed; streaming mode used when local CSV absent |
+| **Streaming** | `datasets` streaming mode (fallback) | Never loads the full corpus into memory; bounded RAM regardless of corpus size |
 | **QA Scoring** | Custom 100-pt model | Completeness(30) + Enum validity(25) + Consistency(25) + Plausibility(20) |
 | **Vector memory** | numpy cosine similarity | Zero extra dependencies; interface-compatible with ChromaDB/Pinecone swap |
 | **Tracing** | LangSmith (optional) | `LANGCHAIN_TRACING_V2=true` activates full node-level trace capture |
-| **Dashboard** | Streamlit + Plotly | Professional light theme; reads `summary.json`; 7 sections including traffic-signal executive action plan |
+| **Dashboard** | Streamlit + Plotly | Professional light theme; reads `summary.json`; narrative structure: hero headline → cost panels → evidence → resolution opportunity → agent roadmap → performance → action plan |
 
 ---
 
@@ -195,14 +199,16 @@ Every agent boundary is protected by the security layer. No LLM call proceeds wi
 ### Security call flow
 
 ```python
-# Every Gemini call in analyzer.py:
+# Every extraction call in analyzer.py (provider-agnostic):
 transcript = INPUT_SANITIZER.sanitize_transcript(transcript)   # before call
-GEMINI_RATE_LIMITER.acquire()                                   # rate check
-response = client.models.generate_content(...)
-SECRET_GUARD.assert_no_secrets_in_output(response.text)        # after call
-OUTPUT_SANITIZER.check_response_size(response.text)            # size check
-result = json.loads(response.text)
+CLAUDE_RATE_LIMITER.acquire()   # or GEMINI_RATE_LIMITER — resolved by _USE_CLAUDE
+# Claude path:  client.messages.create(model=MODEL, ...)
+# Gemini path:  client.models.generate_content(model=MODEL, ...)
+SECRET_GUARD.assert_no_secrets_in_output(response_text)        # after call
+OUTPUT_SANITIZER.check_response_size(response_text)            # size check
+result = _parse_json_text(response_text)                       # strips markdown fences
 result = OUTPUT_SANITIZER.sanitize_extraction_result(result)   # field sanitize
+# token usage injected from response.usage (Claude) or response.usage_metadata (Gemini)
 ```
 
 ---
@@ -334,8 +340,15 @@ cost-lever savings opportunity (at $6.00/call industry benchmark).
 - Pass 2 Critique: `CRITIQUE_PROMPT` grades each recommendation A/B/C
 - Pass 3 Synthesize: `SYNTHESIZE_PROMPT` rewrites weak recommendations
 
+**Provider hierarchy:**
+1. NVIDIA NIM `meta/llama-3.3-70b-instruct` (primary — `NVIDIA_API_KEY` required)
+2. Gemini 2.0 Flash Lite (Gemini fallback — separate quota pool from extraction)
+3. Claude Haiku 4.5 (Anthropic fallback — `ANTHROPIC_API_KEY` required)
+4. Rule-based fallback — derives insights from KPI thresholds, no LLM required
+
 **`source` field in output:**
-- `gemini_llm_deliberated` — all 3 passes succeeded
+- `nvidia_nim_deliberated` — all 3 passes succeeded via NVIDIA NIM
+- `gemini_llm_deliberated` — all 3 passes succeeded via Gemini fallback
 - `gemini_llm` — 1 or 2 passes (degraded but LLM-generated)
 - `rule_based_fallback` — all LLM calls failed; rules derive insights from KPI thresholds
 

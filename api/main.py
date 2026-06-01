@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-from pipeline.analyzer import analyze_transcript, load_system_prompt
+from pipeline.analyzer import _USE_CLAUDE, analyze_transcript, load_system_prompt
 from pipeline.config import (
     EXTRACTION_MODEL,
     MAX_OUTPUT_TOKENS,
@@ -36,13 +36,25 @@ from pipeline.config import (
 )
 from pipeline.security import INPUT_SANITIZER, OUTPUT_SANITIZER
 
-try:
-    from google import genai
-    from google.genai import types
+# Initialise the correct LLM client based on EXTRACTION_MODEL.
+# Changing EXTRACTION_MODEL in config.py automatically switches the API client here.
+_extraction_client = None
+_client_provider   = "unknown"
 
-    _gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
-except Exception:
-    _gemini_client = None  # allow import without credentials (e.g. tests)
+if _USE_CLAUDE:
+    try:
+        import anthropic
+        _extraction_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+        _client_provider   = "Anthropic (Claude)"
+    except Exception:
+        _extraction_client = None
+else:
+    try:
+        from google import genai
+        _extraction_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
+        _client_provider   = "Google AI Studio"
+    except Exception:
+        _extraction_client = None
 
 _system_prompt: str | None = None
 _start_time = time.time()
@@ -107,8 +119,9 @@ class HealthResponse(BaseModel):
     status: str
     uptime_seconds: float
     model: str
+    provider: str
     max_output_tokens: int
-    gemini_client_ready: bool
+    client_ready: bool
     summary_available: bool
 
 
@@ -120,8 +133,9 @@ def health() -> HealthResponse:
         status="ok",
         uptime_seconds=round(time.time() - _start_time, 1),
         model=EXTRACTION_MODEL,
+        provider=_client_provider,
         max_output_tokens=MAX_OUTPUT_TOKENS,
-        gemini_client_ready=_gemini_client is not None,
+        client_ready=_extraction_client is not None,
         summary_available=Path(OUTPUT_DIR / "summary.json").exists(),
     )
 
@@ -146,16 +160,16 @@ def summary() -> JSONResponse:
 
 @app.post("/analyze", response_model=AnalyzeResponse, tags=["Extraction"])
 def analyze(req: AnalyzeRequest, request: Request) -> AnalyzeResponse:
-    if _gemini_client is None:
+    if _extraction_client is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Gemini client unavailable. Check GEMINI_API_KEY.",
+            detail=f"LLM client unavailable. Check {'ANTHROPIC_API_KEY' if _USE_CLAUDE else 'GEMINI_API_KEY'} in your environment.",
         )
 
     t0 = time.monotonic()
     call_id = req.call_id or str(uuid.uuid4())
 
-    transcript_dict: dict = {"call_id": call_id, "transcript": req.transcript}
+    transcript_dict: dict = {"call_id": call_id, "transcript_text": req.transcript}
     for opt in ("agent_id", "customer_id", "call_date", "queue_name", "channel"):
         val = getattr(req, opt)
         if val is not None:
@@ -168,12 +182,12 @@ def analyze(req: AnalyzeRequest, request: Request) -> AnalyzeResponse:
 
     system_prompt = _get_system_prompt()
 
-    result = analyze_transcript(_gemini_client, system_prompt, transcript_dict)
+    result = analyze_transcript(_extraction_client, system_prompt, transcript_dict)
 
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Extraction failed after retries. Check Gemini quota or transcript validity.",
+            detail=f"Extraction failed after retries. Check {_client_provider} quota or transcript validity.",
         )
 
     result = OUTPUT_SANITIZER.sanitize_extraction_result(result)

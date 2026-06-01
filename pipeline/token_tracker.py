@@ -1,32 +1,49 @@
 """
 token_tracker.py
 ----------------
-Token usage accounting and cost estimation for Google AI Studio (Gemini) API calls.
+Token usage accounting and cost estimation.
 
-Pricing source: https://ai.google.dev/pricing
-Model: gemini-2.5-flash-lite
-Last verified: 2026-Q2 — re-check if running at scale.
+Pricing is driven by EXTRACTION_MODEL in pipeline/config.py — change the
+model there and the cost estimates update automatically.
 
-Free tier note:
-  Gemini 2.5 Flash Lite is free up to 500 req/day via Google AI Studio.
-  The pricing below applies to the paid (Google Cloud Vertex AI) tier.
-  At 100 calls/run, cost on the paid tier is ~$0.04 — effectively negligible.
+Provider / pricing map (USD per million tokens, as of 2026-Q2):
+  claude-haiku-*     : $0.80 in / $4.00 out  (Anthropic)
+  gemini-2.5-flash-* : $0.10 in / $0.40 out  (Google AI Studio paid tier; free up to 500 RPD)
+  gemini-2.0-flash-* : $0.10 in / $0.40 out  (Google AI Studio paid tier; free up to 1500 RPD)
+  gemini-*           : $0.10 in / $0.40 out  (generic Gemini fallback pricing)
 
 Usage:
   from pipeline.token_tracker import token_summary
   summary = token_summary(results)   # results = list[dict] from analyze_batch
 """
 
-# ── Pricing (USD per million tokens) ─────────────────────────────────
-# gemini-2.0-flash on Google AI Studio / Vertex AI
-PRICE_INPUT_PER_MTOK  = 0.10
-PRICE_OUTPUT_PER_MTOK = 0.40
-MODEL                 = "gemini-2.5-flash-lite"
-PROVIDER              = "Google AI Studio"
+from pipeline.config import EXTRACTION_MODEL
+
+# ── Provider / pricing resolution ────────────────────────────────────
+
+_PRICING: dict[str, tuple[float, float, str, str]] = {
+    # prefix → (input_per_mtok, output_per_mtok, provider_label, tier_note)
+    "claude-haiku": (0.80, 4.00, "Anthropic (Claude)", "Paid tier pricing — no free tier for Claude Haiku."),
+    "claude":       (0.80, 4.00, "Anthropic (Claude)", "Paid tier pricing."),
+    "gemini-2.5":   (0.10, 0.40, "Google AI Studio",   "Free up to 500 req/day. Paid tier pricing shown."),
+    "gemini-2.0":   (0.10, 0.40, "Google AI Studio",   "Free up to 1500 req/day. Paid tier pricing shown."),
+    "gemini":       (0.10, 0.40, "Google AI Studio",   "Paid tier pricing shown."),
+}
+
+
+def _resolve_pricing(model: str) -> tuple[float, float, str, str]:
+    for prefix, values in _PRICING.items():
+        if model.startswith(prefix):
+            return values
+    return (0.10, 0.40, "Unknown provider", "Pricing unknown — defaulting to Gemini rates.")
+
+
+PRICE_INPUT_PER_MTOK, PRICE_OUTPUT_PER_MTOK, PROVIDER, _TIER_NOTE = _resolve_pricing(EXTRACTION_MODEL)
+MODEL = EXTRACTION_MODEL
 
 
 def cost_usd(prompt_tokens: int, completion_tokens: int) -> float:
-    """Compute USD cost for a single API call (paid tier pricing)."""
+    """Compute USD cost for a single API call using the configured model's pricing."""
     return (
         prompt_tokens     / 1_000_000 * PRICE_INPUT_PER_MTOK  +
         completion_tokens / 1_000_000 * PRICE_OUTPUT_PER_MTOK
@@ -67,15 +84,14 @@ def token_summary(results: list[dict]) -> dict:
         "avg_prompt_tokens_per_call":     round(total_prompt     / calls_with_usage, 0) if calls_with_usage else 0,
         "avg_completion_tokens_per_call": round(total_completion / calls_with_usage, 0) if calls_with_usage else 0,
         "avg_total_tokens_per_call":      round(total_tokens     / calls_with_usage, 0) if calls_with_usage else 0,
-        # ── Cost (paid tier) ─────────────────────────────────────────
+        # ── Cost ────────────────────────────────────────────────────
         "total_cost_usd":                 round(total_cost, 4),
         "avg_cost_per_call_usd":          round(total_cost / calls_with_usage, 6) if calls_with_usage else 0,
         # ── Pricing metadata ─────────────────────────────────────────
         "price_input_per_mtok_usd":       PRICE_INPUT_PER_MTOK,
         "price_output_per_mtok_usd":      PRICE_OUTPUT_PER_MTOK,
-        "free_tier_note":                 "Free up to 500 req/day via Google AI Studio. Paid tier pricing shown above.",
         "pricing_note": (
-            f"Gemini 2.5 Flash Lite paid tier pricing as of 2026-Q2. "
+            f"{MODEL} · {_TIER_NOTE} "
             f"At 100K calls/mo avg {round(total_tokens / calls_with_usage if calls_with_usage else 0):,} tokens/call, "
             f"monthly inference cost ≈ ${round(total_cost / max(calls_with_usage, 1) * 100_000, 2):,.2f} USD."
         ),

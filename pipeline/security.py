@@ -57,8 +57,9 @@ _INJECTION_PATTERNS: list[re.Pattern] = [
 # Secrets: API keys and credentials that must never appear in state or outputs
 _SECRET_PATTERNS: list[re.Pattern] = [
     re.compile(r"AIza[0-9A-Za-z\-_]{35}"),                        # Google / Gemini key
+    re.compile(r"sk-ant-[A-Za-z0-9\-_]{20,}"),                    # Anthropic key
     re.compile(r"sk-[A-Za-z0-9]{20,}"),                           # OpenAI key
-    re.compile(r"(?:GEMINI|GOOGLE|OPENAI)_API_KEY\s*[=:]\s*\S+", re.IGNORECASE),
+    re.compile(r"(?:GEMINI|GOOGLE|OPENAI|ANTHROPIC|NVIDIA)_API_KEY\s*[=:]\s*\S+", re.IGNORECASE),
     re.compile(r"[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{27,}"),  # JWT
     re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", re.IGNORECASE),
     re.compile(r"(?:password|passwd|pwd)\s*[=:]\s*\S+", re.IGNORECASE),
@@ -352,3 +353,6 @@ SECRET_GUARD        = SecretGuard()
 # 15 calls / 60 s matches the Gemini free-tier RPM limit.
 # Raise max_calls to match your paid-tier quota.
 GEMINI_RATE_LIMITER = RateLimiter(max_calls=15, window_s=60.0)
+
+# Claude Haiku has a much higher rate limit; 50/min is a conservative safe cap.
+CLAUDE_RATE_LIMITER = RateLimiter(max_calls=50, window_s=60.0)
