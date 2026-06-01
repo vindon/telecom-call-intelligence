@@ -55,7 +55,13 @@ HF_DATASET      = "talkmap/telecom-conversation-corpus"
 LOCAL_CSV_PATH  = Path("telecom_200k.csv")   # auto-detected; falls back to HF if absent
 
 # ── Governance ─────────────────────────────────────────────────────────
-BUDGET_USD    = 5.00   # hard-stop per run
+# Budget hard-stop per run.
+# Claude Haiku pricing ($0.80 in / $4.00 out per MTok):
+#   ~2 000 prompt + ~1 500 output tokens per call → ≈$0.0076/call
+#   $5.00 ≈ 650 calls.  Raise to $25.00 for production 1 000-call batches.
+# Gemini 2.0/2.5 Flash Lite ($0.10 in / $0.40 out per MTok):
+#   same token volumes → ≈$0.0008/call.  $5.00 ≈ 6 000 calls.
+BUDGET_USD    = 5.00   # hard-stop per run — adjust per model and batch size
 MIN_PASS_RATE = 0.40   # catastrophic quality gate threshold (40%)
 
 # ── Data validation ────────────────────────────────────────────────────

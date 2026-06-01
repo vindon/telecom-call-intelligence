@@ -36,14 +36,46 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load .env before importing any pipeline module (they read GEMINI_API_KEY at call time)
+# Load .env before importing any pipeline module (they read API keys at call time)
 load_dotenv()
 
-if not os.environ.get("GEMINI_API_KEY"):
-    print("ERROR: GEMINI_API_KEY not set.")
-    print("  Copy .env.example to .env and add your Google AI Studio key.")
-    print("  Free key at: https://aistudio.google.com")
-    sys.exit(1)
+# ── Startup API key validation ─────────────────────────────────────────
+# Fail fast with a clear message rather than discovering a missing key
+# 30-60 seconds into a run when the first LLM call fires.
+# Validation is model-aware: EXTRACTION_MODEL drives which key is required.
+from pipeline.config import BUDGET_USD, EXTRACTION_MODEL  # noqa: E402
+
+def _validate_api_keys() -> None:
+    """Check that the required API keys are present for the configured models."""
+    errors: list[str] = []
+
+    if EXTRACTION_MODEL.startswith("claude"):
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            errors.append(
+                f"ANTHROPIC_API_KEY not set — required for EXTRACTION_MODEL='{EXTRACTION_MODEL}'.\n"
+                "  Add ANTHROPIC_API_KEY=sk-ant-... to your .env file.\n"
+                "  Get a key at: https://console.anthropic.com"
+            )
+    else:
+        if not os.environ.get("GEMINI_API_KEY"):
+            errors.append(
+                f"GEMINI_API_KEY not set — required for EXTRACTION_MODEL='{EXTRACTION_MODEL}'.\n"
+                "  Add GEMINI_API_KEY=AIza... to your .env file.\n"
+                "  Free key at: https://aistudio.google.com"
+            )
+
+    # NVIDIA key is optional (InsightsAgent falls back to Claude → rule-based)
+    # but warn if absent so the user knows which insights tier they'll get.
+    if not os.environ.get("NVIDIA_API_KEY"):
+        print("  INFO: NVIDIA_API_KEY not set — InsightsAgent will use Claude fallback.")
+
+    if errors:
+        print("\nERROR: Missing required API key(s):\n")
+        for err in errors:
+            print(f"  {err}\n")
+        sys.exit(1)
+
+_validate_api_keys()
 
 from pipeline.graph import build_pipeline  # noqa: E402
 
@@ -74,13 +106,16 @@ def main() -> dict:
     # Auto-generate a checkpoint key that encodes all sampling parameters
     checkpoint_key = f"offset{args.offset}_n{args.n}_seed{args.seed}"
 
+    from pipeline.token_tracker import PROVIDER as _PROVIDER
+    _est_cost_100 = BUDGET_USD  # show budget cap, not a guess
     print("\n" + "█" * 60)
     print("  TELECOM CALL INTELLIGENCE — Multi-Agent Pipeline")
     print("█" * 60)
     print("  Agents     : DataIngestion → Extraction → Quality →")
     print("               Aggregation  → Insights   → Export")
     print("  Dataset    : talkmap/telecom-conversation-corpus")
-    print("  Model      : gemini-2.5-flash-lite (Google AI Studio)")
+    print(f"  Model      : {EXTRACTION_MODEL}  ({_PROVIDER})")
+    print(f"  Budget cap : ${BUDGET_USD:.2f} / run  (set BUDGET_USD in config.py)")
     print(f"  Calls      : {args.n}")
     print(f"  Seed       : {args.seed}")
     print(f"  Offset     : {args.offset}")

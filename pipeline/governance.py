@@ -24,6 +24,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from pipeline.config import BUDGET_USD, MIN_PASS_RATE
 from pipeline.logger import get_logger
 
 log = get_logger(__name__)
@@ -37,8 +38,10 @@ class BudgetGuard:
     """
     Raises BudgetExceededError if cumulative inference cost exceeds max_cost_usd.
 
-    Default: $5.00 per run — prevents runaway costs during development.
-    At Gemini 2.5 Flash Lite pricing, this allows ~100,000 calls.
+    Limit is driven by BUDGET_USD in pipeline/config.py — change it there and
+    every run automatically inherits the new cap. Cost estimate uses the
+    model-aware pricing from token_tracker.cost_usd(), so switching EXTRACTION_MODEL
+    from Gemini to Claude (or back) gives accurate guard enforcement automatically.
     """
 
     class BudgetExceededError(RuntimeError):
@@ -319,8 +322,9 @@ class AuditLog:
 
 
 # ── Module-level singletons ───────────────────────────────────────────
+# Both limits read from pipeline/config.py — change them there, not here.
 
-BUDGET_GUARD  = BudgetGuard(max_cost_usd=5.00)
-QUALITY_GATE  = QualityGate(min_pass_rate=0.40)
+BUDGET_GUARD  = BudgetGuard(max_cost_usd=BUDGET_USD)
+QUALITY_GATE  = QualityGate(min_pass_rate=MIN_PASS_RATE)
 PII_SCANNER   = PIIScanner()
 AUDIT_LOG     = AuditLog()
