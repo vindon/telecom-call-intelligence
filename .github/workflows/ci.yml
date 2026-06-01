@@ -17,7 +17,9 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'ci-dummy-key-for-import-check' }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'ci-dummy-key-for-import-check' }}
+      NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY || 'ci-dummy-key-for-import-check' }}
 
     steps:
       - name: Checkout
@@ -61,6 +63,7 @@ jobs:
             pipeline/orchestrator.py \
             pipeline/security.py \
             pipeline/vector_memory.py \
+            pipeline/decision_log.py \
             pipeline/graph.py \
             pipeline/agents/__init__.py \
             pipeline/agents/data_agent.py \

@@ -11,14 +11,14 @@ git clone https://github.com/vindon/telecom-call-intelligence.git
 cd telecom-call-intelligence
 python -m venv .venv && source .venv/bin/activate
 make install-dev          # installs prod + dev deps and pre-commit hooks
-cp .env.example .env      # add your GEMINI_API_KEY (Google AI Studio free key)
+cp .env.example .env      # add ANTHROPIC_API_KEY (required) + optional NVIDIA_API_KEY
 ```
 
 Verify setup:
 
 ```bash
-make test          # 149 unit tests — should all pass in < 2 seconds
-make run           # 3-call smoke test (requires GEMINI_API_KEY in .env)
+make test          # 224 unit tests — should all pass in < 7 seconds
+make run           # 3-call smoke test (requires ANTHROPIC_API_KEY in .env)
 ```
 
 ---
@@ -86,11 +86,12 @@ If you want to propose a significant change, open an issue first to discuss the 
 See `CLAUDE.md` for the full checklist. In brief:
 
 1. `pipeline/agents/your_agent.py` — stateless class, `run(state: dict) -> dict`
-2. Export from `pipeline/agents/__init__.py`
-3. Wire the node and edges in `pipeline/graph.py`; update `PipelineState`
-4. Register any tools in `pipeline/tools.py`
-5. Write tests in `tests/`
-6. Update `ARCHITECTURE.md` and `CHANGELOG.md`
+2. Instrument with `DecisionLogger` (see `CLAUDE.md`) — mandatory for all agents
+3. Export from `pipeline/agents/__init__.py`
+4. Wire the node and edges in `pipeline/graph.py`; update `PipelineState`
+5. Register any tools in `pipeline/tools.py`
+6. Write tests in `tests/` including `DecisionLogger` assertions
+7. Update `ARCHITECTURE.md` and `CHANGELOG.md`
 
 ---
 

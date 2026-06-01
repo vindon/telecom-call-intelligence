@@ -6,6 +6,56 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.0.0] — 2026-06-01
+
+### Added — Agent Decision Traceability
+
+- **`pipeline/decision_log.py`** — new module: `DecisionRecord` dataclass (record_id, agent, decision_type, timestamp, decision, reason, evidence, call_id, confidence, alternatives); `DecisionLogger` (scoped to one agent invocation, accumulates across pipeline via `finalize()`); `summarize_decisions()` for dashboard embedding
+- **`PipelineState.decision_log`** — new `list` field accumulating `DecisionRecord` dicts across all 7 agents
+- **Decision logging in every agent:**
+  - `DataIngestionAgent`: `transcript_skip` (every rejected transcript with exact reason) + `pii_redaction`
+  - `ExtractionAgent`: `react_trigger` (per-call, when coverage < threshold) + `react_gap_fill_outcome` (batch summary)
+  - `QualityAgent`: `qa_exclusion` (every LOW exclusion) + `qa_grade_assignment` (borderline MEDIUM 60–65) + `quality_gate_outcome`
+  - `AggregationAgent`: `aggregation_scope` + `cost_model_applied`
+  - `InsightsAgent`: `provider_selected` (with full fallback chain reasoning) + `deliberation_outcome`
+  - `ApprovalGate`: `approval_decision` (approved / rejected / auto-approved)
+  - `GraphRouter`: `routing_decision` (normal vs emergency export path)
+- **`ExportAgent`**: writes `decisions_{ts}.json` (total count, summary by agent/type, full records array); embeds `decision_summary` in `summary.json`; adds `decisions` path to `export_paths` and `run_manifest`
+- **`tests/test_decision_log.py`** — 24 new tests (DecisionRecord fields and serialisation, DecisionLogger accumulation and idempotency, summarize_decisions coverage)
+
+### Added — Plug-and-Play Model Architecture
+
+- **`EXTRACTION_MODEL`-driven everything** — changing `pipeline/config.py → EXTRACTION_MODEL` now automatically propagates to: API client selection (Anthropic vs Gemini), rate limiter (`CLAUDE_RATE_LIMITER` vs `GEMINI_RATE_LIMITER`), cost accounting (`token_tracker._resolve_pricing()`), provider label in aggregator output, budget guard enforcement, and API key startup validation
+- **`pipeline/token_tracker.py`** — rewritten with `_PRICING` dict keyed by model prefix; `_resolve_pricing(model)` resolves provider, input/output prices, and tier note; `PRICE_INPUT_PER_MTOK`, `PRICE_OUTPUT_PER_MTOK`, `PROVIDER` exported as module-level constants
+- **`pipeline/aggregator.py`** — `inference_provider` and `model` fields derived from `EXTRACTION_MODEL`, not hardcoded
+- **`api/main.py`** — extraction client selection now provider-aware; `HealthResponse` reflects actual provider; error messages name the correct API key
+- **`pipeline/agents/extraction_agent.py` `_react_loop`** — client creation is now provider-aware (was hardcoded Gemini, caused `AttributeError` when Claude was configured)
+
+### Added — Startup & Budget Safety
+
+- **Model-aware startup key validation** (`run_pipeline.py`) — replaces hardcoded `GEMINI_API_KEY` check; validates `ANTHROPIC_API_KEY` when `EXTRACTION_MODEL` starts with `claude`, `GEMINI_API_KEY` otherwise; `NVIDIA_API_KEY` absence prints INFO warning (optional, graceful fallback); exits immediately with a clear message rather than failing 30–60s into the run
+- **`BudgetGuard` wired to config** (`pipeline/governance.py`) — singleton now reads `max_cost_usd` from `BUDGET_USD` in `config.py` (was hardcoded `5.00` — changing config had no effect); `QualityGate` similarly reads `MIN_PASS_RATE`
+- **`config.py BUDGET_USD` commentary** — added provider-specific cost guidance: Claude Haiku ~$0.0076/call → $5.00 ≈ 650 calls; Gemini ~$0.0008/call → $5.00 ≈ 6 000 calls
+- **Startup banner** (`run_pipeline.py`) — now shows actual `EXTRACTION_MODEL` + provider from `token_tracker.PROVIDER` and `BUDGET_USD`; was hardcoded `"gemini-2.5-flash-lite (Google AI Studio)"`
+
+### Fixed
+
+- **Budget estimation used Gemini pricing for Claude** (`extraction_agent.py`) — `est_cost = total_tokens / 1_000_000 * 0.10` hardcoded Gemini rate; with Claude Haiku ($4.00/MTok output) this underestimated cost by ~40×; `BudgetGuard` would not have tripped on real overruns. Fixed: now uses `token_tracker.cost_usd(prompt_tokens, completion_tokens)` which resolves pricing from `EXTRACTION_MODEL`
+- **`_react_quota_exhausted` circuit breaker tripped on Claude 429** (`analyzer.py`) — the flag was designed for Gemini daily quota exhaustion (permanent for the day) but also triggered on Claude's transient per-minute 429s, permanently disabling gap-fill for the entire run. Fixed: circuit breaker only trips for Gemini; Claude 429 logs a warning and skips the individual call
+- **`api/main.py` endpoint broken with Claude** — two critical bugs: (1) `"transcript"` key instead of `"transcript_text"` caused `KeyError` in `_build_user_message()`; (2) hardcoded Gemini client creation even when `_USE_CLAUDE=True` caused `AttributeError`. Both fixed
+- **Anthropic key not in `SecretGuard`** — `sk-ant-*` key pattern was absent from `_SECRET_PATTERNS`; Anthropic API keys would not be detected or redacted by security layer. Fixed: added `re.compile(r"sk-ant-[A-Za-z0-9\-_]{20,}")`
+- **NVIDIA not in secret env-var pattern** — `NVIDIA_API_KEY=...` would not be caught by `SecretGuard` env-var pattern. Fixed: added `NVIDIA` to `(?:GEMINI|GOOGLE|OPENAI|ANTHROPIC|NVIDIA)_API_KEY`
+
+### Changed
+
+- **`PipelineState`** — new field `decision_log: list`
+- **`run_pipeline.py` initial state** — seeds `decision_log: []`, `react_stats: {}`, `approval_granted: False`
+- **`ExportAgent` console output** — prints `✓ Decisions : {path}  ({n} records)` line
+- **`tests/test_graph.py`** — `test_state_has_all_required_keys` updated to include `decision_log`
+- **Test count** — 200 → 224 (24 new decision traceability tests)
+
+---
+
 ## [3.0.1] — 2026-05-26
 
 ### Fixed

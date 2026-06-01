@@ -8,11 +8,11 @@ This file tells Claude Code how to work in this repository. Read it before makin
 
 **Telecom Call Intelligence** is a production-grade, multi-agent AI pipeline that:
 1. Streams real telecom call transcripts from HuggingFace (`talkmap/telecom-conversation-corpus`)
-2. Extracts 70+ structured fields per call using **Gemini 2.5 Flash Lite** (Google AI Studio)
+2. Extracts 70+ structured fields per call using **Claude Haiku 4.5** (Anthropic)
 3. Scores extraction quality inline with a 100-point QA model
 4. Aggregates KPIs (FCR, AHT, avoidable call rate, AI resolvability)
-5. Synthesises strategic recommendations via a second Gemini LLM call (InsightsAgent)
-6. Exports CSVs, JSON reports, and an audit trail; serves a Streamlit dashboard
+5. Synthesises strategic recommendations via **NVIDIA NIM** (Llama 3.3 70B) with Claude fallback
+6. Exports CSVs, JSON reports, decision trace, and an audit trail; serves a Streamlit dashboard
 
 **License:** Proprietary — Copyright © 2026 Vinoth N. All rights reserved.
 **Repo:** Private GitHub repository. Do not share code, outputs, or API keys externally.
@@ -27,20 +27,21 @@ run_batches.py → Orchestrator → 5× subprocess → run_pipeline.py
                                               LangGraph StateGraph
                                                        │
                                    DataIngestionAgent  (1)
-                                   ExtractionAgent     (2)  ← Gemini extraction
+                                   ExtractionAgent     (2)  ← Claude Haiku extraction
                                    QualityAgent        (3)  ← 100-pt QA scoring
                                    AggregationAgent    (4)  ← KPI computation
-                                   InsightsAgent       (5)  ← Gemini recommendations
-                                   ExportAgent         (6)  ← CSV/JSON/audit
+                                   InsightsAgent       (5)  ← NVIDIA NIM / Claude recommendations
+                                   ExportAgent         (6)  ← CSV/JSON/decisions/audit
 ```
 
 Key files:
-- `pipeline/config.py` — **single source of truth** for all constants
-- `pipeline/graph.py` — LangGraph 6-node pipeline with conditional routing
+- `pipeline/config.py` — **single source of truth** for all constants (models, budget, thresholds)
+- `pipeline/graph.py` — LangGraph 7-node pipeline with conditional routing and approval gate
+- `pipeline/decision_log.py` — `DecisionRecord`, `DecisionLogger`, `summarize_decisions()`
 - `pipeline/orchestrator.py` — batch work planning, health monitoring, retry
-- `pipeline/governance.py` — BudgetGuard, QualityGate, PIIScanner, AuditLog
+- `pipeline/governance.py` — BudgetGuard (reads `BUDGET_USD`), QualityGate, PIIScanner, AuditLog
 - `pipeline/security.py` — InputSanitizer, OutputSanitizer, AgentScopeGuard, SecretGuard, RateLimiter
-- `pipeline/token_tracker.py` — Gemini token accounting and cost estimation
+- `pipeline/token_tracker.py` — model-aware token accounting; `cost_usd(prompt, completion)` dispatches by `EXTRACTION_MODEL`
 - `pipeline/memory.py` — persistent cross-run agent memory (`outputs/agent_memory.json`)
 - `pipeline/tools.py` — formal JSON-schema tool registry (5 tools)
 - `pipeline/agents/` — one file per agent
@@ -51,7 +52,7 @@ Key files:
 
 ```bash
 make install-dev    # install all deps (prod + dev)
-make test           # run 198-test suite
+make test           # run 224-test suite
 make test-fast      # skip @slow and @integration tests
 make lint           # ruff linter
 make check          # lint + type-check + test (full gate)
@@ -79,50 +80,80 @@ make dashboard      # Streamlit dashboard on localhost:8501
 ## Critical Rules
 
 ### Security — never violate these
-- **Never commit `.env`** — it contains `GEMINI_API_KEY`. The `.gitignore` already excludes it.
+- **Never commit `.env`** — it contains `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `NVIDIA_API_KEY`. The `.gitignore` already excludes it.
 - **Never print or log API keys**, even truncated.
 - **Never push to a public remote** — repo is private.
 
 ### Code conventions
 - All pipeline constants live in `pipeline/config.py`. Don't add new constants to individual modules.
-- Agents are **stateless**: `run(state: dict) -> dict`. No instance state between calls.
+- Agents are **stateless**: `run(state: dict) -> dict`. No persistent instance state between calls.
 - State handoff is **immutable**: always `return {**state, "new_key": new_value}`.
+- Every agent **must** use `DecisionLogger` and return `"decision_log": dl.finalize()`. This is the traceability contract.
 - Tests live in `tests/`. New modules get new test files. Mark tests that make API calls with `@pytest.mark.slow`.
 - No AI-generated comments explaining what the code does. Comments explain WHY (a non-obvious constraint, invariant, or workaround).
 
 ### Model and API
-- Current model: `gemini-2.5-flash-lite` (defined in `pipeline/config.py` as `EXTRACTION_MODEL` and `INSIGHTS_MODEL`)
-- `thinking_budget=0` — **must not be removed**. Without it, thinking tokens consume the token budget and JSON output is truncated.
+- **Primary extraction model**: `claude-haiku-4-5-20251001` — set as `EXTRACTION_MODEL` in `pipeline/config.py`
+- **Primary insights model**: `meta/llama-3.3-70b-instruct` via NVIDIA NIM (OpenAI-compatible endpoint) — set as `INSIGHTS_MODEL`
+- **Fallback chain**: NVIDIA NIM → Claude Haiku → rule-based (InsightsAgent auto-selects based on key availability)
+- `EXTRACTION_MODEL` is the single switch that controls which client, rate limiter, pricing, and key validation fire. Change only in `config.py`.
+- Claude: 50 RPM rate limit (`CLAUDE_RATE_LIMITER`). Gemini: 15 RPM (`GEMINI_RATE_LIMITER`).
+- `thinking_budget=0` on Gemini calls — **must not be removed**. Without it, thinking tokens truncate JSON output.
 - `max_output_tokens=8192` — sized to fit the 70-field extraction JSON; do not reduce.
-- Free tier: `gemini-2.5-flash-lite` = **500 RPD / 15 RPM** (Google AI Studio; last verified 2026-Q2). For larger runs switch to `gemini-2.0-flash-lite` (1 500 RPD / 30 RPM) by updating `EXTRACTION_MODEL` and `INSIGHTS_MODEL` in `pipeline/config.py`. Daily quota resets at midnight Pacific.
+
+### Decision traceability — required for every agent
+Every agent must instrument decisions with `DecisionLogger`:
+
+```python
+from pipeline.decision_log import DecisionLogger
+
+def run(self, state: dict) -> dict:
+    dl = DecisionLogger(self.name, state)
+    dl.log(
+        decision_type="my_decision_type",
+        decision="what was decided",
+        reason="why — max 500 chars",
+        evidence={"score": 87, "threshold": 60},   # no PII, no transcript text
+        call_id="optional",
+        confidence=0.9,
+        alternatives=["option_b"],
+    )
+    return {**state, "decision_log": dl.finalize()}
+```
+
+Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `react_gap_fill_outcome`, `qa_exclusion`, `qa_grade_assignment`, `quality_gate_outcome`, `aggregation_scope`, `cost_model_applied`, `provider_selected`, `deliberation_outcome`, `routing_decision`, `approval_decision`.
 
 ### Adding new agents
 1. Create `pipeline/agents/your_agent.py` with a stateless class + `run(state: dict) -> dict`
-2. Export from `pipeline/agents/__init__.py`
-3. Add a singleton in `pipeline/graph.py` and wire the node
-4. Add tests in `tests/test_agents/test_your_agent.py`
-5. Register any tools in `pipeline/tools.py`
-6. Update `PipelineState` TypedDict with any new state keys
-7. Update `ARCHITECTURE.md`
+2. Instrument with `DecisionLogger` (see above) — not optional
+3. Export from `pipeline/agents/__init__.py`
+4. Add a singleton in `pipeline/graph.py` and wire the node
+5. Add tests in `tests/test_agents/test_your_agent.py`
+6. Register any tools in `pipeline/tools.py`
+7. Update `PipelineState` TypedDict with any new state keys
+8. Update `ARCHITECTURE.md` and `CHANGELOG.md`
 
 ---
 
 ## What NOT to do
 
 - Don't add a `requirements.txt` entry for `google-generativeai` — it's deprecated. Use `google-genai`.
-- Don't import directly from `pipeline.analyzer` for the model name — import from `pipeline.config`.
+- Don't import model names from `pipeline.analyzer` — import from `pipeline.config`.
 - Don't hardcode `"outputs"` as a string path — use `pipeline.config.OUTPUT_DIR`.
 - Don't skip `thinking_budget=0` in Gemini calls.
-- Don't add mock tests for things that should hit the real governance logic — `BudgetGuard`, `QualityGate`, `PIIScanner`, and `AuditLog` are all fast, pure Python and should be tested directly.
+- Don't add mock tests for things that should hit the real governance logic — `BudgetGuard`, `QualityGate`, `PIIScanner`, and `AuditLog` are all fast, pure Python and must be tested directly.
 - Don't commit `outputs/*.json`, `outputs/*.csv`, or checkpoint files — `.gitignore` excludes them except `summary.json`.
+- Don't hardcode cost rates in agent code — use `token_tracker.cost_usd(prompt_tokens, completion_tokens)`.
+- Don't store transcript text or customer PII in `evidence` dicts in `DecisionLogger`.
+- Don't write agent code that reads `GEMINI_API_KEY` when `EXTRACTION_MODEL` starts with `claude` — the startup validator enforces model-aware key checks.
 
 ---
 
 ## Running Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -v          # all 198 tests
-.venv/bin/python -m pytest tests/ -m "not slow"  # skip API tests
+.venv/bin/python -m pytest tests/ -v              # all 224 tests
+.venv/bin/python -m pytest tests/ -m "not slow"   # skip API tests
 ```
 
-Expected: **198 passed** in < 2 seconds. If a test fails, check whether config.py constants changed or a governance threshold was adjusted.
+Expected: **224 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
