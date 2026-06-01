@@ -24,6 +24,7 @@ Outputs injected into PipelineState:
 
 import time
 
+from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, QUALITY_GATE
 from pipeline.logger import get_logger
 from qa_audit import audit_record, build_report
@@ -54,18 +55,42 @@ class QualityAgent:
 
         log.info("[%s] Scoring %d extraction results", self.name, len(results))
 
+        dl = DecisionLogger(self.name, state)
+
         # Attach per-call QA score into the result dict itself
         scored_results: list[dict] = []
         for r in results:
             audit = audit_record(r)
+            grade = audit["grade"]
+            score = audit["total_score"]
             enriched = {
                 **r,
-                "_qa_score":      audit["total_score"],
-                "_qa_grade":      audit["grade"],
+                "_qa_score":      score,
+                "_qa_grade":      grade,
                 "_qa_n_issues":   audit["total_issues"],
                 "_qa_dimensions": audit["dimension_scores"],
             }
             scored_results.append(enriched)
+
+            # Log LOW grades and borderline MEDIUM (60-65) decisions
+            if grade == "LOW":
+                dl.log(
+                    decision_type="qa_exclusion",
+                    decision=f"Excluded {r.get('call_id', '?')}: grade=LOW score={score}",
+                    reason=f"QA score {score}/100 < PASS_THRESHOLD={PASS_THRESHOLD}; record excluded from aggregation to protect KPI accuracy",
+                    evidence={"call_id": str(r.get("call_id", "?"))[:16], "qa_score": score, "threshold": PASS_THRESHOLD, "issues": audit["total_issues"]},
+                    call_id=str(r.get("call_id", "?"))[:16], confidence="high",
+                    alternatives=["Include with low-confidence flag (rejected: would skew KPIs)"],
+                )
+            elif grade == "MEDIUM" and score <= 65:
+                dl.log(
+                    decision_type="qa_grade_assignment",
+                    decision=f"Borderline MEDIUM for {r.get('call_id', '?')}: score={score}",
+                    reason=f"Score {score} is in borderline range 60-65; accepted as MEDIUM but flagged — {audit['total_issues']} issue(s) detected",
+                    evidence={"call_id": str(r.get("call_id", "?"))[:16], "qa_score": score, "issues": audit["total_issues"]},
+                    call_id=str(r.get("call_id", "?"))[:16], confidence="medium",
+                    alternatives=["Exclude as LOW (rejected: score above threshold)", "Re-extract (rejected: cost vs marginal gain)"],
+                )
 
         # Build dataset-level report (uses qa_audit.build_report internals)
         report = build_report(results, source_file="inline_pipeline", pass_threshold=PASS_THRESHOLD)
@@ -107,6 +132,13 @@ class QualityAgent:
                     "verdict":       verdict,
                 },
             )
+            dl.log(
+                decision_type="quality_gate_outcome",
+                decision=f"Quality gate PASSED: verdict={verdict}, avg={summary.get('avg_score', 0)}",
+                reason=f"pass_rate={summary.get('pass_rate_pct', 0)}% meets QualityGate threshold; pipeline continues to aggregation",
+                evidence={"verdict": verdict, "avg_score": summary.get("avg_score", 0), "pass_rate_pct": summary.get("pass_rate_pct", 0), "n_low": low_count},
+                confidence="high",
+            )
         except QUALITY_GATE.QualityGateError as exc:
             gate_passed = False
             AUDIT_LOG.record_governance(
@@ -115,6 +147,14 @@ class QualityAgent:
             )
             AUDIT_LOG.record_error(self.name, str(exc))
             log.error("[%s] Quality gate FAILED: %s", self.name, exc)
+            dl.log(
+                decision_type="quality_gate_outcome",
+                decision=f"Quality gate FAILED: {str(exc)[:120]}",
+                reason=f"pass_rate={summary.get('pass_rate_pct', 0)}% fell below QualityGate minimum; routing to emergency export to prevent bad KPIs",
+                evidence={"verdict": verdict, "avg_score": summary.get("avg_score", 0), "pass_rate_pct": summary.get("pass_rate_pct", 0), "error": str(exc)[:120]},
+                confidence="high",
+                alternatives=["Continue to aggregation with warning (rejected: would produce misleading KPIs)"],
+            )
             # Don't raise — set a flag so graph can route to emergency export
             report["_quality_gate_failed"] = True
 
@@ -135,4 +175,5 @@ class QualityAgent:
             "analysis_results":  scored_results,
             "qa_report":         report,
             "qa_passed_results": passed,
+            "decision_log":      dl.finalize(),
         }

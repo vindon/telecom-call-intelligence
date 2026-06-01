@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from pipeline.decision_log import summarize_decisions
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
@@ -42,11 +43,12 @@ class ExportAgent:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         AUDIT_LOG.record_agent_start(self.name, {"ts": ts})
 
-        results   = state["analysis_results"]
-        metrics   = dict(state["aggregated_metrics"])
-        qa_report = state.get("qa_report", {})
-        insights  = state.get("agent_insights", {})
-        usage     = state.get("token_usage", {})
+        results      = state["analysis_results"]
+        metrics      = dict(state["aggregated_metrics"])
+        qa_report    = state.get("qa_report", {})
+        insights     = state.get("agent_insights", {})
+        usage        = state.get("token_usage", {})
+        decision_log = state.get("decision_log", [])
 
         # 1 ── Per-call CSV
         df       = pd.DataFrame(results)
@@ -55,9 +57,10 @@ class ExportAgent:
         log.info("[%s] CSV: %d rows → %s", self.name, len(results), csv_path)
 
         # 2 ── Summary JSON (dashboard source of truth)
-        metrics["token_usage"]    = usage
-        metrics["qa_summary"]     = qa_report.get("summary", {})
-        metrics["agent_insights"] = insights
+        metrics["token_usage"]       = usage
+        metrics["qa_summary"]        = qa_report.get("summary", {})
+        metrics["agent_insights"]    = insights
+        metrics["decision_summary"]  = summarize_decisions(decision_log)
         summary_path = OUTPUT_DIR / "summary.json"
         with open(summary_path, "w", encoding="utf-8") as fh:
             json.dump(metrics, fh, indent=2)
@@ -77,6 +80,20 @@ class ExportAgent:
         insights_path = OUTPUT_DIR / f"insights_{ts}.json"
         with open(insights_path, "w", encoding="utf-8") as fh:
             json.dump(insights, fh, indent=2)
+
+        # 5b ── Decision log JSON (agent reasoning audit trail)
+        decisions_path = OUTPUT_DIR / f"decisions_{ts}.json"
+        with open(decisions_path, "w", encoding="utf-8") as fh:
+            json.dump(
+                {
+                    "run_timestamp":    ts,
+                    "total_decisions":  len(decision_log),
+                    "summary":          summarize_decisions(decision_log),
+                    "records":          decision_log,
+                },
+                fh, indent=2,
+            )
+        log.info("[%s] Decision log: %d records → %s", self.name, len(decision_log), decisions_path)
 
         # 6 ── Run manifest
         manifest = {
@@ -104,12 +121,14 @@ class ExportAgent:
             "failed_call_ids":    state.get("failed_call_ids", []),
             "token_usage":        usage,
             "insights_source":    insights.get("source", "none"),
+            "decision_log_count": len(decision_log),
             "output_files": {
-                "csv":          str(csv_path),
-                "summary_json": str(summary_path),
-                "full_json":    str(full_path),
-                "qa_report":    str(qa_path),
-                "insights":     str(insights_path),
+                "csv":           str(csv_path),
+                "summary_json":  str(summary_path),
+                "full_json":     str(full_path),
+                "qa_report":     str(qa_path),
+                "insights":      str(insights_path),
+                "decisions":     str(decisions_path),
             },
         }
         manifest_path = OUTPUT_DIR / f"run_manifest_{ts}.json"
@@ -125,6 +144,7 @@ class ExportAgent:
             "full_results": str(full_path),
             "qa_report":    str(qa_path),
             "insights":     str(insights_path),
+            "decisions":    str(decisions_path),
             "manifest":     str(manifest_path),
             "audit_log":    str(audit_path),
         }

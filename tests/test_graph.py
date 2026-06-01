@@ -23,6 +23,8 @@ class TestPipelineState:
             "agent_insights", "export_paths",
             # Telemetry
             "validation_errors", "failed_call_ids", "token_usage",
+            # Traceability
+            "decision_log",
         }
         annotations = PipelineState.__annotations__
         missing = required - set(annotations.keys())

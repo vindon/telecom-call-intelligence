@@ -15,6 +15,7 @@ Outputs injected into PipelineState:
   validation_errors     — list of rejection reasons
 """
 
+from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, PII_SCANNER
 from pipeline.hf_loader import load_telecom_transcripts
 from pipeline.logger import get_logger
@@ -44,6 +45,7 @@ class DataIngestionAgent:
         raw = load_telecom_transcripts(n=n, seed=seed, offset=offset)
         log.info("[%s] Fetched %d transcripts", self.name, len(raw))
 
+        dl    = DecisionLogger(self.name, state)
         valid:  list[dict] = []
         errors: list[str]  = []
         pii_count = 0
@@ -53,16 +55,40 @@ class DataIngestionAgent:
 
             if not t.get("transcript_text"):
                 errors.append(f"{call_id}: empty transcript")
+                dl.log(
+                    decision_type="transcript_skip",
+                    decision=f"Skipped {call_id}: empty transcript",
+                    reason="transcript_text field is absent or empty — no content to extract",
+                    evidence={"call_id": str(call_id), "skip_reason": "empty"},
+                    call_id=str(call_id), confidence="high",
+                    alternatives=["Include with placeholder text (rejected: no signal)"],
+                )
                 continue
 
             if len(t["transcript_text"]) < MIN_TRANSCRIPT_CHARS:
-                errors.append(
-                    f"{call_id}: transcript too short ({len(t['transcript_text'])} chars)"
+                txt_len = len(t["transcript_text"])
+                errors.append(f"{call_id}: transcript too short ({txt_len} chars)")
+                dl.log(
+                    decision_type="transcript_skip",
+                    decision=f"Skipped {call_id}: too short ({txt_len} chars)",
+                    reason=f"Transcript length {txt_len} < MIN_TRANSCRIPT_CHARS={MIN_TRANSCRIPT_CHARS}; too brief for reliable extraction",
+                    evidence={"call_id": str(call_id), "chars": txt_len, "min_required": MIN_TRANSCRIPT_CHARS},
+                    call_id=str(call_id), confidence="high",
+                    alternatives=["Include with lower quality flag (rejected: extraction unreliable)"],
                 )
                 continue
 
             if t.get("turn_count", 0) < MIN_TURN_COUNT:
-                errors.append(f"{call_id}: too few turns ({t.get('turn_count')})")
+                turns = t.get("turn_count", 0)
+                errors.append(f"{call_id}: too few turns ({turns})")
+                dl.log(
+                    decision_type="transcript_skip",
+                    decision=f"Skipped {call_id}: too few turns ({turns})",
+                    reason=f"turn_count {turns} < MIN_TURN_COUNT={MIN_TURN_COUNT}; not a valid multi-turn conversation",
+                    evidence={"call_id": str(call_id), "turns": turns, "min_required": MIN_TURN_COUNT},
+                    call_id=str(call_id), confidence="high",
+                    alternatives=["Include single-turn transcripts (rejected: not customer care calls)"],
+                )
                 continue
 
             # PII scan before transcript enters the pipeline
@@ -71,6 +97,14 @@ class DataIngestionAgent:
                 pii_types = t["_pii_redacted"]
                 AUDIT_LOG.record_pii(str(call_id), pii_types)
                 pii_count += 1
+                dl.log(
+                    decision_type="pii_redaction",
+                    decision=f"PII redacted in {call_id}: {pii_types}",
+                    reason="PIIScanner detected sensitive patterns; redacted before transcript reaches LLM",
+                    evidence={"call_id": str(call_id), "pii_types": pii_types},
+                    call_id=str(call_id), confidence="high",
+                    alternatives=["Block transcript entirely (rejected: redaction preserves data)"],
+                )
 
             valid.append(t)
 
@@ -97,4 +131,5 @@ class DataIngestionAgent:
             "raw_transcripts":       raw,
             "validated_transcripts": valid,
             "validation_errors":     errors,
+            "decision_log":          dl.finalize(),
         }

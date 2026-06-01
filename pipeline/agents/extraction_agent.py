@@ -30,6 +30,7 @@ import os
 import time
 
 import pipeline.analyzer as _analyzer_mod
+from pipeline.decision_log import DecisionLogger
 from pipeline.analyzer import (
     analyze_batch,
     analyze_transcript,
@@ -37,6 +38,7 @@ from pipeline.analyzer import (
     load_system_prompt,
     score_field_coverage,
 )
+from pipeline.token_tracker import cost_usd as _cost_usd
 from pipeline.config import REACT_MAX_ITERATIONS, REACT_QUALITY_THRESHOLD
 from pipeline.governance import AUDIT_LOG, BUDGET_GUARD
 from pipeline.logger import get_logger
@@ -70,6 +72,8 @@ class ExtractionAgent:
             self.name, len(transcripts), checkpoint_key or "none",
         )
 
+        self._dl = DecisionLogger(self.name, state)
+
         # ── Act: initial batch extraction ────────────────────────────
         results = analyze_batch(
             transcripts,
@@ -86,9 +90,10 @@ class ExtractionAgent:
         if failed:
             MEMORY.record_failures(failed, context=f"checkpoint={checkpoint_key}")
 
-        # Budget check
-        total_tokens = sum(r.get("_total_tokens", 0) for r in results)
-        est_cost = total_tokens / 1_000_000 * 0.10
+        # Budget check — use model-aware pricing from token_tracker (not hardcoded rate)
+        total_prompt = sum(r.get("_prompt_tokens", 0) for r in results)
+        total_out    = sum(r.get("_completion_tokens", 0) for r in results)
+        est_cost     = _cost_usd(total_prompt, total_out)
         try:
             BUDGET_GUARD.check(est_cost, context=f"after {len(results)} calls (incl. ReAct retries)")
             AUDIT_LOG.record_governance(
@@ -113,11 +118,24 @@ class ExtractionAgent:
             elapsed_s=time.monotonic() - t0,
         )
 
+        # Dataset-level summary decision
+        self._dl.log(
+            decision_type="react_gap_fill_outcome",
+            decision=f"ReAct loop: {react_stats['n_gap_fills']} gap-fills, {react_stats['n_improved']} improved",
+            reason=(
+                f"Calls below REACT_QUALITY_THRESHOLD={REACT_QUALITY_THRESHOLD}% coverage "
+                f"triggered targeted gap-fill retries; avg coverage before={react_stats['avg_coverage_before']}%"
+            ),
+            evidence=react_stats,
+            confidence="high",
+        )
+
         return {
             **state,
             "analysis_results": results,
             "failed_call_ids":  failed,
             "react_stats":      react_stats,
+            "decision_log":     self._dl.finalize(),
         }
 
     def _react_loop(
@@ -180,6 +198,14 @@ class ExtractionAgent:
             log.info(
                 "[ReAct] call %s: coverage=%d < threshold=%d — triggering gap-fill",
                 str(call_id)[:12], coverage, REACT_QUALITY_THRESHOLD,
+            )
+            self._dl.log(
+                decision_type="react_trigger",
+                decision=f"Gap-fill triggered for {call_id} (coverage={coverage}%)",
+                reason=f"Field coverage {coverage}% < REACT_QUALITY_THRESHOLD={REACT_QUALITY_THRESHOLD}%; targeted retry will attempt to recover missing critical fields",
+                evidence={"call_id": str(call_id)[:12], "coverage_pct": coverage, "threshold": REACT_QUALITY_THRESHOLD},
+                call_id=str(call_id)[:12], confidence="high",
+                alternatives=["Accept partial extraction (rejected: critical fields missing)"],
             )
             AUDIT_LOG.record_tool_call(
                 tool="gap_fill", agent=self.name,

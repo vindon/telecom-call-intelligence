@@ -105,6 +105,9 @@ def main() -> dict:
         "validation_errors":     [],
         "failed_call_ids":       [],
         "token_usage":           {},
+        "react_stats":           {},
+        "approval_granted":      False,
+        "decision_log":          [],
     }
 
     pipeline    = build_pipeline()

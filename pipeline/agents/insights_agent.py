@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import os
 
+from pipeline.decision_log import DecisionLogger
 from pipeline.config import (
     CLAUDE_INSIGHTS_MODEL,
     DELIBERATION_ENABLED,
@@ -282,6 +283,8 @@ class InsightsAgent:
         log.info("[%s] Generating insights for %d calls (deliberation=%s)",
                  self.name, n_calls, DELIBERATION_ENABLED)
 
+        dl = DecisionLogger(self.name, state)
+
         # Retrieve historical context from both flat memory and vector store
         historical_context = self._get_rich_context(kpis, n_calls)
 
@@ -306,19 +309,56 @@ class InsightsAgent:
 
         insights["deliberation_passes"] = passes_completed
         insights = OUTPUT_SANITIZER.sanitize_insights(insights)
+        final_source = insights.get("source", "unknown")
+
+        # ── Decision: provider selected ──────────────────────────────
+        _provider_map = {
+            "llm_deliberated":  "NVIDIA NIM (3-pass deliberation)",
+            "llm_single_pass":  "NVIDIA NIM or Claude (single-pass fallback)",
+            "rule_based_fallback": "Rule-based (all LLM calls failed)",
+        }
+        dl.log(
+            decision_type="provider_selected",
+            decision=f"Insights provider: {_provider_map.get(final_source, final_source)}",
+            reason=(
+                f"Provider hierarchy: NVIDIA NIM → Claude → rule-based. "
+                f"Selected '{final_source}' after {passes_completed} pass(es). "
+                f"NVIDIA_API_KEY={'set' if os.environ.get('NVIDIA_API_KEY') else 'missing'}, "
+                f"ANTHROPIC_API_KEY={'set' if os.environ.get('ANTHROPIC_API_KEY') else 'missing'}"
+            ),
+            evidence={
+                "source": final_source,
+                "passes_completed": passes_completed,
+                "deliberation_enabled": DELIBERATION_ENABLED,
+                "nvidia_key_present": bool(os.environ.get("NVIDIA_API_KEY")),
+                "anthropic_key_present": bool(os.environ.get("ANTHROPIC_API_KEY")),
+            },
+            confidence="high",
+            alternatives=["Claude single-pass", "Rule-based fallback", "Skip insights"],
+        )
+
+        # ── Decision: deliberation outcome ───────────────────────────
+        if passes_completed >= 2:
+            critique_quality = insights.get("critique", "unknown")
+            dl.log(
+                decision_type="deliberation_outcome",
+                decision=f"3-pass deliberation completed: critique_quality={critique_quality}",
+                reason=f"Self-reflection critique graded recommendations as '{critique_quality}'; synthesis pass incorporated feedback to produce final board-ready output",
+                evidence={"passes": passes_completed, "critique_quality": critique_quality, "n_recs": len(insights.get("top_recommendations", []))},
+                confidence="high",
+            )
 
         AUDIT_LOG.record_governance(
             check="insights_source", passed=True,
-            details={"source": insights.get("source", "?"),
-                     "passes": passes_completed},
+            details={"source": final_source, "passes": passes_completed},
         )
         AUDIT_LOG.record_agent_end(
             self.name,
-            {"source": insights.get("source"), "passes": passes_completed,
+            {"source": final_source, "passes": passes_completed,
              "n_recs": len(insights.get("top_recommendations", []))},
             elapsed_s=time.monotonic() - t0,
         )
-        return {**state, "agent_insights": insights}
+        return {**state, "agent_insights": insights, "decision_log": dl.finalize()}
 
     # ── Deliberation: Analyze → Critique → Synthesize ─────────────────
 

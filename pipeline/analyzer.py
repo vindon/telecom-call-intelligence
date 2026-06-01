@@ -328,8 +328,13 @@ def gap_fill_transcript(
     except Exception as exc:
         exc_str = str(exc)
         if "429" in exc_str or "rate_limit" in exc_str.lower():
-            _react_quota_exhausted = True
-            log.warning("[ReAct] Quota exhausted — disabling gap-fill for remaining batches.")
+            if not _USE_CLAUDE:
+                # Gemini 429 = daily quota exhausted — circuit break for the run
+                _react_quota_exhausted = True
+                log.warning("[ReAct] Gemini quota exhausted — disabling gap-fill for remaining batches.")
+            else:
+                # Claude 429 = transient per-minute limit — CLAUDE_RATE_LIMITER already backs off
+                log.warning("[ReAct] Claude rate-limited on gap-fill for call %s — skipping this call only", call_id_short)
         else:
             log.warning("[ReAct] gap-fill failed for call %s: %s", call_id_short, exc_str[:120])
         return first_pass

@@ -44,6 +44,7 @@ from pipeline.config import (
     LANGSMITH_PROJECT,
     REQUIRE_HUMAN_APPROVAL,
 )
+from pipeline.decision_log import DecisionLogger, summarize_decisions
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
@@ -103,6 +104,8 @@ class PipelineState(TypedDict):
     token_usage:           dict
     react_stats:           dict   # ReAct loop coverage improvement telemetry
     approval_granted:      bool   # human approval gate result
+    # ── Traceability ─────────────────────────────────────────────────
+    decision_log:          list   # DecisionRecord dicts — agent reasoning audit trail
 
 
 # ── Node wrappers (thin console-printing shims around each agent) ─────
@@ -151,10 +154,33 @@ def quality_node(state: PipelineState) -> PipelineState:
 
 def _route_after_quality(state: PipelineState) -> str:
     """Dynamic routing: skip to export if quality gate tripped."""
-    if state.get("qa_report", {}).get("_quality_gate_failed"):
+    gate_failed = state.get("qa_report", {}).get("_quality_gate_failed", False)
+    destination = "export" if gate_failed else "aggregate"
+
+    dl = DecisionLogger("GraphRouter", state)
+    dl.log(
+        decision_type="routing_decision",
+        decision=f"Route quality → {destination}",
+        reason=(
+            "Quality gate tripped: pass_rate below threshold — skipping aggregate/insights"
+            if gate_failed else
+            "Quality gate passed — continuing to normal aggregate→insights path"
+        ),
+        evidence={
+            "quality_gate_failed": gate_failed,
+            "qa_verdict": state.get("qa_report", {}).get("dataset_verdict", "N/A"),
+            "destination": destination,
+        },
+        confidence="high",
+        alternatives=["aggregate"] if gate_failed else ["export (emergency)"],
+    )
+    # Merge decision log back — state is read-only in conditional edges
+    # (LangGraph doesn't persist state mutations from conditional edge functions,
+    # so we log here for observability but the record is captured in export_node
+    # via the accumulated decision_log in state from upstream agents)
+    if gate_failed:
         log.warning("Quality gate failed — routing directly to export (skipping aggregate/insights)")
-        return "export"
-    return "aggregate"
+    return destination
 
 
 def aggregate_node(state: PipelineState) -> PipelineState:
@@ -215,7 +241,16 @@ def approval_gate_node(state: PipelineState) -> PipelineState:
 
     if not REQUIRE_HUMAN_APPROVAL:
         log.debug("[ApprovalGate] Disabled — auto-passing")
-        return {**state, "approval_granted": True}
+        dl = DecisionLogger("ApprovalGate", state)
+        dl.log(
+            decision_type="approval_decision",
+            decision="Auto-approved (REQUIRE_HUMAN_APPROVAL=False)",
+            reason="Human approval gate disabled in config — pipeline runs unattended",
+            evidence={"require_human_approval": False},
+            confidence="high",
+            alternatives=["Require manual operator approval"],
+        )
+        return {**state, "approval_granted": True, "decision_log": dl.finalize()}
 
     kpis = state.get("aggregated_metrics", {}).get("kpis", {})
     print(f"\n  FCR: {kpis.get('fcr_rate_pct', 'N/A')}%  "
@@ -261,21 +296,43 @@ def approval_gate_node(state: PipelineState) -> PipelineState:
         details={"status": status},
     )
 
+    dl = DecisionLogger("ApprovalGate", state)
+    dl.log(
+        decision_type="approval_decision",
+        decision=f"Export {'approved' if granted else 'rejected'} by operator",
+        reason=(
+            "Operator explicitly confirmed export at the interactive approval gate"
+            if granted else
+            "Operator rejected export — pipeline halted before writing outputs"
+        ),
+        evidence={
+            "granted": granted,
+            "timeout_s": APPROVAL_TIMEOUT_S,
+            "fcr_pct": kpis.get("fcr_rate_pct"),
+            "insights_source": state.get("agent_insights", {}).get("source"),
+        },
+        confidence="high",
+        alternatives=["Auto-approve on timeout", "Reject and halt pipeline"],
+    )
+    updated_state = {**state, "approval_granted": granted, "decision_log": dl.finalize()}
+
     if not granted:
         raise RuntimeError("Export rejected by operator at approval gate")
 
-    return {**state, "approval_granted": True}
+    return updated_state
 
 
 def export_node(state: PipelineState) -> PipelineState:
     _banner(6, 6, "ExportAgent — CSV · JSON · QA Report · Insights · Manifest")
     result = _export_agent.run(state)
     paths  = result["export_paths"]
+    n_decisions = len(result.get("decision_log", []))
     print(f"  ✓ CSV         : {paths.get('csv', '')}")
     print(f"  ✓ Summary     : {paths.get('summary', '')}  ← Streamlit dashboard")
     print(f"  ✓ Full JSON   : {paths.get('full_results', '')}")
     print(f"  ✓ QA Report   : {paths.get('qa_report', '')}")
     print(f"  ✓ Insights    : {paths.get('insights', '')}")
+    print(f"  ✓ Decisions   : {paths.get('decisions', '')}  ({n_decisions} records)")
     print(f"  ✓ Manifest    : {paths.get('manifest', '')}")
     return result
 
