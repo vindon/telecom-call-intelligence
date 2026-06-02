@@ -15,7 +15,6 @@ from pipeline.decision_log import (
     summarize_decisions,
 )
 
-
 # ── DecisionRecord ────────────────────────────────────────────────────
 
 class TestDecisionRecord:

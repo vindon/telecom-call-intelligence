@@ -27,7 +27,6 @@ from __future__ import annotations
 import json
 import os
 
-from pipeline.decision_log import DecisionLogger
 from pipeline.config import (
     CLAUDE_INSIGHTS_MODEL,
     DELIBERATION_ENABLED,
@@ -37,6 +36,7 @@ from pipeline.config import (
     NVIDIA_BASE_URL,
     NVIDIA_INSIGHTS_MODEL,
 )
+from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY

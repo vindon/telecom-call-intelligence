@@ -45,6 +45,7 @@ load_dotenv()
 # Validation is model-aware: EXTRACTION_MODEL drives which key is required.
 from pipeline.config import BUDGET_USD, EXTRACTION_MODEL  # noqa: E402
 
+
 def _validate_api_keys() -> None:
     """Check that the required API keys are present for the configured models."""
     errors: list[str] = []

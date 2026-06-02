@@ -360,7 +360,6 @@ _BUCKET = {
 
 
 def _cost_buckets(issue_cats: dict, kpis: dict, baseline: float) -> dict:
-    total = sum(issue_cats.values()) or 1
     serve = sum(v for k, v in issue_cats.items() if _BUCKET.get(k, "serve") == "serve")
     sell  = sum(v for k, v in issue_cats.items() if _BUCKET.get(k, "serve") == "sell")
     retain_pct = float(kpis.get("escalation_rate_pct", 0))
@@ -585,8 +584,6 @@ def main():
     total_secs = sum(phases.values()) or 1
     disc_secs  = phases.get("Discovery", 0)
     diag_secs  = phases.get("Diagnosis", 0)
-    hold_secs  = phases.get("Hold", 0)
-    ai_phase_pct = (disc_secs + diag_secs + hold_secs) / total_secs * 100
     aht_min  = kpis.get("avg_handle_time_minutes", round(total_secs / 60, 1))
 
     # Issue category data

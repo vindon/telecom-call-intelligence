@@ -34,7 +34,7 @@ serialises directly to JSON without any import dependencies.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Any
 
 from pipeline.logger import get_logger
@@ -54,7 +54,7 @@ _FORBIDDEN_EVIDENCE_KEYS: frozenset[str] = frozenset({
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _short_id() -> str:

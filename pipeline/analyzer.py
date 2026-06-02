@@ -36,11 +36,11 @@ from pipeline.config import (
     EXTRACTION_TEMPERATURE as TEMPERATURE,
 )
 from pipeline.config import (
-    MAX_RESPONSE_BYTES,
-    PROMPT_PATH,
+    MAX_OUTPUT_TOKENS as MAX_TOKENS,
 )
 from pipeline.config import (
-    MAX_OUTPUT_TOKENS as MAX_TOKENS,
+    MAX_RESPONSE_BYTES,
+    PROMPT_PATH,
 )
 from pipeline.config import (
     OUTPUT_DIR as CHECKPOINT_DIR,
