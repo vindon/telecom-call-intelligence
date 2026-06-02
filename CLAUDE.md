@@ -157,3 +157,36 @@ Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `reac
 ```
 
 Expected: **224 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
+
+---
+
+## Proactive Standards — How Claude Must Operate in This Repo
+
+This project is Vinoth's primary portfolio piece for landing work. Every session must meet the standard an investor or senior hiring manager would apply. Reactive assistance is not acceptable.
+
+### Mandatory proactive checks — do these without being asked
+
+**Before ending any session:**
+1. Run `git status` and `git log --oneline -5` — if commits exist that haven't been pushed, flag it and ask to push
+2. Scan for docstring/comment/banner inconsistencies introduced by new code (agent count, model names, version strings)
+3. Check that any new constants in `config.py` are actually imported and used — dead config is a red flag
+4. Verify tests still pass after any edit: `make test`
+
+**When reading code that spans multiple modules:**
+- Always trace cross-module invariants. If `governance.py` defines a budget guard and `orchestrator.py` spawns subprocesses, ask: *does the guard actually enforce across process boundaries?*
+- If a flag or sentinel is module-level in Python, assume it resets per subprocess unless proven otherwise
+- Rate limiters, budget guards, circuit breakers — all require inter-process verification
+
+**When asked "what am I missing?" or "is anything wrong?":**
+- This is a deep audit request, not a surface check. Read the critical path files and trace actual failure modes
+- Do not answer until you have read at least: `config.py`, `orchestrator.py`, `governance.py`, and the primary agent(s) under discussion
+- Failure modes to always check: budget/rate cross-process safety, state mutation leaking across agents, PII in decision logs, stale docstrings, agent count mismatches in banners
+
+### Portfolio standard — enforce this on every change
+- Every file that mentions an agent count, model name, or version must be consistent with `config.py` and the current architecture
+- GitHub must always be in sync with local `main` — check at session start
+- Nothing half-finished goes into `main`. If a fix touches a bug, check for its siblings
+- The README, ARCHITECTURE.md, and CHANGELOG.md must reflect the current state after any significant change
+
+### What "two layers deep" means in practice
+When you see `BUDGET_GUARD.check(cost)` in an agent, the first layer is "does this guard work?" The second layer is "does this guard work when the caller is a subprocess spawned by `run_batches.py`?" Always ask the second-layer question before declaring something correct.
