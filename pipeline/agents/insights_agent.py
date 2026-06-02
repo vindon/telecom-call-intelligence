@@ -1,5 +1,5 @@
 """
-InsightsAgent  —  Agent 5 of 6
+InsightsAgent  —  Agent 5 of 7
 ---------------------------------
 The second LLM agent in the pipeline. Uses Gemini to synthesize aggregated
 KPIs into actionable strategic recommendations for telecom operations leaders.

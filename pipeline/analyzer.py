@@ -36,7 +36,6 @@ from pipeline.config import (
     EXTRACTION_TEMPERATURE as TEMPERATURE,
 )
 from pipeline.config import (
-    MAX_CONCURRENT_EXTRACTIONS,
     MAX_RESPONSE_BYTES,
     PROMPT_PATH,
 )
@@ -59,9 +58,14 @@ _USE_CLAUDE = MODEL.startswith("claude")
 
 log = get_logger(__name__)
 
-# Tripped on first 429 during a gap-fill call; prevents wasting remaining
-# daily quota on retries when the free-tier RPD limit is already exhausted.
-_react_quota_exhausted: bool = False
+# Sentinel file persists the Gemini daily-quota exhaustion flag across
+# subprocess boundaries (run_batches.py spawns one process per batch).
+# Without this, each new subprocess resets the flag and burns more quota.
+_QUOTA_SENTINEL = CHECKPOINT_DIR / ".react_quota_exhausted"
+
+# Tripped on first Gemini 429 (daily quota); persisted via sentinel file so
+# subsequent batch subprocesses inherit the exhausted state immediately.
+_react_quota_exhausted: bool = _QUOTA_SENTINEL.exists()
 
 
 # ── System prompt ─────────────────────────────────────────────────────
@@ -329,9 +333,11 @@ def gap_fill_transcript(
         exc_str = str(exc)
         if "429" in exc_str or "rate_limit" in exc_str.lower():
             if not _USE_CLAUDE:
-                # Gemini 429 = daily quota exhausted — circuit break for the run
+                # Gemini 429 = daily quota exhausted — circuit break across all batches
                 _react_quota_exhausted = True
-                log.warning("[ReAct] Gemini quota exhausted — disabling gap-fill for remaining batches.")
+                CHECKPOINT_DIR.mkdir(exist_ok=True)
+                _QUOTA_SENTINEL.touch()
+                log.warning("[ReAct] Gemini quota exhausted — sentinel written; gap-fill disabled for all remaining batches.")
             else:
                 # Claude 429 = transient per-minute limit — CLAUDE_RATE_LIMITER already backs off
                 log.warning("[ReAct] Claude rate-limited on gap-fill for call %s — skipping this call only", call_id_short)

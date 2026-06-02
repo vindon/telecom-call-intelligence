@@ -31,12 +31,16 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+from pipeline.config import BUDGET_USD
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
 
 log = get_logger(__name__)
 
 OUTPUT_DIR = Path("outputs")
+
+# Sentinel written by analyzer.py when Gemini daily quota is exhausted
+_QUOTA_SENTINEL = OUTPUT_DIR / ".react_quota_exhausted"
 
 
 # ── Work unit ─────────────────────────────────────────────────────────
@@ -169,6 +173,11 @@ class Orchestrator:
         self.health         = AgentHealthMonitor()
         self.tasks          = WorkPlanner.plan(total_calls, batch_size, seed, delay, max_retries)
         self._started_at    = datetime.now()
+        # Per-batch budget = total budget divided equally across all batches.
+        # Prevents a single subprocess from consuming the entire budget while
+        # sibling batches (even sequential) would then exceed the global cap.
+        n_batches = len(self.tasks) or 1
+        self._budget_per_batch = round(BUDGET_USD / n_batches, 4)
 
     # ── Public API ────────────────────────────────────────────────────
 
@@ -179,7 +188,15 @@ class Orchestrator:
         """
         self._print_plan()
         est = WorkPlanner.estimate_duration(self.tasks)
-        print(f"  Estimated duration : ~{est} min  ({self.rate_limit_rpm} RPM limit)\n")
+        print(f"  Estimated duration : ~{est} min  ({self.rate_limit_rpm} RPM limit)")
+        print(f"  Budget per batch   : ${self._budget_per_batch:.4f}  "
+              f"(${BUDGET_USD:.2f} / {len(self.tasks)} batches)\n")
+
+        # Clear any stale Gemini quota sentinel from a previous run so the
+        # circuit breaker starts fresh for this new orchestration.
+        if _QUOTA_SENTINEL.exists():
+            _QUOTA_SENTINEL.unlink()
+            log.info("[Orchestrator] Cleared stale Gemini quota sentinel from previous run.")
 
         queue = list(self.tasks)  # work queue (includes retries)
 
@@ -226,6 +243,7 @@ class Orchestrator:
             "--offset", str(task.offset),
             "--seed",   str(task.seed),
             "--delay",  str(task.delay),
+            "--budget", str(self._budget_per_batch),
         ]
 
         try:

@@ -4,7 +4,7 @@
 # All targets assume the project virtualenv is activated (.venv/).
 
 .PHONY: help install install-dev test test-fast test-cov lint format \
-        type-check check run run-batches dashboard clean
+        type-check check run run-batches dashboard clean clean-outputs
 
 PYTHON   := .venv/bin/python
 PIP      := .venv/bin/pip
@@ -88,3 +88,16 @@ clean:
 	find . -name "*.pyc" -not -path './.venv/*' -delete 2>/dev/null || true
 	rm -rf .pytest_cache htmlcov .coverage coverage.xml 2>/dev/null || true
 	@echo "  Clean done."
+
+clean-outputs:
+	@echo "  Removing run outputs (keeping summary.json for dashboard cold-start)..."
+	find outputs/ -name "call_results_*.csv" -delete 2>/dev/null || true
+	find outputs/ -name "full_results_*.json" -delete 2>/dev/null || true
+	find outputs/ -name "qa_report_*.json" -delete 2>/dev/null || true
+	find outputs/ -name "insights_*.json" -delete 2>/dev/null || true
+	find outputs/ -name "decisions_*.json" -delete 2>/dev/null || true
+	find outputs/ -name "run_manifest_*.json" -delete 2>/dev/null || true
+	find outputs/ -name "audit_log_*.json" -delete 2>/dev/null || true
+	find outputs/ -name ".checkpoint_*.jsonl" -delete 2>/dev/null || true
+	find outputs/ -name ".react_quota_exhausted" -delete 2>/dev/null || true
+	@echo "  Outputs cleaned."

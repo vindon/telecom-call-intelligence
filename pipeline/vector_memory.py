@@ -166,11 +166,14 @@ class VectorMemoryStore:
             log.warning("[VectorMemory] Empty KPI text for run %s — skipping", run_id)
             return
 
-        # Attempt Gemini embedding; fall back to TF-IDF
+        # Attempt Gemini embedding; fall back to TF-IDF — tag backend so
+        # query() can detect and refuse cross-backend comparisons.
+        backend = "gemini"
         try:
             vec = _embed_gemini([kpi_text])[0]
         except Exception as exc:
             log.debug("[VectorMemory] Gemini embed failed (%s) — using TF-IDF fallback", exc)
+            backend = "tfidf"
             corpus_texts = [r["text"] for r in self._index] + [kpi_text]
             vecs, self._vocab = _embed_tfidf(corpus_texts, self._vocab or None)
             vec = vecs[-1]
@@ -188,6 +191,7 @@ class VectorMemoryStore:
             "run_id":    run_id,
             "text":      kpi_text,
             "timestamp": datetime.now(UTC).isoformat(),
+            "_backend":  backend,
             **metadata,
         })
         log.debug("[VectorMemory] Added run %s (total=%d)", run_id, len(self._index))
@@ -203,22 +207,39 @@ class VectorMemoryStore:
         if self._vectors is None or len(self._index) == 0:
             return []
 
-        # Embed query with the same backend used for storage
+        # Determine the backend used by stored vectors to avoid silent
+        # dimension mismatches that produce meaningless similarity scores.
+        stored_backends = {r.get("_backend", "gemini") for r in self._index}
+        stored_backend  = stored_backends.pop() if len(stored_backends) == 1 else "mixed"
+
+        # Embed query using the matching backend
         try:
             q_vec = _embed_gemini([query_text])[0].astype(np.float32)
+            query_backend = "gemini"
         except Exception:
             if self._vocab:
                 q_vecs, _ = _embed_tfidf([query_text], self._vocab)
                 q_vec = q_vecs[0].astype(np.float32)
+                query_backend = "tfidf"
             else:
                 return []
 
-        # Pad / trim query to match stored dimension
+        # Refuse cross-backend queries — dimensions differ, results would be garbage
+        if stored_backend not in ("mixed",) and query_backend != stored_backend:
+            log.warning(
+                "[VectorMemory] Backend mismatch: query=%s stored=%s — returning empty results "
+                "to avoid corrupted similarity scores.",
+                query_backend, stored_backend,
+            )
+            return []
+
         stored_dim = self._vectors.shape[1]
-        if q_vec.shape[0] < stored_dim:
-            q_vec = np.pad(q_vec, (0, stored_dim - q_vec.shape[0]))
-        elif q_vec.shape[0] > stored_dim:
-            q_vec = q_vec[:stored_dim]
+        if q_vec.shape[0] != stored_dim:
+            log.warning(
+                "[VectorMemory] Dimension mismatch query=%d stored=%d — skipping query",
+                q_vec.shape[0], stored_dim,
+            )
+            return []
 
         scores = _cosine_similarity(q_vec, self._vectors)
         k      = min(top_k, len(self._index))

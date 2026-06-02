@@ -24,7 +24,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from pipeline.config import BUDGET_USD, MIN_PASS_RATE
+from pipeline.config import BUDGET_USD, MIN_PASS_RATE, QUALITY_WARN_RATE
 from pipeline.logger import get_logger
 
 log = get_logger(__name__)
@@ -114,6 +114,13 @@ class QualityGate:
             "[QualityGate] pass_rate=%.1f%%  avg_score=%.1f  n=%d  threshold=%.0f%%",
             pass_rate * 100, avg_score, n_audited, self.min_pass_rate * 100,
         )
+
+        if pass_rate < QUALITY_WARN_RATE:
+            log.warning(
+                "[QualityGate] WARNING: pass_rate=%.1f%% is below quality warning threshold %.0f%% "
+                "— aggregation will run on a degraded dataset. Check extraction model and prompt.",
+                pass_rate * 100, QUALITY_WARN_RATE * 100,
+            )
 
         if pass_rate < self.min_pass_rate:
             raise self.QualityGateError(

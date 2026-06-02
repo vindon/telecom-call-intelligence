@@ -6,7 +6,7 @@ previously defined MODEL, MAX_TOKENS, OUTPUT_DIR, etc. inline should
 import from here instead.
 
 Groupings mirror the system architecture:
-  Model       — Gemini API parameters
+  Model       — LLM API parameters (Claude, NVIDIA NIM, Gemini fallback)
   API         — Retry and rate-limit settings
   Batching    — Default CLI argument values
   Paths       — Filesystem locations
@@ -61,8 +61,9 @@ LOCAL_CSV_PATH  = Path("telecom_200k.csv")   # auto-detected; falls back to HF i
 #   $5.00 ≈ 650 calls.  Raise to $25.00 for production 1 000-call batches.
 # Gemini 2.0/2.5 Flash Lite ($0.10 in / $0.40 out per MTok):
 #   same token volumes → ≈$0.0008/call.  $5.00 ≈ 6 000 calls.
-BUDGET_USD    = 5.00   # hard-stop per run — adjust per model and batch size
-MIN_PASS_RATE = 0.40   # catastrophic quality gate threshold (40%)
+BUDGET_USD         = 5.00   # hard-stop per run — adjust per model and batch size
+MIN_PASS_RATE      = 0.40   # catastrophic quality gate threshold (40%)
+QUALITY_WARN_RATE  = 0.70   # warning threshold — logs prominently but does not stop pipeline
 
 # ── Data validation ────────────────────────────────────────────────────
 MIN_TRANSCRIPT_CHARS = 150
@@ -82,9 +83,6 @@ DELIBERATION_ENABLED     = True  # Analyze → Critique → Synthesize passes
 
 # ── InsightsAgent Claude fallback ─────────────────────────────────────
 CLAUDE_INSIGHTS_MODEL    = "claude-haiku-4-5-20251001"  # fallback if NVIDIA unavailable
-
-# ── Parallel extraction ────────────────────────────────────────────────
-MAX_CONCURRENT_EXTRACTIONS = 1   # 1 = serial (free-tier safe); raise on paid tier
 
 # ── Human approval gate ────────────────────────────────────────────────
 REQUIRE_HUMAN_APPROVAL   = False  # pause before export for explicit human sign-off

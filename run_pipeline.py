@@ -3,9 +3,9 @@ run_pipeline.py
 ---------------
 Entry point for the Telecom Call Intelligence multi-agent pipeline.
 
-Architecture (6 agents):
+Architecture (7 agents):
   DataIngestionAgent  →  ExtractionAgent  →  QualityAgent
-  AggregationAgent    →  InsightsAgent    →  ExportAgent
+  AggregationAgent    →  InsightsAgent    →  ApprovalGate  →  ExportAgent
 
 Usage
 -----
@@ -99,9 +99,21 @@ def main() -> dict:
     )
     parser.add_argument(
         "--delay",  type=float, default=2.0,
-        help="Seconds between Gemini API calls (default: 2.0)",
+        help="Seconds between API calls (default: 2.0)",
+    )
+    parser.add_argument(
+        "--budget", type=float, default=None,
+        help="Override budget cap for this batch in USD (default: BUDGET_USD from config). "
+             "Set by run_batches.py to enforce per-batch spending limits.",
     )
     args = parser.parse_args()
+
+    # Apply per-batch budget override from orchestrator before building the pipeline.
+    # This ensures each subprocess enforces its share of the global budget cap,
+    # not the full BUDGET_USD, preventing multi-batch runs from exceeding the total limit.
+    if args.budget is not None:
+        from pipeline.governance import BUDGET_GUARD
+        BUDGET_GUARD.max_cost_usd = args.budget
 
     # Auto-generate a checkpoint key that encodes all sampling parameters
     checkpoint_key = f"offset{args.offset}_n{args.n}_seed{args.seed}"
@@ -115,7 +127,8 @@ def main() -> dict:
     print("               Aggregation  → Insights   → Export")
     print("  Dataset    : talkmap/telecom-conversation-corpus")
     print(f"  Model      : {EXTRACTION_MODEL}  ({_PROVIDER})")
-    print(f"  Budget cap : ${BUDGET_USD:.2f} / run  (set BUDGET_USD in config.py)")
+    _effective_budget = args.budget if args.budget is not None else BUDGET_USD
+    print(f"  Budget cap : ${_effective_budget:.4f} / batch  (global: ${BUDGET_USD:.2f})")
     print(f"  Calls      : {args.n}")
     print(f"  Seed       : {args.seed}")
     print(f"  Offset     : {args.offset}")

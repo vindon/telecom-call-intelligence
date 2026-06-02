@@ -117,7 +117,7 @@ def _banner(step: int | str, total: int | str, label: str) -> None:
 
 
 def ingest_node(state: PipelineState) -> PipelineState:
-    _banner(1, 6, "DataIngestionAgent — Fetch & Validate")
+    _banner(1, 7, "DataIngestionAgent — Fetch & Validate")
     result = _data_agent.run(state)
     n_valid = len(result["validated_transcripts"])
     n_skip  = len(result["validation_errors"])
@@ -130,12 +130,12 @@ def ingest_node(state: PipelineState) -> PipelineState:
 
 
 def extract_node(state: PipelineState) -> PipelineState:
-    _banner(2, 6, "ExtractionAgent — Claude Haiku · Structured JSON")
+    _banner(2, 7, "ExtractionAgent — Claude Haiku · Structured JSON")
     return _extraction_agent.run(state)
 
 
 def quality_node(state: PipelineState) -> PipelineState:
-    _banner(3, 6, "QualityAgent — Inline QA Scoring (100-pt model)")
+    _banner(3, 7, "QualityAgent — Inline QA Scoring (100-pt model)")
     result  = _quality_agent.run(state)
     rep     = result.get("qa_report", {})
     summary = rep.get("summary", {})
@@ -184,7 +184,7 @@ def _route_after_quality(state: PipelineState) -> str:
 
 
 def aggregate_node(state: PipelineState) -> PipelineState:
-    _banner(4, 6, "AggregationAgent — Executive KPI Computation")
+    _banner(4, 7, "AggregationAgent — Executive KPI Computation")
     result = _aggregation_agent.run(state)
     kpis   = result["aggregated_metrics"]["kpis"]
     usage  = result["token_usage"]
@@ -200,7 +200,7 @@ def aggregate_node(state: PipelineState) -> PipelineState:
 
 
 def insights_node(state: PipelineState) -> PipelineState:
-    _banner(5, 6, "InsightsAgent — LLM Strategic Recommendations")
+    _banner(5, 7, "InsightsAgent — LLM Strategic Recommendations")
     result   = _insights_agent.run(state)
     insights = result.get("agent_insights", {})
     source   = insights.get("source", "unknown")
@@ -237,7 +237,7 @@ def approval_gate_node(state: PipelineState) -> PipelineState:
     When disabled (default), this node is a transparent pass-through so it
     costs nothing in CI or automated batch runs.
     """
-    _banner("▶", 6, "ApprovalGate — Human Sign-off Before Export")
+    _banner("6", 7, "ApprovalGate — Human Sign-off Before Export")
 
     if not REQUIRE_HUMAN_APPROVAL:
         log.debug("[ApprovalGate] Disabled — auto-passing")
@@ -323,7 +323,7 @@ def approval_gate_node(state: PipelineState) -> PipelineState:
 
 
 def export_node(state: PipelineState) -> PipelineState:
-    _banner(6, 6, "ExportAgent — CSV · JSON · QA Report · Insights · Manifest")
+    _banner(7, 7, "ExportAgent — CSV · JSON · QA Report · Insights · Manifest")
     result = _export_agent.run(state)
     paths  = result["export_paths"]
     n_decisions = len(result.get("decision_log", []))
@@ -348,6 +348,13 @@ def build_pipeline() -> object:
                    ingest → extract → quality → export → END
     """
     _configure_tracing()
+
+    if not REQUIRE_HUMAN_APPROVAL:
+        log.info(
+            "[ApprovalGate] Human approval DISABLED (REQUIRE_HUMAN_APPROVAL=False in config). "
+            "Pipeline will export autonomously without operator sign-off. "
+            "Set REQUIRE_HUMAN_APPROVAL=True for supervised production runs."
+        )
 
     # Load flat + vector memory at build time so InsightsAgent has full context
     MEMORY.load()

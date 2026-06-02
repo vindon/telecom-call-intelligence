@@ -44,6 +44,14 @@ log = get_logger(__name__)
 # Maximum characters for the reason field — keeps records compact in JSON exports
 _MAX_REASON_CHARS = 500
 
+# Keys that must never appear in evidence dicts — enforces the CLAUDE.md contract
+# that transcript text and customer PII are never stored in decision records.
+_FORBIDDEN_EVIDENCE_KEYS: frozenset[str] = frozenset({
+    "transcript_text", "transcript", "text", "customer_name", "customer_id",
+    "agent_name", "phone", "email", "ssn", "account_number", "address",
+    "raw_transcript", "call_text", "conversation",
+})
+
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -124,6 +132,18 @@ class DecisionLogger:
         self._records: list[dict] = list(state.get("decision_log", []))
         self._new: list[DecisionRecord] = []
 
+    @staticmethod
+    def _validate_evidence(evidence: dict[str, Any] | None) -> None:
+        """Raise ValueError if evidence contains forbidden keys (transcript text or PII)."""
+        if not evidence:
+            return
+        violations = _FORBIDDEN_EVIDENCE_KEYS & evidence.keys()
+        if violations:
+            raise ValueError(
+                f"DecisionLogger.log() evidence contains forbidden key(s): {sorted(violations)}. "
+                "Transcript text and customer PII must not be stored in decision records."
+            )
+
     def log(
         self,
         decision_type: str,
@@ -135,6 +155,7 @@ class DecisionLogger:
         alternatives:  list[str] | None = None,
     ) -> None:
         """Record one decision."""
+        self._validate_evidence(evidence)
         rec = DecisionRecord(
             agent=self._agent,
             decision_type=decision_type,
