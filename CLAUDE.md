@@ -121,7 +121,7 @@ def run(self, state: dict) -> dict:
     return {**state, "decision_log": dl.finalize()}
 ```
 
-Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `react_gap_fill_outcome`, `qa_exclusion`, `qa_grade_assignment`, `quality_gate_outcome`, `aggregation_scope`, `cost_model_applied`, `provider_selected`, `deliberation_outcome`, `routing_decision`, `approval_decision`.
+Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `react_gap_fill_outcome`, `qa_exclusion`, `qa_grade_assignment`, `quality_gate_outcome`, `aggregation_scope`, `cost_model_applied`, `provider_selected`, `deliberation_outcome`, `routing_decision`, `approval_decision`, `export_scope`.
 
 ### Adding new agents
 1. Create `pipeline/agents/your_agent.py` with a stateless class + `run(state: dict) -> dict`

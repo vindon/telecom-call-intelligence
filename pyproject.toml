@@ -1,11 +1,11 @@
 [project]
 name = "telecom-call-intelligence"
-version = "2.0.0"
-description = "Multi-agent telecom call intelligence pipeline — LangGraph + Gemini"
+version = "4.1.0"
+description = "Multi-agent telecom call intelligence pipeline — LangGraph + Claude Haiku + NVIDIA NIM"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [{ name = "Vinoth N", email = "vinoth.n@outlook.com" }]
-keywords = ["telecom", "nlp", "multi-agent", "langGraph", "gemini", "agentic-ai"]
+keywords = ["telecom", "nlp", "multi-agent", "langgraph", "claude", "nvidia-nim", "agentic-ai"]
 
 
 # ── Ruff ───────────────────────────────────────────────────────────────
@@ -18,7 +18,6 @@ select = ["E", "F", "W", "I", "UP"]
 ignore = [
     "E501",   # line too long — handled per-file, not globally
     "E741",   # ambiguous variable name (l, O, I) — false-positives in ML code
-    "F401",   # unused imports — some are re-exported
 ]
 
 [tool.ruff.lint.per-file-ignores]

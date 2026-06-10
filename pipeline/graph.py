@@ -43,8 +43,9 @@ from pipeline.config import (
     APPROVAL_TIMEOUT_S,
     LANGSMITH_PROJECT,
     REQUIRE_HUMAN_APPROVAL,
+    VECTOR_MEMORY_ENABLED,
 )
-from pipeline.decision_log import DecisionLogger, summarize_decisions
+from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
@@ -109,6 +110,9 @@ class PipelineState(TypedDict):
 
 
 # ── Node wrappers (thin console-printing shims around each agent) ─────
+# Wrappers take PipelineState (the StateGraph schema) and return plain dict
+# updates; agents receive dict(state) copies since TypedDict is not assignable
+# to their dict parameters under mypy.
 
 def _banner(step: int | str, total: int | str, label: str) -> None:
     print("\n" + "═" * 60)
@@ -116,9 +120,9 @@ def _banner(step: int | str, total: int | str, label: str) -> None:
     print("═" * 60)
 
 
-def ingest_node(state: PipelineState) -> PipelineState:
+def ingest_node(state: PipelineState) -> dict:
     _banner(1, 7, "DataIngestionAgent — Fetch & Validate")
-    result = _data_agent.run(state)
+    result = _data_agent.run(dict(state))
     n_valid = len(result["validated_transcripts"])
     n_skip  = len(result["validation_errors"])
     print(f"  ✓ Valid: {n_valid}  |  Skipped: {n_skip}")
@@ -129,14 +133,14 @@ def ingest_node(state: PipelineState) -> PipelineState:
     return result
 
 
-def extract_node(state: PipelineState) -> PipelineState:
+def extract_node(state: PipelineState) -> dict:
     _banner(2, 7, "ExtractionAgent — Claude Haiku · Structured JSON")
-    return _extraction_agent.run(state)
+    return _extraction_agent.run(dict(state))
 
 
-def quality_node(state: PipelineState) -> PipelineState:
+def quality_node(state: PipelineState) -> dict:
     _banner(3, 7, "QualityAgent — Inline QA Scoring (100-pt model)")
-    result  = _quality_agent.run(state)
+    result  = _quality_agent.run(dict(state))
     rep     = result.get("qa_report", {})
     summary = rep.get("summary", {})
     verdict = rep.get("dataset_verdict", "N/A")
@@ -157,7 +161,7 @@ def _route_after_quality(state: PipelineState) -> str:
     gate_failed = state.get("qa_report", {}).get("_quality_gate_failed", False)
     destination = "export" if gate_failed else "aggregate"
 
-    dl = DecisionLogger("GraphRouter", state)
+    dl = DecisionLogger("GraphRouter", dict(state))
     dl.log(
         decision_type="routing_decision",
         decision=f"Route quality → {destination}",
@@ -183,9 +187,9 @@ def _route_after_quality(state: PipelineState) -> str:
     return destination
 
 
-def aggregate_node(state: PipelineState) -> PipelineState:
+def aggregate_node(state: PipelineState) -> dict:
     _banner(4, 7, "AggregationAgent — Executive KPI Computation")
-    result = _aggregation_agent.run(state)
+    result = _aggregation_agent.run(dict(state))
     kpis   = result["aggregated_metrics"]["kpis"]
     usage  = result["token_usage"]
     print(f"  Calls aggregated  : {kpis['total_calls_analyzed']}")
@@ -199,9 +203,9 @@ def aggregate_node(state: PipelineState) -> PipelineState:
     return result
 
 
-def insights_node(state: PipelineState) -> PipelineState:
+def insights_node(state: PipelineState) -> dict:
     _banner(5, 7, "InsightsAgent — LLM Strategic Recommendations")
-    result   = _insights_agent.run(state)
+    result   = _insights_agent.run(dict(state))
     insights = result.get("agent_insights", {})
     source   = insights.get("source", "unknown")
     print(f"  Insights source  : {source}")
@@ -226,7 +230,7 @@ def insights_node(state: PipelineState) -> PipelineState:
     return result
 
 
-def approval_gate_node(state: PipelineState) -> PipelineState:
+def approval_gate_node(state: PipelineState) -> dict:
     """
     Human-in-the-loop approval gate before export.
 
@@ -241,7 +245,7 @@ def approval_gate_node(state: PipelineState) -> PipelineState:
 
     if not REQUIRE_HUMAN_APPROVAL:
         log.debug("[ApprovalGate] Disabled — auto-passing")
-        dl = DecisionLogger("ApprovalGate", state)
+        dl = DecisionLogger("ApprovalGate", dict(state))
         dl.log(
             decision_type="approval_decision",
             decision="Auto-approved (REQUIRE_HUMAN_APPROVAL=False)",
@@ -296,7 +300,7 @@ def approval_gate_node(state: PipelineState) -> PipelineState:
         details={"status": status},
     )
 
-    dl = DecisionLogger("ApprovalGate", state)
+    dl = DecisionLogger("ApprovalGate", dict(state))
     dl.log(
         decision_type="approval_decision",
         decision=f"Export {'approved' if granted else 'rejected'} by operator",
@@ -322,9 +326,9 @@ def approval_gate_node(state: PipelineState) -> PipelineState:
     return updated_state
 
 
-def export_node(state: PipelineState) -> PipelineState:
+def export_node(state: PipelineState) -> dict:
     _banner(7, 7, "ExportAgent — CSV · JSON · QA Report · Insights · Manifest")
-    result = _export_agent.run(state)
+    result = _export_agent.run(dict(state))
     paths  = result["export_paths"]
     n_decisions = len(result.get("decision_log", []))
     print(f"  ✓ CSV         : {paths.get('csv', '')}")
@@ -358,11 +362,12 @@ def build_pipeline() -> object:
 
     # Load flat + vector memory at build time so InsightsAgent has full context
     MEMORY.load()
-    try:
-        from pipeline.vector_memory import VECTOR_STORE
-        VECTOR_STORE.load()
-    except Exception as exc:
-        log.debug("[build_pipeline] Vector memory load skipped: %s", exc)
+    if VECTOR_MEMORY_ENABLED:
+        try:
+            from pipeline.vector_memory import VECTOR_STORE
+            VECTOR_STORE.load()
+        except Exception as exc:
+            log.debug("[build_pipeline] Vector memory load skipped: %s", exc)
 
     graph = StateGraph(PipelineState)
 

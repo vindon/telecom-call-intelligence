@@ -24,14 +24,13 @@ Outputs injected into PipelineState:
 
 import time
 
+from pipeline.config import QA_PASS_THRESHOLD as PASS_THRESHOLD
 from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, QUALITY_GATE
 from pipeline.logger import get_logger
 from qa_audit import audit_record, build_report
 
 log = get_logger(__name__)
-
-PASS_THRESHOLD = 60
 
 
 class QualityAgent:

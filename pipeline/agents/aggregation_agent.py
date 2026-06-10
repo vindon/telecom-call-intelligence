@@ -76,7 +76,7 @@ class AggregationAgent:
         # Log cost model selection decision
         dl.log(
             decision_type="cost_model_applied",
-            decision=f"Cost model: {usage_summary.get('provider', 'unknown')} at ${usage_summary.get('price_input_per_mtok', 0):.2f}/${usage_summary.get('price_output_per_mtok', 0):.2f}/MTok",
+            decision=f"Cost model: {usage_summary.get('provider', 'unknown')} at ${usage_summary.get('price_input_per_mtok_usd', 0):.2f}/${usage_summary.get('price_output_per_mtok_usd', 0):.2f}/MTok",
             reason="Cost model resolved from EXTRACTION_MODEL prefix via token_tracker._resolve_pricing() — single config knob drives all provider pricing",
             evidence={
                 "model": usage_summary.get("model", "unknown"),

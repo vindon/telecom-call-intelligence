@@ -3,7 +3,6 @@ Tests for pipeline/orchestrator.py — BatchTask, WorkPlanner, AgentHealthMonito
 Orchestrator._run_task() (which spawns subprocesses) is covered by integration tests only.
 """
 
-import pytest
 
 from pipeline.orchestrator import AgentHealthMonitor, BatchTask, WorkPlanner
 

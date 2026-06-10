@@ -22,12 +22,11 @@ from pathlib import Path
 # gemini-2.0-flash-lite = 1 500 RPD / 30 RPM (separate quota pool).
 # Claude Haiku is the primary extraction model; Gemini is fallback if ANTHROPIC_API_KEY absent.
 EXTRACTION_MODEL       = "claude-haiku-4-5-20251001"
-INSIGHTS_MODEL         = "gemini-2.0-flash-lite"  # Gemini fallback
 
-# NVIDIA NIM — InsightsAgent primary provider (OpenAI-compatible API).
-# llama-3.1-nemotron-70b is NVIDIA's instruction-tuned flagship; strong
-# reasoning and reliable JSON output via response_format=json_object.
-NVIDIA_INSIGHTS_MODEL  = "meta/llama-3.3-70b-instruct"
+# InsightsAgent primary provider: NVIDIA NIM (OpenAI-compatible API).
+# Llama 3.3 70B Instruct gives strong reasoning and reliable JSON output
+# via response_format=json_object. Fallback chain: NIM → Claude → rule-based.
+INSIGHTS_MODEL         = "meta/llama-3.3-70b-instruct"
 NVIDIA_BASE_URL        = "https://integrate.api.nvidia.com/v1"
 MAX_OUTPUT_TOKENS      = 8192
 EXTRACTION_TEMPERATURE = 0.1   # near-deterministic for structured extraction

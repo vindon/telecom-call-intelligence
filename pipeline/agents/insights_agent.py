@@ -1,8 +1,9 @@
 """
-InsightsAgent  —  Agent 5 of 7
+InsightsAgent  —  Agent 5 of 6
 ---------------------------------
-The second LLM agent in the pipeline. Uses Gemini to synthesize aggregated
-KPIs into actionable strategic recommendations for telecom operations leaders.
+The second LLM agent in the pipeline. Uses NVIDIA NIM (Llama 3.3 70B), with
+Claude Haiku and rule-based fallbacks, to synthesize aggregated KPIs into
+actionable strategic recommendations for telecom operations leaders.
 
 Control loop: Analyze → Critique → Synthesize (self-reflection deliberation)
 -----------------------------------------------------------------------------
@@ -14,7 +15,7 @@ Control loop: Analyze → Critique → Synthesize (self-reflection deliberation)
 This 3-pass pattern catches generic recommendations and forces the LLM to
 confront weak spots before the output leaves the agent. Enabled by default
 (DELIBERATION_ENABLED=True in config); falls back to single-pass if any
-Gemini call fails, and to rule-based fallback if all calls fail.
+LLM call fails, and to rule-based fallback if all calls fail.
 
 Outputs injected into PipelineState
 -------------------------------------
@@ -34,13 +35,13 @@ from pipeline.config import (
     INSIGHTS_TEMPERATURE,
     MAX_OUTPUT_TOKENS,
     NVIDIA_BASE_URL,
-    NVIDIA_INSIGHTS_MODEL,
+    VECTOR_MEMORY_ENABLED,
 )
 from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
-from pipeline.security import GEMINI_RATE_LIMITER, OUTPUT_SANITIZER, SECRET_GUARD
+from pipeline.security import OUTPUT_SANITIZER, SECRET_GUARD
 
 log = get_logger(__name__)
 
@@ -291,15 +292,18 @@ class InsightsAgent:
         # ── Deliberation loop or single-pass ─────────────────────────
         insights = None
         passes_completed = 0
+        usage_acc: list[dict] = []   # per-pass LLM token usage (NIM + Claude)
 
         if DELIBERATION_ENABLED:
             insights, passes_completed = self._deliberation_loop(
-                kpis, metrics, qa_rep, n_calls, historical_context
+                kpis, metrics, qa_rep, n_calls, historical_context, usage_acc
             )
 
         if insights is None:
             # Single-pass fallback
-            insights = self._single_pass_llm(kpis, metrics, qa_rep, n_calls, historical_context)
+            insights = self._single_pass_llm(
+                kpis, metrics, qa_rep, n_calls, historical_context, usage_acc
+            )
             if insights:
                 passes_completed = 1
 
@@ -308,6 +312,12 @@ class InsightsAgent:
             insights = _rule_based_insights(kpis, qa_rep.get("summary", {}), n_calls)
 
         insights["deliberation_passes"] = passes_completed
+        insights["token_usage"] = {
+            "total_prompt_tokens":     sum(u["prompt_tokens"] for u in usage_acc),
+            "total_completion_tokens": sum(u["completion_tokens"] for u in usage_acc),
+            "calls":                   len(usage_acc),
+            "by_pass":                 usage_acc,
+        }
         insights = OUTPUT_SANITIZER.sanitize_insights(insights)
         final_source = insights.get("source", "unknown")
 
@@ -369,6 +379,7 @@ class InsightsAgent:
         qa_rep: dict,
         n_calls: int,
         historical_context: str,
+        usage_acc: list | None = None,
     ) -> tuple[dict | None, int]:
         """
         Run the 3-pass Analyze→Critique→Synthesize loop.
@@ -381,6 +392,7 @@ class InsightsAgent:
         initial = self._llm_call(
             self._build_analyze_prompt(kpis, metrics, qa_rep, n_calls, historical_context),
             temperature=INSIGHTS_TEMPERATURE,
+            usage_acc=usage_acc,
         )
         if initial is None:
             return None, 0
@@ -394,6 +406,7 @@ class InsightsAgent:
                 **kpi_ctx,
             ),
             temperature=0.1,  # low temp for consistent grading
+            usage_acc=usage_acc,
         )
         if critique is None:
             log.warning("[%s] Critique pass failed — returning single-pass result", self.name)
@@ -408,6 +421,7 @@ class InsightsAgent:
                 **kpi_ctx,
             ),
             temperature=INSIGHTS_TEMPERATURE,
+            usage_acc=usage_acc,
         )
         if final is None:
             log.warning("[%s] Synthesis pass failed — returning post-critique result", self.name)
@@ -427,10 +441,12 @@ class InsightsAgent:
         qa_rep: dict,
         n_calls: int,
         historical_context: str,
+        usage_acc: list | None = None,
     ) -> dict | None:
         result = self._llm_call(
             self._build_analyze_prompt(kpis, metrics, qa_rep, n_calls, historical_context),
             temperature=INSIGHTS_TEMPERATURE,
+            usage_acc=usage_acc,
         )
         if result:
             result["source"] = "llm_single_pass"
@@ -438,15 +454,19 @@ class InsightsAgent:
 
     # ── Helpers ──────────────────────────────────────────────────────
 
-    def _llm_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
+    def _llm_call(
+        self, prompt: str, temperature: float = 0.3, usage_acc: list | None = None
+    ) -> dict | None:
         """Call NVIDIA first; fall back to Claude if NVIDIA is unavailable."""
-        result = self._nvidia_call(prompt, temperature)
+        result = self._nvidia_call(prompt, temperature, usage_acc)
         if result is not None:
             return result
         log.info("[%s] NVIDIA unavailable — falling back to Claude", self.name)
-        return self._claude_call(prompt, temperature)
+        return self._claude_call(prompt, temperature, usage_acc)
 
-    def _nvidia_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
+    def _nvidia_call(
+        self, prompt: str, temperature: float = 0.3, usage_acc: list | None = None
+    ) -> dict | None:
         """Call NVIDIA NIM API (OpenAI-compatible). Returns parsed dict or None."""
         api_key = os.environ.get("NVIDIA_API_KEY")
         if not api_key:
@@ -456,7 +476,7 @@ class InsightsAgent:
 
             client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=api_key)
             response = client.chat.completions.create(
-                model=NVIDIA_INSIGHTS_MODEL,
+                model=INSIGHTS_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"},
                 temperature=temperature,
@@ -464,17 +484,28 @@ class InsightsAgent:
             )
             raw = response.choices[0].message.content
             SECRET_GUARD.assert_no_secrets_in_output(raw)
+            if usage_acc is not None and response.usage:
+                usage_acc.append({
+                    "provider":          "nvidia_nim",
+                    "model":             INSIGHTS_MODEL,
+                    "prompt_tokens":     response.usage.prompt_tokens or 0,
+                    "completion_tokens": response.usage.completion_tokens or 0,
+                })
             result = json.loads(raw)
-            return OUTPUT_SANITIZER.sanitize_insights(result)
+            # Per-pass payloads (critique etc.) have varying schemas — apply the
+            # generic sanitizer here; sanitize_insights() runs once on the final dict.
+            return OUTPUT_SANITIZER.sanitize_extraction_result(result)
 
         except Exception as exc:
             if "429" in str(exc):
-                log.warning("[%s] NVIDIA quota exhausted (429) — model=%s", self.name, NVIDIA_INSIGHTS_MODEL)
+                log.warning("[%s] NVIDIA quota exhausted (429) — model=%s", self.name, INSIGHTS_MODEL)
             else:
                 log.warning("[%s] NVIDIA call failed (%s): %s", self.name, type(exc).__name__, exc)
             return None
 
-    def _claude_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
+    def _claude_call(
+        self, prompt: str, temperature: float = 0.3, usage_acc: list | None = None
+    ) -> dict | None:
         """Call Anthropic Claude (fallback). Returns parsed dict or None."""
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
@@ -490,7 +521,9 @@ class InsightsAgent:
                 messages=[{"role": "user", "content": prompt}],
                 system="You are a strategic telecom analyst. Always respond with valid JSON only — no markdown fences, no prose.",
             )
-            raw = response.content[0].text.strip()
+            # content[0] may be a non-text block (tool use, thinking) — getattr keeps
+            # the failure path in the except handler instead of an AttributeError.
+            raw = getattr(response.content[0], "text", "").strip()
             # strip markdown fences if present (```json ... ```)
             if raw.startswith("```"):
                 raw = raw.split("```", 2)[1]
@@ -498,47 +531,21 @@ class InsightsAgent:
                     raw = raw[4:]
                 raw = raw.strip()
             SECRET_GUARD.assert_no_secrets_in_output(raw)
+            if usage_acc is not None:
+                usage_acc.append({
+                    "provider":          "anthropic",
+                    "model":             CLAUDE_INSIGHTS_MODEL,
+                    "prompt_tokens":     response.usage.input_tokens,
+                    "completion_tokens": response.usage.output_tokens,
+                })
             result = json.loads(raw)
-            return OUTPUT_SANITIZER.sanitize_insights(result)
+            return OUTPUT_SANITIZER.sanitize_extraction_result(result)
 
         except Exception as exc:
             if "429" in str(exc) or "rate" in str(exc).lower():
                 log.warning("[%s] Claude rate limited — model=%s", self.name, CLAUDE_INSIGHTS_MODEL)
             else:
                 log.warning("[%s] Claude call failed (%s): %s", self.name, type(exc).__name__, exc)
-            return None
-
-    def _gemini_call(self, prompt: str, temperature: float = 0.3) -> dict | None:
-        """Call Gemini (last-resort fallback). Returns parsed dict or None."""
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            return None
-        try:
-            from google import genai
-            from google.genai import types
-
-            GEMINI_RATE_LIMITER.acquire()
-            client   = genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model=INSIGHTS_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=temperature,
-                    max_output_tokens=MAX_OUTPUT_TOKENS,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
-            )
-            SECRET_GUARD.assert_no_secrets_in_output(response.text)
-            result = json.loads(response.text)
-            return OUTPUT_SANITIZER.sanitize_insights(result)
-
-        except Exception as exc:
-            from google.genai import errors as _genai_errors
-            if isinstance(exc, _genai_errors.ClientError) and "429" in str(exc):
-                log.warning("[%s] Gemini quota exhausted (429) — model=%s", self.name, INSIGHTS_MODEL)
-            else:
-                log.warning("[%s] Gemini call failed (%s): %s", self.name, type(exc).__name__, exc)
             return None
 
     def _build_analyze_prompt(
@@ -551,11 +558,10 @@ class InsightsAgent:
     ) -> str:
         cost_dist  = metrics.get("distributions", {}).get("cost_driver", {})
         top_driver = max(cost_dist, key=cost_dist.get) if cost_dist else "unknown"
-        hist_section = (
-            f"\n--- Historical Performance Context ---\n{historical_context}\n"
-            if historical_context else ""
-        )
-        return (hist_section + ANALYZE_PROMPT).format(
+        # historical_context is injected only via the {historical_context}
+        # placeholder — never concatenated into the template before .format(),
+        # because memory text may contain braces that would break formatting.
+        return ANALYZE_PROMPT.format(
             n_calls               = n_calls,
             aht_min               = kpis.get("avg_handle_time_minutes", 0),
             fcr_pct               = kpis.get("fcr_rate_pct", 0),
@@ -569,7 +575,10 @@ class InsightsAgent:
             top_cost_driver       = top_driver,
             qa_avg_score          = qa_rep.get("summary", {}).get("avg_score", "N/A"),
             qa_verdict            = qa_rep.get("dataset_verdict", "N/A"),
-            historical_context    = historical_context,
+            historical_context    = (
+                f"--- Historical Performance Context ---\n{historical_context}"
+                if historical_context else ""
+            ),
         )
 
     def _kpi_context(self, kpis: dict, metrics: dict) -> dict:
@@ -589,6 +598,9 @@ class InsightsAgent:
         Vector store retrieves runs most similar to the current KPI profile.
         """
         flat_context = MEMORY.get_context_for_insights()
+
+        if not VECTOR_MEMORY_ENABLED:
+            return flat_context
 
         # Semantic retrieval from vector memory
         try:

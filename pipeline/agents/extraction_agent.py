@@ -1,19 +1,20 @@
 """
 ExtractionAgent  —  Agent 2 of 6
 -----------------------------------
-Drives the Gemini 2.5 Flash Lite structured JSON extraction for every validated
-transcript. This agent is the primary LLM consumer in the pipeline.
+Drives structured JSON extraction for every validated transcript using the
+configured EXTRACTION_MODEL (Claude Haiku primary; Gemini fallback). This
+agent is the primary LLM consumer in the pipeline.
 
 Responsibilities
 ----------------
-  • Manage the Gemini API client and system prompt lifecycle
-  • Submit each transcript to Gemini with native JSON mode + Chain-of-Thought
+  • Manage the LLM API client and system prompt lifecycle
+  • Submit each transcript with JSON output mode + Chain-of-Thought
   • Execute the ReAct control loop per transcript:
       Reason  : assess which critical fields are likely present
-      Act     : call Gemini for full extraction
+      Act     : call the LLM for full extraction
       Observe : score field coverage inline
       Reason  : decide if a targeted gap-fill retry is warranted
-      Act     : call Gemini again for missing fields only (if score < threshold)
+      Act     : call the LLM again for missing fields only (if score < threshold)
       Observe : merge and record final coverage improvement
   • Handle 429 rate limits with exponential backoff
   • Checkpoint each successful result immediately (resume-safe)
@@ -28,11 +29,11 @@ Outputs injected into PipelineState
 
 import os
 import time
+from typing import Any
 
 import pipeline.analyzer as _analyzer_mod
 from pipeline.analyzer import (
     analyze_batch,
-    analyze_transcript,
     gap_fill_transcript,
     load_system_prompt,
     score_field_coverage,
@@ -72,7 +73,9 @@ class ExtractionAgent:
             self.name, len(transcripts), checkpoint_key or "none",
         )
 
-        self._dl = DecisionLogger(self.name, state)
+        # Local logger keeps the agent stateless — no instance state may
+        # persist across run() invocations on the shared singleton.
+        dl = DecisionLogger(self.name, state)
 
         # ── Act: initial batch extraction ────────────────────────────
         results = analyze_batch(
@@ -82,7 +85,7 @@ class ExtractionAgent:
         )
 
         # ── Observe + Reason + Act (ReAct gap-fill loop) ─────────────
-        results, react_stats = self._react_loop(results, transcripts)
+        results, react_stats = self._react_loop(results, transcripts, dl)
 
         result_ids = {r.get("call_id") for r in results}
         failed = [t["call_id"] for t in transcripts if t["call_id"] not in result_ids]
@@ -119,7 +122,7 @@ class ExtractionAgent:
         )
 
         # Dataset-level summary decision
-        self._dl.log(
+        dl.log(
             decision_type="react_gap_fill_outcome",
             decision=f"ReAct loop: {react_stats['n_gap_fills']} gap-fills, {react_stats['n_improved']} improved",
             reason=(
@@ -135,13 +138,14 @@ class ExtractionAgent:
             "analysis_results": results,
             "failed_call_ids":  failed,
             "react_stats":      react_stats,
-            "decision_log":     self._dl.finalize(),
+            "decision_log":     dl.finalize(),
         }
 
     def _react_loop(
         self,
         results: list[dict],
         transcripts: list[dict],
+        dl: DecisionLogger,
     ) -> tuple[list[dict], dict]:
         """
         ReAct observe → reason → act loop.
@@ -152,6 +156,7 @@ class ExtractionAgent:
 
         Returns (improved_results, stats_dict).
         """
+        client: Any
         try:
             from pipeline.analyzer import _USE_CLAUDE
             if _USE_CLAUDE:
@@ -174,7 +179,7 @@ class ExtractionAgent:
         # Build a lookup so we can find the original transcript for each result
         transcript_map = {t["call_id"]: t for t in transcripts}
 
-        improved_results = []
+        improved_results: list[dict] = []
         n_improved  = 0
         n_gap_fills = 0
         coverage_before: list[int] = []
@@ -199,7 +204,7 @@ class ExtractionAgent:
                 "[ReAct] call %s: coverage=%d < threshold=%d — triggering gap-fill",
                 str(call_id)[:12], coverage, REACT_QUALITY_THRESHOLD,
             )
-            self._dl.log(
+            dl.log(
                 decision_type="react_trigger",
                 decision=f"Gap-fill triggered for {call_id} (coverage={coverage}%)",
                 reason=f"Field coverage {coverage}% < REACT_QUALITY_THRESHOLD={REACT_QUALITY_THRESHOLD}%; targeted retry will attempt to recover missing critical fields",

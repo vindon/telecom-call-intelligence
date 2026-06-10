@@ -28,7 +28,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-OUTPUT_DIR = Path("outputs")
+from pipeline.config import OUTPUT_DIR, QA_HIGH_THRESHOLD, QA_PASS_THRESHOLD
 
 # ── Schema ────────────────────────────────────────────────────────────
 
@@ -269,8 +269,8 @@ def audit_record(record: dict) -> dict:
         "call_id":             str(record.get("call_id", "UNKNOWN")),
         "total_score":         total,
         "grade": (
-            "HIGH"   if total >= 85 else
-            "MEDIUM" if total >= 60 else
+            "HIGH"   if total >= QA_HIGH_THRESHOLD else
+            "MEDIUM" if total >= QA_PASS_THRESHOLD else
             "LOW"
         ),
         "dimension_scores": {
@@ -294,7 +294,7 @@ def audit_record(record: dict) -> dict:
 def build_report(
     results: list[dict],
     source_file: str,
-    pass_threshold: int = 60,
+    pass_threshold: int = QA_PASS_THRESHOLD,
 ) -> dict:
     """Generate the full QA report from audited records."""
     audited   = [audit_record(r) for r in results]
@@ -387,7 +387,7 @@ def main() -> None:
         help="Path to full_results JSON to audit (default: latest in outputs/)",
     )
     parser.add_argument(
-        "--threshold", type=int, default=60,
+        "--threshold", type=int, default=QA_PASS_THRESHOLD,
         help="Minimum score to count as 'passing' (default: 60)",
     )
     args = parser.parse_args()

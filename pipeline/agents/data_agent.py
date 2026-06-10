@@ -15,16 +15,13 @@ Outputs injected into PipelineState:
   validation_errors     — list of rejection reasons
 """
 
+from pipeline.config import MIN_TRANSCRIPT_CHARS, MIN_TURN_COUNT
 from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, PII_SCANNER
 from pipeline.hf_loader import load_telecom_transcripts
 from pipeline.logger import get_logger
-from pipeline.tools import REGISTRY as TOOLS
 
 log = get_logger(__name__)
-
-MIN_TRANSCRIPT_CHARS = 150
-MIN_TURN_COUNT       = 4
 
 
 class DataIngestionAgent:

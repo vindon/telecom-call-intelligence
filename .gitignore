@@ -14,14 +14,24 @@ dist/
 build/
 .eggs/
 
+# ── Dataset (682 MB — exceeds GitHub's 100 MB hard limit; never commit) ──
+telecom_200k.csv
+
 # ── Pipeline outputs ──────────────────────────────────────────────────
-# Commit summary.json manually if you want live results in the repo.
-# Commit qa_report*.json to track quality over time (optional).
+# Everything in outputs/ is ignored except summary.json (commit manually
+# if you want live results in the repo) — matches the CLAUDE.md contract.
 outputs/call_results_*.csv
 outputs/full_results_*.json
 outputs/run_manifest_*.json
 outputs/merge_manifest_*.json
+outputs/qa_report_*.json
+outputs/insights_*.json
+outputs/decisions_*.json
+outputs/audit_log_*.json
+outputs/agent_memory.json
+outputs/vector_memory/
 outputs/.checkpoint_*.jsonl
+outputs/.react_quota_exhausted
 outputs/pipeline.log
 
 # ── OS ────────────────────────────────────────────────────────────────

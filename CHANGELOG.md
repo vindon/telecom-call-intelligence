@@ -6,6 +6,36 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.1.0] — 2026-06-10
+
+### Fixed — ReAct correctness and cost accounting
+
+- **`_CRITICAL_FIELDS` schema mismatch** (`pipeline/analyzer.py`): `fcr`, `issue_category`, and `resolution_status` did not exist in the extraction schema, capping field coverage at 57% and forcing a wasted gap-fill API call on *every* transcript (~2× extraction cost). Replaced with the real schema fields (`fcr_indicator`, `issue_1_category`, `escalation_required`); phantom columns no longer leak into exported CSVs
+- **Boolean false counted as missing**: `value in (None, "", 0)` treated `False` as a missing field (False == 0 in Python) — new `_is_missing()` helper treats only null/empty-string as missing
+- **Gap-fill tokens now counted**: ReAct retry token usage was discarded, so `BudgetGuard` under-enforced; gap-fill prompt/completion tokens now accumulate into the per-call token totals
+- **Orchestrator retry off-by-one**: `attempts` was incremented in both `run()` and `_run_task()`, silently consuming one retry per task; `attempts` now counts retries only
+- **Emergency export no longer blanks the dashboard**: on the quality-gate-failure path, `summary.json` (empty metrics) is preserved instead of overwritten
+- **Cost-model decision record** showed $0.00/$0.00 pricing due to a key-name mismatch (`price_input_per_mtok` vs `price_input_per_mtok_usd`)
+- **False sanitizer warnings**: `sanitize_insights()` was applied to critique-pass responses (different schema); per-pass responses now use the generic sanitizer, with `sanitize_insights()` applied once to the final dict
+
+### Changed — config as single source of truth
+
+- `INSIGHTS_MODEL` is now the NVIDIA NIM model (`meta/llama-3.3-70b-instruct`), replacing `NVIDIA_INSIGHTS_MODEL`; removed the dead Gemini insights fallback (`_gemini_call`) — the chain is NIM → Claude → rule-based as documented
+- All hardcoded `Path("outputs")` occurrences replaced with `pipeline.config.OUTPUT_DIR` (governance, orchestrator, export agent, logger, tools, qa_audit, merge_outputs)
+- Dead config constants wired up: `DEFAULT_*` now drive CLI argparse defaults; `QA_PASS_THRESHOLD`/`QA_HIGH_THRESHOLD` drive QA grading; `MAX_TRANSCRIPT_CHARS`/`MAX_FIELD_STRING_LEN` drive sanitizer limits; `VECTOR_MEMORY_ENABLED` gates vector memory load/retrieval
+- `ExportAgent` now instruments `DecisionLogger` (new `export_scope` decision type); `ExtractionAgent` no longer stores logger state on the shared singleton
+- `SecretGuard` sensitive-key set extended with `anthropic_api_key`, `nvidia_api_key`, `langchain_api_key`
+- InsightsAgent now records per-pass LLM token usage in `agent_insights.token_usage`
+- Orchestrator quota events record the actual configured model/provider instead of hardcoded "Google AI Studio"
+
+### Tooling
+
+- `ruff` F401 (unused imports) no longer globally ignored; `api/` added to lint/format targets; `make check` (lint + mypy + tests) passes clean
+- `.gitignore` now covers `telecom_200k.csv` (682 MB) and all `outputs/` artifacts except `summary.json`
+- `pyproject.toml` version aligned to 4.1.0; stale Gemini-era docstrings and agent-count mismatches corrected across the codebase
+
+---
+
 ## [4.0.0] — 2026-06-01
 
 ### Added — Agent Decision Traceability

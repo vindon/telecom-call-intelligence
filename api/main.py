@@ -27,14 +27,13 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-from pipeline.analyzer import _USE_CLAUDE, analyze_transcript, load_system_prompt
-from pipeline.config import (
+from pipeline.analyzer import _USE_CLAUDE, analyze_transcript, load_system_prompt  # noqa: E402
+from pipeline.config import (  # noqa: E402
     EXTRACTION_MODEL,
     MAX_OUTPUT_TOKENS,
-    EXTRACTION_TEMPERATURE,
     OUTPUT_DIR,
 )
-from pipeline.security import INPUT_SANITIZER, OUTPUT_SANITIZER
+from pipeline.security import INPUT_SANITIZER, OUTPUT_SANITIZER  # noqa: E402
 
 # Initialise the correct LLM client based on EXTRACTION_MODEL.
 # Changing EXTRACTION_MODEL in config.py automatically switches the API client here.

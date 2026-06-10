@@ -5,8 +5,6 @@ All tests use tmp_path-backed instances — no side effects on outputs/agent_mem
 
 import json
 
-import pytest
-
 from pipeline.memory import _SCHEMA_VERSION, AgentMemory
 
 

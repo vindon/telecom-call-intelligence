@@ -29,6 +29,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from pipeline.config import (  # noqa: E402
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_DELAY_S,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RATE_LIMIT_RPM,
+    DEFAULT_SEED,
+)
 from pipeline.orchestrator import Orchestrator  # noqa: E402
 
 
@@ -55,23 +62,23 @@ def main() -> None:
         help="Number of sequential batches to run (default: 5)",
     )
     parser.add_argument(
-        "--n", type=int, default=20,
+        "--n", type=int, default=DEFAULT_BATCH_SIZE,
         help="Calls per batch (default: 20). Total calls = batches × n.",
     )
     parser.add_argument(
-        "--seed", type=int, default=42,
+        "--seed", type=int, default=DEFAULT_SEED,
         help="Random seed for reproducible transcript sampling (default: 42).",
     )
     parser.add_argument(
-        "--delay", type=float, default=2.0,
-        help="Seconds between Gemini API calls within each batch (default: 2.0).",
+        "--delay", type=float, default=DEFAULT_DELAY_S,
+        help="Seconds between LLM API calls within each batch (default: 2.0).",
     )
     parser.add_argument(
-        "--retries", type=int, default=2,
+        "--retries", type=int, default=DEFAULT_MAX_RETRIES,
         help="Max retry attempts per failed batch (default: 2).",
     )
     parser.add_argument(
-        "--rpm", type=int, default=15,
+        "--rpm", type=int, default=DEFAULT_RATE_LIMIT_RPM,
         help="Rate limit in requests per minute — used for duration estimates (default: 15).",
     )
     parser.add_argument(

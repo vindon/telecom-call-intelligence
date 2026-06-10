@@ -26,18 +26,14 @@ from __future__ import annotations
 import subprocess
 import sys
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
 
-from pipeline.config import BUDGET_USD
+from pipeline.config import BUDGET_USD, OUTPUT_DIR
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
 
 log = get_logger(__name__)
-
-OUTPUT_DIR = Path("outputs")
 
 # Sentinel written by analyzer.py when Gemini daily quota is exhausted
 _QUOTA_SENTINEL = OUTPUT_DIR / ".react_quota_exhausted"
@@ -228,13 +224,14 @@ class Orchestrator:
     # ── Task execution ────────────────────────────────────────────────
 
     def _run_task(self, task: BatchTask) -> None:
-        task.status   = "running"
-        task.attempts += 1
+        # task.attempts counts *retries consumed* (incremented by run() when a
+        # retry is scheduled) — incrementing it here too would burn a retry per run.
+        task.status = "running"
         t0 = time.monotonic()
 
         log.info(
             "[Orchestrator] Starting task %d/%d: offset=%d n=%d attempt=%d",
-            task.task_id, len(self.tasks), task.offset, task.n_calls, task.attempts,
+            task.task_id, len(self.tasks), task.offset, task.n_calls, task.attempts + 1,
         )
 
         cmd = [
@@ -360,7 +357,7 @@ class Orchestrator:
 
         if report["failed_task_ids"]:
             print(f"\n  Failed task IDs: {report['failed_task_ids']}")
-            print("  Re-run with --resume to retry failed batches only")
+            print("  Re-run run_batches.py — completed calls resume from checkpoints automatically")
 
         print("▓" * 60 + "\n")
 
@@ -369,8 +366,9 @@ class Orchestrator:
             MEMORY.load()
             # Record each quota event detected (failed tasks)
             if report["failed_task_ids"]:
-                from pipeline.analyzer import MODEL as CURRENT_MODEL
-                MEMORY.record_quota_event(CURRENT_MODEL, "Google AI Studio")
+                from pipeline.token_tracker import MODEL as CURRENT_MODEL
+                from pipeline.token_tracker import PROVIDER as CURRENT_PROVIDER
+                MEMORY.record_quota_event(CURRENT_MODEL, CURRENT_PROVIDER)
             MEMORY.save()
         except Exception as exc:
             log.warning("[Orchestrator] Memory update failed: %s", exc)

@@ -18,18 +18,16 @@ Outputs injected into PipelineState:
 import json
 import time
 from datetime import datetime
-from pathlib import Path
 
 import pandas as pd
 
-from pipeline.decision_log import summarize_decisions
+from pipeline.config import OUTPUT_DIR
+from pipeline.decision_log import DecisionLogger, summarize_decisions
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
 
 log = get_logger(__name__)
-
-OUTPUT_DIR = Path("outputs")
 
 
 class ExportAgent:
@@ -44,11 +42,13 @@ class ExportAgent:
         AUDIT_LOG.record_agent_start(self.name, {"ts": ts})
 
         results      = state["analysis_results"]
-        metrics      = dict(state["aggregated_metrics"])
+        metrics      = dict(state.get("aggregated_metrics", {}))
         qa_report    = state.get("qa_report", {})
         insights     = state.get("agent_insights", {})
         usage        = state.get("token_usage", {})
         decision_log = state.get("decision_log", [])
+
+        dl = DecisionLogger(self.name, state)
 
         # 1 ── Per-call CSV
         df       = pd.DataFrame(results)
@@ -56,15 +56,49 @@ class ExportAgent:
         df.to_csv(csv_path, index=False)
         log.info("[%s] CSV: %d rows → %s", self.name, len(results), csv_path)
 
-        # 2 ── Summary JSON (dashboard source of truth)
-        metrics["token_usage"]       = usage
-        metrics["qa_summary"]        = qa_report.get("summary", {})
-        metrics["agent_insights"]    = insights
-        metrics["decision_summary"]  = summarize_decisions(decision_log)
+        # 2 ── Summary JSON (dashboard source of truth).
+        # On the emergency path (quality gate failure) aggregated_metrics is
+        # empty — overwriting summary.json then would blank the dashboard, so
+        # the last good run's summary is preserved instead.
+        emergency_run = not metrics.get("kpis")
+        dl.log(
+            decision_type="export_scope",
+            decision=(
+                "Emergency export: per-call artifacts only, summary.json preserved"
+                if emergency_run else
+                f"Full export: {len(results)} records + summary.json refreshed"
+            ),
+            reason=(
+                "aggregated_metrics has no KPIs (quality gate failure path) — overwriting "
+                "the dashboard source of truth with empty metrics would blank it"
+                if emergency_run else
+                "Normal pipeline completion — all artifacts written including dashboard summary"
+            ),
+            evidence={"emergency_run": emergency_run, "n_records": len(results),
+                      "qa_verdict": qa_report.get("dataset_verdict", "N/A")},
+            confidence="high",
+            alternatives=(
+                ["Overwrite summary.json with empty metrics (rejected: blanks dashboard)"]
+                if emergency_run else
+                ["Skip summary refresh (rejected: dashboard would show stale data)"]
+            ),
+        )
+        decision_log = dl.finalize()  # include the export decision in all artifacts below
+
         summary_path = OUTPUT_DIR / "summary.json"
-        with open(summary_path, "w", encoding="utf-8") as fh:
-            json.dump(metrics, fh, indent=2)
-        log.info("[%s] Summary JSON: %s", self.name, summary_path)
+        if not emergency_run:
+            metrics["token_usage"]       = usage
+            metrics["qa_summary"]        = qa_report.get("summary", {})
+            metrics["agent_insights"]    = insights
+            metrics["decision_summary"]  = summarize_decisions(decision_log)
+            with open(summary_path, "w", encoding="utf-8") as fh:
+                json.dump(metrics, fh, indent=2)
+            log.info("[%s] Summary JSON: %s", self.name, summary_path)
+        else:
+            log.warning(
+                "[%s] Emergency export (no aggregated metrics) — summary.json NOT overwritten",
+                self.name,
+            )
 
         # 3 ── Full results JSON (QA-enriched per-call records)
         full_path = OUTPUT_DIR / f"full_results_{ts}.json"
@@ -96,17 +130,15 @@ class ExportAgent:
         log.info("[%s] Decision log: %d records → %s", self.name, len(decision_log), decisions_path)
 
         # 6 ── Run manifest
+        agents_executed = ["DataIngestionAgent", "ExtractionAgent", "QualityAgent"]
+        if not emergency_run:
+            agents_executed += ["AggregationAgent", "InsightsAgent", "ApprovalGate"]
+        agents_executed.append("ExportAgent")
+
         manifest = {
             "run_timestamp":      ts,
-            "pipeline_version":   "2.0-multi-agent",
-            "agents_executed": [
-                "DataIngestionAgent",
-                "ExtractionAgent",
-                "QualityAgent",
-                "AggregationAgent",
-                "InsightsAgent",
-                "ExportAgent",
-            ],
+            "pipeline_version":   "4.1-multi-agent",
+            "agents_executed":    agents_executed,
             "offset":             state.get("offset", 0),
             "seed":               state.get("seed", 42),
             "n_requested":        state.get("n_calls", 0),
@@ -179,4 +211,4 @@ class ExportAgent:
             "[%s] All outputs written to %s  |  Audit: %s events",
             self.name, OUTPUT_DIR.resolve(), AUDIT_LOG.summary()["total_events"],
         )
-        return {**state, "export_paths": export_paths}
+        return {**state, "export_paths": export_paths, "decision_log": decision_log}

@@ -20,16 +20,13 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
-from pipeline.config import BUDGET_USD, MIN_PASS_RATE, QUALITY_WARN_RATE
+from pipeline.config import BUDGET_USD, MIN_PASS_RATE, OUTPUT_DIR, QUALITY_WARN_RATE
 from pipeline.logger import get_logger
 
 log = get_logger(__name__)
-
-OUTPUT_DIR = Path("outputs")
 
 
 # ── 1. Budget Guard ───────────────────────────────────────────────────

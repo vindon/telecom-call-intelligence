@@ -7,7 +7,6 @@ All tests are pure Python — no API calls, no filesystem writes.
 Expected: all tests pass in < 1 second.
 """
 
-import pytest
 
 from pipeline.decision_log import (
     DecisionLogger,

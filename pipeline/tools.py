@@ -30,6 +30,11 @@ from typing import Any
 
 from pipeline.logger import get_logger
 
+# Aliases resolved at module scope — inside ToolRegistry the name `list`
+# refers to the .list() method, which breaks annotations like list[dict].
+_StrList  = list[str]
+_DictList = list[dict]
+
 log = get_logger(__name__)
 
 
@@ -96,10 +101,10 @@ class ToolRegistry:
     def invoke(self, name: str, audit_log=None, **kwargs) -> Any:
         return self.get(name).invoke(audit_log=audit_log, **kwargs)
 
-    def list(self) -> list[str]:
+    def list(self) -> _StrList:
         return list(self._tools)
 
-    def manifest(self) -> list[dict]:
+    def manifest(self) -> _DictList:
         """Return tool definitions suitable for embedding in an LLM system prompt."""
         return [
             {
@@ -140,8 +145,10 @@ def _export_results(results: list, metrics: dict, output_dir: str) -> dict:
     import json
     from datetime import datetime
     from pathlib import Path
+
+    from pipeline.config import OUTPUT_DIR
     p = Path(output_dir).resolve()
-    allowed = Path("outputs").resolve()
+    allowed = OUTPUT_DIR.resolve()
     try:
         p.relative_to(allowed)
     except ValueError:

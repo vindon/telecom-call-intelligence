@@ -58,11 +58,11 @@ test-cov:
 # ── Code quality ───────────────────────────────────────────────────────
 
 lint:
-	$(RUFF) check pipeline/ tests/ run_pipeline.py run_batches.py \
+	$(RUFF) check pipeline/ tests/ api/ run_pipeline.py run_batches.py \
 		merge_outputs.py qa_audit.py dashboard/
 
 format:
-	$(RUFF) format pipeline/ tests/ run_pipeline.py run_batches.py \
+	$(RUFF) format pipeline/ tests/ api/ run_pipeline.py run_batches.py \
 		merge_outputs.py qa_audit.py dashboard/
 
 type-check:

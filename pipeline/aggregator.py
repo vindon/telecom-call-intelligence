@@ -18,7 +18,6 @@ a full inference cost breakdown alongside the business KPIs.
 
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
 
 from pipeline.config import EXTRACTION_MODEL

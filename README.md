@@ -27,7 +27,7 @@ This system is a direct implementation of Anthropic's Agentic AI framework: **ag
 | Claude Agentic Principle | How it's implemented |
 |--------------------------|---------------------|
 | **Tool use** | Formal JSON-schema tool registry; each agent calls only its authorised tools via `AgentScopeGuard` |
-| **Multi-agent orchestration** | 7 specialised agents in a LangGraph `StateGraph`; each stateless, composable, and replaceable |
+| **Multi-agent orchestration** | 6 specialised agents + a human approval gate in a 7-node LangGraph `StateGraph`; each stateless, composable, and replaceable |
 | **Reasoning loops** | ReAct (Observe→Reason→Act) per transcript; 3-pass deliberation (Analyze→Critique→Synthesize) for insights |
 | **Chain-of-Thought** | `_cot_reasoning` as the mandatory first JSON field forces structured reasoning before every extraction and recommendation |
 | **Long-term memory** | Flat JSON run history + Gemini-embedded semantic vector store; top-K similar historical runs injected into InsightsAgent context |
@@ -116,7 +116,7 @@ Every component exists because production autonomous systems need it.
 | **Multi-layer security** | `InputSanitizer` (injection + PII), `OutputSanitizer` (code execution + secrets), `AgentScopeGuard` (tool access), `SecretGuard`, `RateLimiter` | Prompt injection, cross-agent tool hijacking, secret exfiltration, response bombs — all blocked before they reach downstream agents |
 | **Human approval gate** | Configurable checkpoint before export: interactive in production, auto-approve in CI | Autonomous systems need human oversight options; this is where operators review KPIs before outputs are written |
 | **Governance layer** | `BudgetGuard` (reads `BUDGET_USD` from config), `QualityGate`, `PIIScanner`, `AuditLog` | Cost caps, quality thresholds, PII compliance, and event traceability — without manual intervention |
-| **LangSmith tracing** | One env var (`LANGCHAIN_TRACING_V2=true`) enables full node-level span capture | End-to-end observability across all 7 agents and both LLM providers |
+| **LangSmith tracing** | One env var (`LANGCHAIN_TRACING_V2=true`) enables full node-level span capture | End-to-end observability across all 7 pipeline nodes and every LLM provider |
 | **Dynamic routing** | LangGraph conditional edge after QualityAgent | Catastrophic extraction failure routes to safe export; the pipeline never silently fails |
 | **Checkpoint/resume** | Every API call persisted to `outputs/.checkpoint_{key}.jsonl` immediately | Kill a 100-call job at call 73 — restart and it resumes from 74 with zero duplicated API spend |
 | **Process isolation** | `run_batches.py` → `Orchestrator` → N subprocesses | A crashed batch cannot corrupt other batches; full batch-level retry with health monitoring |
@@ -226,14 +226,14 @@ make clean         # remove __pycache__, .pyc, pytest cache
 
 | Category | Fields |
 |----------|--------|
-| **Resolution** | `first_call_resolution`, `resolution_status`, `escalated` |
-| **Effort** | `handle_time_seconds`, `issue_count`, `hold_time_seconds` |
-| **Intent** | `intent` (24 categories), `avoidable_call`, `agentic_ai_resolvable` |
-| **Sentiment** | `sentiment_start`, `sentiment_end`, `sentiment_trajectory` |
-| **Risk** | `repeat_call_risk`, `churn_risk_signal` |
-| **Commercial** | `upsell_attempted`, `upsell_success`, `cross_sell_opportunity` |
-| **Operations** | `cost_driver`, `agent_professionalism`, `tool_struggle_detected` |
-| **Phase durations** | `greeting_s`, `issue_s`, `resolution_s`, `wrap_up_s` |
+| **Resolution** | `fcr_indicator`, `all_issues_resolved`, `primary_issue_resolved`, `escalation_required` |
+| **Effort** | `total_duration_seconds`, `total_issues_count`, `hold_count`, `phase_hold_total_seconds` |
+| **Intent** | `issue_1..5_category`, `avoidable_call`, `agentic_ai_resolvable`, `could_be_self_served` |
+| **Sentiment** | `customer_sentiment_start`, `customer_sentiment_end`, `customer_sentiment_improved` |
+| **Risk** | `repeat_call_risk`, `customer_expressed_dissatisfaction` |
+| **Commercial** | `upsell_attempted`, `upsell_outcome`, `plans_discussed` |
+| **Operations** | `primary_cost_driver`, `agent_skill_rating`, `agent_tool_struggle_detected`, `handle_time_efficiency` |
+| **Phase durations** | `phase_welcome/discovery/diagnosis/resolution/upsell/closing_duration_seconds` |
 | **Reasoning** | `_cot_reasoning` (LLM step-by-step analysis before field extraction) |
 
 ---
@@ -277,7 +277,7 @@ telecom-call-intelligence/
 │   │   ├── quality_agent.py        ← Agent 3: QualityAgent (100-pt QA scoring)
 │   │   ├── aggregation_agent.py    ← Agent 4: AggregationAgent (KPIs + cost levers)
 │   │   ├── insights_agent.py       ← Agent 5: InsightsAgent (NVIDIA NIM deliberation)
-│   │   └── export_agent.py         ← Agent 7: ExportAgent (CSV/JSON/decisions/audit)
+│   │   └── export_agent.py         ← Agent 6: ExportAgent (CSV/JSON/decisions/audit)
 │   ├── graph.py                ← LangGraph StateGraph (7 nodes, conditional routing,
 │   │                               approval gate, LangSmith tracing)
 │   ├── orchestrator.py         ← WorkPlanner, AgentHealthMonitor, adaptive retry
@@ -301,6 +301,7 @@ telecom-call-intelligence/
 │   └── test_security.py        ← 51 security tests
 │
 ├── dashboard/app.py            ← Streamlit executive dashboard (8 sections)
+├── api/main.py                 ← FastAPI wrapper (/health, /summary, /analyze)
 ├── prompts/system_prompt.txt   ← 70-field extraction schema + CoT instructions
 │
 ├── run_pipeline.py             ← Single-batch entry point (model-aware key validation)
@@ -353,7 +354,7 @@ The 7-node architecture is designed for this. Only `data_agent.py` changes when 
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — Multi-agent design, agentic control loops, decision traceability, security layer, state schema
 - [`SECURITY.md`](SECURITY.md) — Threat model, PII handling, API key security, vulnerability disclosure
-- [`CHANGELOG.md`](CHANGELOG.md) — Version history from v0.1 to v4.0
+- [`CHANGELOG.md`](CHANGELOG.md) — Version history from v0.1 to v4.1
 
 ---
 

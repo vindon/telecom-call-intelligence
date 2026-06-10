@@ -396,7 +396,7 @@ KPIs computed: FCR rate, AHT, escalation rate, avoidable call rate, agentic AI r
 
 ---
 
-### Agent 6 (node) — ApprovalGate (`pipeline/graph.py`)
+### ApprovalGate (node 6) (`pipeline/graph.py`)
 
 **Responsibilities:** Human-in-the-loop checkpoint before any outputs are written.
 
@@ -412,7 +412,7 @@ KPIs computed: FCR rate, AHT, escalation rate, avoidable call rate, agentic AI r
 
 ---
 
-### Agent 7 — ExportAgent (`pipeline/agents/export_agent.py`)
+### Agent 6 (node 7) — ExportAgent (`pipeline/agents/export_agent.py`)
 
 **Responsibilities:** Persist all pipeline outputs and the complete audit trail to disk.
 
@@ -520,7 +520,7 @@ telecom-call-intelligence/
 │   │   ├── quality_agent.py       ← Agent 3: QualityAgent (100-pt QA)
 │   │   ├── aggregation_agent.py   ← Agent 4: AggregationAgent (KPIs)
 │   │   ├── insights_agent.py      ← Agent 5: InsightsAgent (NVIDIA NIM deliberation)
-│   │   └── export_agent.py        ← Agent 7: ExportAgent
+│   │   └── export_agent.py        ← Agent 6: ExportAgent
 │   ├── graph.py               ← LangGraph (7 nodes, conditional routing,
 │   │                              approval gate, decision logging, LangSmith)
 │   ├── orchestrator.py        ← WorkPlanner, AgentHealthMonitor, adaptive retry

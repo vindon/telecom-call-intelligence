@@ -3,9 +3,9 @@ run_pipeline.py
 ---------------
 Entry point for the Telecom Call Intelligence multi-agent pipeline.
 
-Architecture (7 agents):
+Architecture (6 agents + approval gate, 7-node LangGraph):
   DataIngestionAgent  →  ExtractionAgent  →  QualityAgent
-  AggregationAgent    →  InsightsAgent    →  ApprovalGate  →  ExportAgent
+  AggregationAgent    →  InsightsAgent    →  [ApprovalGate]  →  ExportAgent
 
 Usage
 -----
@@ -43,7 +43,13 @@ load_dotenv()
 # Fail fast with a clear message rather than discovering a missing key
 # 30-60 seconds into a run when the first LLM call fires.
 # Validation is model-aware: EXTRACTION_MODEL drives which key is required.
-from pipeline.config import BUDGET_USD, EXTRACTION_MODEL  # noqa: E402
+from pipeline.config import (  # noqa: E402
+    BUDGET_USD,
+    DEFAULT_DELAY_S,
+    DEFAULT_N_CALLS,
+    DEFAULT_SEED,
+    EXTRACTION_MODEL,
+)
 
 
 def _validate_api_keys() -> None:
@@ -86,12 +92,12 @@ def main() -> dict:
         description="Telecom Call Intelligence — single-batch pipeline runner"
     )
     parser.add_argument(
-        "--n",      type=int,   default=100,
-        help="Number of calls to analyze (default: 100)",
+        "--n",      type=int,   default=DEFAULT_N_CALLS,
+        help=f"Number of calls to analyze (default: {DEFAULT_N_CALLS})",
     )
     parser.add_argument(
-        "--seed",   type=int,   default=42,
-        help="Random seed for HuggingFace sampling (default: 42)",
+        "--seed",   type=int,   default=DEFAULT_SEED,
+        help=f"Random seed for HuggingFace sampling (default: {DEFAULT_SEED})",
     )
     parser.add_argument(
         "--offset", type=int,   default=0,
@@ -99,8 +105,8 @@ def main() -> dict:
              "Use multiples of --n to guarantee non-overlapping batches.",
     )
     parser.add_argument(
-        "--delay",  type=float, default=2.0,
-        help="Seconds between API calls (default: 2.0)",
+        "--delay",  type=float, default=DEFAULT_DELAY_S,
+        help=f"Seconds between API calls (default: {DEFAULT_DELAY_S})",
     )
     parser.add_argument(
         "--budget", type=float, default=None,

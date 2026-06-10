@@ -21,13 +21,11 @@ Usage
 """
 
 import argparse
-import glob
 import json
 from datetime import datetime
 from pathlib import Path
 
-OUTPUT_DIR = Path("outputs")
-
+from pipeline.config import OUTPUT_DIR
 
 # ── Discovery ─────────────────────────────────────────────────────────
 

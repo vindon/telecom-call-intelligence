@@ -25,7 +25,6 @@ from pathlib import Path
 from typing import Any
 
 from google import genai
-from google.genai import errors as genai_errors
 from google.genai import types
 from tqdm import tqdm
 
@@ -249,16 +248,25 @@ def analyze_transcript(
 
 # ── ReAct: targeted gap-fill call ────────────────────────────────────
 
-# Fields whose absence meaningfully degrades downstream KPI quality
+# Fields whose absence meaningfully degrades downstream KPI quality.
+# Names must match prompts/system_prompt.txt exactly — a field listed here
+# that the schema doesn't define makes coverage unreachable and forces a
+# wasted gap-fill call on every transcript.
 _CRITICAL_FIELDS: list[str] = [
-    "issue_category",
-    "fcr",
-    "resolution_status",
+    "issue_1_category",
+    "fcr_indicator",
+    "escalation_required",
     "customer_sentiment_start",
     "customer_sentiment_end",
     "total_duration_seconds",
     "all_issues_resolved",
 ]
+
+
+def _is_missing(value) -> bool:
+    """A field is missing only if null/absent or empty string.
+    False and 0 are legitimate extracted values (e.g. fcr_indicator=False)."""
+    return value is None or value == ""
 
 
 def score_field_coverage(result: dict) -> int:
@@ -268,12 +276,12 @@ def score_field_coverage(result: dict) -> int:
     """
     if not result:
         return 0
-    present = sum(1 for f in _CRITICAL_FIELDS if result.get(f) not in (None, "", 0))
+    present = sum(1 for f in _CRITICAL_FIELDS if not _is_missing(result.get(f)))
     return round(present / len(_CRITICAL_FIELDS) * 100)
 
 
 def gap_fill_transcript(
-    client: genai.Client,
+    client: Any,
     system_prompt: str,
     transcript: dict,
     first_pass: dict,
@@ -290,7 +298,7 @@ def gap_fill_transcript(
     if _react_quota_exhausted:
         return first_pass
 
-    missing = [f for f in _CRITICAL_FIELDS if first_pass.get(f) in (None, "", 0)]
+    missing = [f for f in _CRITICAL_FIELDS if _is_missing(first_pass.get(f))]
     if not missing:
         return first_pass
 
@@ -301,7 +309,7 @@ def gap_fill_transcript(
     try:
         gap_msg = _build_gap_fill_message(transcript, missing)
         if _USE_CLAUDE:
-            text, _, _ = _call_claude(client, system_prompt, gap_msg, 1024)
+            text, in_tok, out_tok = _call_claude(client, system_prompt, gap_msg, 1024)
         else:
             GEMINI_RATE_LIMITER.acquire()
             response = client.models.generate_content(
@@ -316,6 +324,8 @@ def gap_fill_transcript(
                 ),
             )
             text = response.text
+            in_tok  = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
+            out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
 
         SECRET_GUARD.assert_no_secrets_in_output(text)
         retry_result = _parse_json_text(text)
@@ -323,8 +333,13 @@ def gap_fill_transcript(
 
         merged = dict(first_pass)
         for field, val in retry_result.items():
-            if merged.get(field) in (None, "", 0) and val not in (None, "", 0):
+            if _is_missing(merged.get(field)) and not _is_missing(val):
                 merged[field] = val
+        # Gap-fill spend must count toward token totals — BudgetGuard and
+        # token_summary() read these keys for cost enforcement and reporting.
+        merged["_prompt_tokens"]     = merged.get("_prompt_tokens", 0) + in_tok
+        merged["_completion_tokens"] = merged.get("_completion_tokens", 0) + out_tok
+        merged["_total_tokens"]      = merged.get("_prompt_tokens", 0) + merged.get("_completion_tokens", 0)
         log.info("[ReAct] call %s: gap-fill improved coverage %d → %d",
                  call_id_short, score_field_coverage(first_pass), score_field_coverage(merged))
         return merged
@@ -354,10 +369,11 @@ def analyze_batch(
     checkpoint_key: str = "",
 ) -> list[dict]:
     """
-    Sequentially analyze all transcripts via Gemini 2.5 Flash Lite.
+    Sequentially analyze all transcripts with the configured EXTRACTION_MODEL
+    (Claude Haiku primary; Gemini fallback when EXTRACTION_MODEL is gemini-*).
 
-    Gemini free tier: 15 RPM · 1,500 req/day · 1M TPM
-    Default 2s delay → ~25 req/min, safely within the free tier.
+    Rate limits are enforced by CLAUDE_RATE_LIMITER / GEMINI_RATE_LIMITER;
+    the default 2s inter-call delay keeps Gemini runs inside the free tier.
 
     Args:
         transcripts:       Transcript dicts from hf_loader.load_telecom_transcripts()
@@ -367,6 +383,7 @@ def analyze_batch(
     Returns:
         List of result dicts including _prompt_tokens / _completion_tokens / _total_tokens.
     """
+    client: Any
     if _USE_CLAUDE:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:

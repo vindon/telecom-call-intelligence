@@ -5,8 +5,6 @@ No API calls are made; tests verify structural correctness only.
 
 import os
 
-import pytest
-
 # Ensure GEMINI_API_KEY is set before any pipeline import triggers the check
 os.environ.setdefault("GEMINI_API_KEY", "test-key-ci-dummy")
 

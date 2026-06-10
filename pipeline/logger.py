@@ -14,9 +14,9 @@ Log levels:
 
 import logging
 import sys
-from pathlib import Path
 
-_LOG_DIR  = Path("outputs")
+from pipeline.config import OUTPUT_DIR as _LOG_DIR
+
 _LOG_FILE = _LOG_DIR / "pipeline.log"
 _FMT      = "%(asctime)s  %(levelname)-8s  %(name)-28s  %(message)s"
 _DATE     = "%Y-%m-%d %H:%M:%S"

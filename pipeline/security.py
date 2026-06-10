@@ -32,6 +32,7 @@ import re
 import time
 from typing import Any
 
+from pipeline.config import MAX_FIELD_STRING_LEN, MAX_TRANSCRIPT_CHARS
 from pipeline.logger import get_logger
 
 log = get_logger(__name__)
@@ -80,6 +81,7 @@ _CODE_EXECUTION_PATTERNS: list[re.Pattern] = [
 # Sensitive state keys that must never appear in serialised state payloads
 _SENSITIVE_STATE_KEYS: frozenset[str] = frozenset({
     "api_key", "gemini_api_key", "google_api_key",
+    "anthropic_api_key", "nvidia_api_key", "langchain_api_key",
     "openai_api_key", "secret", "password", "token",
     "auth", "credential", "private_key",
 })
@@ -106,7 +108,7 @@ class InputSanitizer:
     Hard failures raise SecurityViolation; soft issues are redacted and logged.
     """
 
-    def sanitize_transcript(self, transcript: dict, max_chars: int = 50_000) -> dict:
+    def sanitize_transcript(self, transcript: dict, max_chars: int = MAX_TRANSCRIPT_CHARS) -> dict:
         """
         Return a sanitized copy of a transcript dict.
         Applies: size limits, encoding cleanup, injection neutralisation,
@@ -178,7 +180,7 @@ class OutputSanitizer:
             )
 
     def sanitize_extraction_result(
-        self, result: dict, max_field_len: int = 2_000
+        self, result: dict, max_field_len: int = MAX_FIELD_STRING_LEN
     ) -> dict:
         """
         Return a sanitized copy of an extraction result dict.
