@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Cost-to-Serve Engine — Agentic AI for Telecom Customer Care</title>
+<style>
+  /* ── Claude design tokens ─────────────────────────────────────────
+     Paper-and-ink palette: warm cream surfaces, charcoal text,
+     a single terracotta accent. Serif display, sans body.       */
+  :root {
+    --paper:       #FAF9F5;
+    --paper-deep:  #F0EEE6;
+    --paper-card:  #FFFFFF;
+    --ink:         #1F1E1D;
+    --ink-soft:    #51504B;
+    --ink-faint:   #8A8880;
+    --accent:      #D97757;
+    --accent-deep: #B85C3D;
+    --accent-tint: #F5E5DD;
+    --hairline:    #E5E2D9;
+    --serif: "Tiempos Text", "Charter", Georgia, "Times New Roman", serif;
+    --sans:  "Styrene A", "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --mono:  "Berkeley Mono", "SF Mono", "Menlo", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; background: var(--paper-deep); }
+  body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+  /* ── Deck chrome ── */
+  #stage {
+    height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 28px;
+  }
+  .slide {
+    width: min(1240px, 100%); aspect-ratio: 16 / 9;
+    background: var(--paper); border: 1px solid var(--hairline); border-radius: 14px;
+    padding: 64px 76px; display: none; flex-direction: column; overflow: hidden;
+    position: relative;
+  }
+  .slide.active { display: flex; }
+  .slide.deep { background: var(--paper-deep); }
+  .slide.inverse { background: var(--ink); color: var(--paper); }
+  .slide.inverse .kicker { color: var(--accent); }
+  .slide.inverse .footnote, .slide.inverse .muted { color: #A8A69E; }
+
+  #nav {
+    position: fixed; bottom: 16px; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center; gap: 18px;
+    font-size: 13px; color: var(--ink-faint); user-select: none;
+  }
+  #nav button {
+    border: 1px solid var(--hairline); background: var(--paper); color: var(--ink-soft);
+    border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer;
+  }
+  #nav button:hover { border-color: var(--accent); color: var(--accent-deep); }
+
+  /* ── Typography ── */
+  .kicker {
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-deep);
+    margin-bottom: 18px;
+  }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 54px; line-height: 1.12; letter-spacing: -0.01em; }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: 38px; line-height: 1.16; letter-spacing: -0.01em; margin-bottom: 22px; }
+  h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  p  { font-size: 17px; line-height: 1.55; color: var(--ink-soft); }
+  .lede { font-family: var(--serif); font-size: 22px; line-height: 1.5; color: var(--ink-soft); }
+  .muted { color: var(--ink-faint); }
+  .footnote { font-size: 12.5px; color: var(--ink-faint); margin-top: auto; padding-top: 18px; line-height: 1.45; }
+  .accent { color: var(--accent-deep); }
+  strong { color: var(--ink); font-weight: 600; }
+  .slide.inverse strong { color: var(--paper); }
+
+  /* ── Layout primitives ── */
+  .cols { display: flex; gap: 36px; flex: 1; min-height: 0; }
+  .col  { flex: 1; min-width: 0; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: var(--paper-card); border: 1px solid var(--hairline);
+    border-radius: 12px; padding: 20px 22px;
+  }
+  .card.tint { background: var(--accent-tint); border-color: #EAD3C6; }
+  .card h3 { font-size: 15px; }
+  .card p  { font-size: 14px; line-height: 1.5; }
+
+  .stat-num {
+    font-family: var(--serif); font-size: 44px; font-weight: 500; color: var(--ink);
+    line-height: 1.05; margin-bottom: 6px;
+  }
+  .stat-num.accent { color: var(--accent-deep); }
+  .stat-label { font-size: 13.5px; color: var(--ink-faint); line-height: 1.4; }
+
+  .rule { border: 0; border-top: 1px solid var(--hairline); margin: 22px 0; }
+
+  ul.list { list-style: none; }
+  ul.list li {
+    font-size: 16.5px; line-height: 1.5; color: var(--ink-soft);
+    padding: 10px 0 10px 26px; position: relative; border-bottom: 1px solid var(--hairline);
+  }
+  ul.list li:last-child { border-bottom: 0; }
+  ul.list li::before {
+    content: ""; position: absolute; left: 2px; top: 19px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase;
+       color: var(--ink-faint); font-weight: 600; padding: 0 14px 10px 0; border-bottom: 1px solid var(--ink); }
+  td { padding: 11px 14px 11px 0; border-bottom: 1px solid var(--hairline); color: var(--ink-soft); vertical-align: top; }
+  td:first-child { color: var(--ink); font-weight: 500; }
+
+  .pill {
+    display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--accent-deep);
+    background: var(--accent-tint); border-radius: 999px; padding: 4px 12px; margin-right: 6px;
+  }
+
+  /* Agent pipeline diagram */
+  .pipe { display: flex; align-items: stretch; gap: 0; margin: 26px 0 10px; }
+  .pipe .node {
+    flex: 1; background: var(--paper-card); border: 1px solid var(--hairline); border-radius: 10px;
+    padding: 14px 10px; text-align: center;
+  }
+  .pipe .node .n  { font-family: var(--mono); font-size: 11px; color: var(--accent-deep); display: block; margin-bottom: 6px; }
+  .pipe .node .t  { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; }
+  .pipe .node .d  { font-size: 11.5px; color: var(--ink-faint); line-height: 1.35; }
+  .pipe .arrow { align-self: center; padding: 0 6px; color: var(--accent); font-size: 16px; }
+
+  /* Lever bars */
+  .lever { margin-bottom: 18px; }
+  .lever .row { display: flex; justify-content: space-between; font-size: 14.5px; margin-bottom: 7px; }
+  .lever .bar { height: 12px; background: var(--paper-deep); border-radius: 999px; overflow: hidden; }
+  .lever .fill { height: 100%; border-radius: 999px; background: var(--accent); }
+  .lever .fill.l2 { opacity: 0.75; }
+  .lever .fill.l3 { opacity: 0.5; }
+
+  .brand-mark {
+    position: absolute; bottom: 26px; right: 34px; font-size: 12px; color: var(--ink-faint);
+    font-family: var(--mono);
+  }
+
+  /* ── Print: one slide per page ── */
+  @media print {
+    #nav { display: none; }
+    #stage { display: block; height: auto; padding: 0; }
+    .slide { display: flex !important; width: 100%; border-radius: 0; border: 0;
+             page-break-after: always; aspect-ratio: auto; height: 100vh; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- ─── 1 · Title ───────────────────────────────────────────────── -->
+<section class="slide deep">
+  <div class="kicker">Telecom Call Intelligence · Executive Briefing</div>
+  <h1>Every call has a cost.<br>Almost no one knows <span class="accent">which ones</span> — or why.</h1>
+  <p class="lede" style="margin-top:26px; max-width:820px;">
+    A multi-agent AI engine that reads 100% of customer care conversations,
+    quantifies cost-to-serve drivers per call, and identifies precisely where
+    agentic AI removes cost — built for the economics of global telecom.
+  </p>
+  <div class="grid g3" style="margin-top:auto; padding-top:30px;">
+    <div><div class="stat-num accent" style="font-size:34px;">&lt;$0.01</div><div class="stat-label">to fully analyze a $6–12 call</div></div>
+    <div><div class="stat-num" style="font-size:34px;">70+ fields</div><div class="stat-label">of structured economics per conversation</div></div>
+    <div><div class="stat-num" style="font-size:34px;">3 levers</div><div class="stat-label">deflection · agentic AI · proactive care — costed in dollars</div></div>
+  </div>
+  <div class="footnote" style="margin-top:26px;">
+    Vinoth N · Senior Analytics &amp; AI Leadership · vinoth.n@outlook.com<br>
+    Working system, not a concept — private repository, live dashboard, 342-test CI suite.
+  </div>
+  <div class="brand-mark">cost-to-serve engine · v4.1</div>
+</section>
+
+<!-- ─── 2 · Industry context ────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">The industry context</div>
+  <h2>Customer care is telecom's largest<br>controllable operating cost.</h2>
+  <div class="grid g3" style="margin-top:14px;">
+    <div class="card"><div class="stat-num">~$1.7T</div><div class="stat-label">Global telecom services market — and ARPU is flat or declining in most regions. Margin must come from cost.</div></div>
+    <div class="card"><div class="stat-num">Billions</div><div class="stat-label">of care contacts per year. A tier-1 operator with 50–100M subscribers handles 100M+ assisted contacts annually.</div></div>
+    <div class="card"><div class="stat-num accent">$6–12</div><div class="stat-label">Commonly cited cost of a single assisted voice call — versus under $0.50 for a self-service interaction.</div></div>
+  </div>
+  <hr class="rule">
+  <p style="max-width:900px;">
+    Care experience also drives <strong>churn and NPS</strong>: a single unresolved call measurably raises
+    a subscriber's propensity to leave. Cost-to-serve is therefore both a margin lever
+    <em>and</em> a retention lever — every avoidable, repeated, or escalated call leaks both.
+  </p>
+  <div class="footnote">Figures are widely used industry benchmark ranges; the engine replaces them with an operator's actual ACD cost data in production.</div>
+</section>
+
+<!-- ─── 3 · The blind spot ──────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">The problem</div>
+  <h2>Operators manage cost-to-serve in aggregate —<br>but the drivers live <span class="accent">inside the conversation</span>.</h2>
+  <div class="cols" style="margin-top:10px;">
+    <div class="col">
+      <ul class="list">
+        <li><strong>QA listens to 1–2% of calls.</strong> Manual sampling means 98% of conversations are never analyzed for cost drivers.</li>
+        <li><strong>ACD data says how long, not why.</strong> Handle time, queue, and disposition codes can't tell you a call was avoidable.</li>
+        <li><strong>Deflection programs run on intuition.</strong> Which intents to automate is decided by anecdote, not evidence.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="card tint" style="height:100%; display:flex; flex-direction:column; justify-content:center;">
+        <div class="stat-num accent">20–40%</div>
+        <div class="stat-label" style="font-size:15px; color:var(--ink-soft); line-height:1.55;">
+          of inbound telecom contacts are commonly estimated to be <strong>avoidable</strong> —
+          billing confusion, status checks, information-only queries.
+          At $6–12 per call, that is structural margin leakage hiding in plain sight.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footnote">The question is no longer "what is our cost per call?" but "which calls should never have happened, and what resolves the rest without an agent?"</div>
+</section>
+
+<!-- ─── 4 · The solution ────────────────────────────────────────── -->
+<section class="slide inverse">
+  <div class="kicker">The solution</div>
+  <h2 style="color:var(--paper);">Read every call. Quantify every driver.<br>Route every dollar to a lever.</h2>
+  <p class="lede" style="color:#C9C7BE; max-width:880px; margin-top:6px;">
+    The engine converts raw call transcripts into <strong style="color:var(--paper);">70+ structured economic signals per call</strong> —
+    resolution, avoidability, self-serve fit, AI-resolvability, sentiment trajectory, phase-level time use —
+    then aggregates them into executive KPIs and a costed action plan.
+  </p>
+  <div class="grid g3" style="margin-top:30px;">
+    <div class="card" style="background:#2B2A28; border-color:#3A3936;"><h3 style="color:var(--paper);">100% coverage</h3><p style="color:#A8A69E;">Every conversation analyzed — not a 2% QA sample. The long tail is where the avoidable cost lives.</p></div>
+    <div class="card" style="background:#2B2A28; border-color:#3A3936;"><h3 style="color:var(--paper);">Per-call economics</h3><p style="color:#A8A69E;">Each call is classified by cost driver and matched to its cheapest viable resolution channel.</p></div>
+    <div class="card" style="background:#2B2A28; border-color:#3A3936;"><h3 style="color:var(--paper);">Board-ready output</h3><p style="color:#A8A69E;">KPIs, savings levers in dollars, and AI-generated strategic recommendations with an audit trail.</p></div>
+  </div>
+  <div class="footnote">Dataset-agnostic: runs on any transcript source — voice transcription, chat logs, or BPO exports — in any LLM-supported language.</div>
+</section>
+
+<!-- ─── 5 · Architecture ────────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">How it works</div>
+  <h2>Six specialized agents, one governed pipeline.</h2>
+  <p style="max-width:880px;">A LangGraph-orchestrated multi-agent system: each agent owns one stage, logs every decision
+  it makes, and hands immutable state to the next. A quality gate and human approval node guard the output.</p>
+  <div class="pipe">
+    <div class="node"><span class="n">01</span><span class="t">Data Ingestion</span><span class="d">Fetch, validate, redact PII before any LLM sees text</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><span class="n">02</span><span class="t">Extraction</span><span class="d">Claude Haiku · 70+ fields per call with ReAct gap-fill</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><span class="n">03</span><span class="t">Quality</span><span class="d">100-pt QA score per call; low-grade records excluded</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><span class="n">04</span><span class="t">Aggregation</span><span class="d">KPIs, distributions, cost-lever math</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><span class="n">05</span><span class="t">Insights</span><span class="d">Llama 3.3 70B · 3-pass self-critique deliberation</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><span class="n">06</span><span class="t">Export</span><span class="d">Dashboard, CSV, audit trail, decision log</span></div>
+  </div>
+  <div style="margin-top:18px;">
+    <span class="pill">Approval gate before export</span>
+    <span class="pill">Budget hard-stop per run</span>
+    <span class="pill">Every agent decision logged</span>
+  </div>
+  <div class="footnote">Stack: LangGraph · Claude Haiku 4.5 (extraction) · NVIDIA NIM Llama 3.3 70B (insights) · Streamlit · FastAPI — 342 automated tests gate every change.</div>
+</section>
+
+<!-- ─── 6 · Agentic AI layer 1 ──────────────────────────────────── -->
+<section class="slide deep">
+  <div class="kicker">Agentic AI · Layer 1</div>
+  <h2>Agents that <span class="accent">analyze</span>:<br>why this isn't "a script calling an API."</h2>
+  <div class="grid g3" style="margin-top:16px;">
+    <div class="card"><h3>ReAct control loop</h3><p>The extraction agent scores its own field coverage after every call. Below threshold, it reasons about what's missing and issues a targeted re-query — recovering critical fields instead of shipping nulls into the KPIs.</p></div>
+    <div class="card"><h3>Self-critique deliberation</h3><p>The insights agent drafts recommendations, then a critique pass grades each one for data-grounding and specificity, and a synthesis pass rewrites the weak ones. Generic consulting filler doesn't survive.</p></div>
+    <div class="card"><h3>Autonomous degradation</h3><p>Provider down? Quota exhausted? Agents fall back across a NIM → Claude → rule-based chain, circuit-break across batch processes, and checkpoint so no work is repeated.</p></div>
+  </div>
+  <hr class="rule">
+  <p style="max-width:920px;">
+    Every one of these behaviours emits a <strong>decision record</strong> — what was decided, why, the evidence,
+    and the alternatives rejected. The reasoning is auditable end to end, which is what separates
+    deployable agentic systems from demos.
+  </p>
+</section>
+
+<!-- ─── 7 · What it measures ────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">Sample output · public telecom corpus</div>
+  <h2>The KPI layer an operator actually steers by.</h2>
+  <div class="grid g4" style="margin-top:14px;">
+    <div class="card"><div class="stat-num">57.9%</div><div class="stat-label">First-call resolution — vs the 70–75% industry benchmark. Every point below is repeat-call cost.</div></div>
+    <div class="card"><div class="stat-num accent">53.9%</div><div class="stat-label">Avoidable-call rate — contacts a better journey would have prevented entirely.</div></div>
+    <div class="card"><div class="stat-num accent">38.2%</div><div class="stat-label">Agentic-AI-resolvable — calls a capable AI agent could close with no human.</div></div>
+    <div class="card"><div class="stat-num">28.9%</div><div class="stat-label">Escalation rate — supervisor and tier-2 cost concentrated in identifiable intents.</div></div>
+  </div>
+  <div class="cols" style="margin-top:20px;">
+    <div class="col">
+      <h3>Top cost drivers (share of calls)</h3>
+      <p style="font-size:14.5px;">Technical 28.9% · Information-only 25.0% · Device 18.4% · Plan change 14.5% · Billing 5.3%</p>
+    </div>
+    <div class="col">
+      <h3>Phase-level time use</h3>
+      <p style="font-size:14.5px;">Per-call timing across welcome, discovery, diagnosis, resolution, hold, and upsell phases shows <em>where</em> handle time concentrates — coaching targets, not averages.</p>
+    </div>
+  </div>
+  <div class="footnote">Live results from a 76-call run on the public talkmap telecom corpus (synthetic data) — shown to demonstrate the measurement layer, not an operator's actuals. In production these numbers come from your calls.</div>
+</section>
+
+<!-- ─── 8 · Three levers ────────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">From measurement to money</div>
+  <h2>Three levers, each costed per month.</h2>
+  <div class="cols" style="margin-top:8px;">
+    <div class="col" style="flex:1.2;">
+      <div class="lever">
+        <div class="row"><span><strong>1 · Self-serve deflection</strong> — route preventable intents to app/IVR/chatbot</span><span class="accent"><strong>$295K/mo</strong></span></div>
+        <div class="bar"><div class="fill" style="width:49%"></div></div>
+      </div>
+      <div class="lever">
+        <div class="row"><span><strong>2 · Agentic AI resolution</strong> — AI agents autonomously close eligible calls</span><span class="accent"><strong>$160K/mo</strong></span></div>
+        <div class="bar"><div class="fill l2" style="width:27%"></div></div>
+      </div>
+      <div class="lever">
+        <div class="row"><span><strong>3 · Proactive care</strong> — outage, billing-cycle, and usage outreach before the call</span><span class="accent"><strong>$104K/mo</strong></span></div>
+        <div class="bar"><div class="fill l3" style="width:17%"></div></div>
+      </div>
+      <hr class="rule">
+      <p style="font-size:15px;">Illustrative at <strong>100K calls/month × $6.00/call</strong> ($600K baseline), using the sample corpus rates and
+      conservative effectiveness factors (85% / 70% / 60%). The engine recomputes this with an operator's real volume and ACD costs.</p>
+    </div>
+    <div class="col" style="flex:0.8;">
+      <div class="card tint" style="height:100%; display:flex; flex-direction:column; justify-content:center;">
+        <h3>Why per-call classification matters</h3>
+        <p style="font-size:14.5px;">Aggregate deflection targets fail because they automate the wrong intents.
+        Classifying <em>every call</em> against <em>each lever</em> means the business case is built
+        from evidence — intent by intent, dollar by dollar — before a single journey is rebuilt.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 9 · Agentic AI layer 2 ──────────────────────────────────── -->
+<section class="slide deep">
+  <div class="kicker">Agentic AI · Layer 2</div>
+  <h2>Agents that <span class="accent">resolve</span>:<br>the intervention the analysis de-risks.</h2>
+  <div class="cols" style="margin-top:10px;">
+    <div class="col">
+      <p style="max-width:560px;">Tier-1 operators already run conversational assistants (Vodafone's TOBi,
+      Deutsche Telekom's Frag Magenta, and peers). The industry's next step is <strong>agentic</strong>:
+      assistants that don't just answer but <em>act</em> — checking a line, re-provisioning a service,
+      adjusting a bill, scheduling a technician.</p>
+      <p style="margin-top:14px; max-width:560px;">Industry analysts project that agentic AI will autonomously resolve the
+      <strong>majority of common service issues by the late 2020s</strong>. The operators that win that
+      transition are the ones that know — with evidence — which intents to hand to agents first.</p>
+    </div>
+    <div class="col">
+      <ul class="list">
+        <li><strong>This engine is the targeting system.</strong> It identifies the AI-resolvable 30–40% and ranks intents by volume × cost × risk.</li>
+        <li><strong>It is also the measurement system.</strong> Re-run continuously, it shows deflected volume, FCR shift, and sentiment impact after each rollout wave.</li>
+        <li><strong>And the safety case.</strong> Escalation, sentiment, and repeat-risk fields show where AI should <em>not</em> be deployed yet.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footnote">Analyze → target → deploy → re-measure: the closed loop that turns agentic AI from a pilot into a P&amp;L line.</div>
+</section>
+
+<!-- ─── 10 · Global scale ───────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">Global applicability</div>
+  <h2>The same engine, from a regional MVNO<br>to a 300M-subscriber group.</h2>
+  <table style="margin-top:14px;">
+    <tr><th style="width:24%;">Operator profile</th><th style="width:26%;">Assisted contacts / yr</th><th style="width:25%;">Care cost exposure</th><th>What the engine changes</th></tr>
+    <tr><td>Tier-1 group (multi-market)</td><td>100M+</td><td>$0.6–1.2B+ / yr</td><td>Group-wide cost-driver league tables; lever sizing per market; AI rollout sequencing</td></tr>
+    <tr><td>Tier-2 national operator</td><td>10–50M</td><td>$60–500M / yr</td><td>Full-coverage analysis where QA teams sample 1–2%; costed deflection roadmap</td></tr>
+    <tr><td>MVNO / regional</td><td>1–10M</td><td>$6–60M / yr</td><td>Enterprise-grade care analytics without an enterprise analytics team</td></tr>
+    <tr><td>BPO / outsourcer</td><td>Per client book</td><td>Margin on every seat</td><td>Per-client cost-to-serve evidence; differentiated, data-backed pricing</td></tr>
+  </table>
+  <p style="margin-top:18px; font-size:15px;">
+    LLM-based extraction is <strong>language- and market-agnostic</strong> — the same field schema runs on English,
+    Hindi, German, or Tagalog transcripts. No per-market rule engineering, no retraining cycle.
+  </p>
+  <div class="footnote">Care cost exposure estimated at $6–12 per assisted contact; replace with regional actuals during scoping.</div>
+</section>
+
+<!-- ─── 11 · Unit economics ─────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">Unit economics of the analysis itself</div>
+  <h2>It costs less than a cent<br>to understand a $6 call.</h2>
+  <div class="grid g3" style="margin-top:16px;">
+    <div class="card"><div class="stat-num accent">&lt;$0.01</div><div class="stat-label">LLM cost to fully analyze one call (Claude Haiku, ~8K tokens) — roughly 1/800th of the cost of handling it.</div></div>
+    <div class="card"><div class="stat-num">~$800/mo</div><div class="stat-label">to analyze 100K calls — against a $600K monthly handling baseline and ~$560K/mo of identified levers in the sample run.</div></div>
+    <div class="card"><div class="stat-num">700×+</div><div class="stat-label">indicative ratio of identified savings opportunity to analysis cost. Even at 10% lever realization, payback is measured in days.</div></div>
+  </div>
+  <hr class="rule">
+  <p style="max-width:920px;">
+    Token spend is metered per call, enforced by a <strong>hard budget guard</strong> inside the pipeline, and reported
+    in every run manifest — the cost of intelligence is itself governed, predictable, and auditable.
+  </p>
+  <div class="footnote">Two-model design keeps economics flat at scale: a small fast model does high-volume extraction; a large model reasons only over the aggregate.</div>
+</section>
+
+<!-- ─── 12 · Implementation ─────────────────────────────────────── -->
+<section class="slide deep">
+  <div class="kicker">Implementation path</div>
+  <h2>Four phases from transcript export to closed loop.</h2>
+  <div class="grid g4" style="margin-top:18px;">
+    <div class="card"><span class="pill" style="margin-bottom:10px;">Weeks 1–4</span><h3>0 · Evidence pilot</h3><p>Run on 30–90 days of historical transcripts. No integration required — a transcript export is enough. Output: baseline KPIs and sized levers.</p></div>
+    <div class="card"><span class="pill" style="margin-bottom:10px;">Weeks 5–10</span><h3>1 · Ground truth</h3><p>Swap benchmark costs for actual ACD/WFM data; segment by queue, market, and account type. Output: a board-grade business case.</p></div>
+    <div class="card"><span class="pill" style="margin-bottom:10px;">Quarter 2</span><h3>2 · Deploy levers</h3><p>Rebuild top avoidable journeys; launch agentic AI on the highest-confidence intents; stand up proactive outreach triggers.</p></div>
+    <div class="card"><span class="pill" style="margin-bottom:10px;">Ongoing</span><h3>3 · Closed loop</h3><p>Continuous batch analysis tracks deflection, FCR, and sentiment shift per wave — the engine that found the cost now verifies its removal.</p></div>
+  </div>
+  <p style="margin-top:20px; font-size:15px;">
+    Integration surface is deliberately small: <strong>transcripts in, KPIs and recommendations out</strong> —
+    REST API, dashboard, and CSV exports drop into existing BI and WFM stacks.
+  </p>
+</section>
+
+<!-- ─── 13 · Governance ─────────────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">Enterprise readiness</div>
+  <h2>Governed by design — because telecom<br>regulators will ask, and boards should.</h2>
+  <div class="grid g3" style="margin-top:16px;">
+    <div class="card"><h3>PII redaction at the gate</h3><p>Emails, card numbers, and identifiers are scanned and redacted <em>before</em> any transcript reaches an LLM. Redactions are logged per call.</p></div>
+    <div class="card"><h3>Hard cost controls</h3><p>A budget guard halts any run that exceeds its spend ceiling; rate limiters and quota circuit-breakers contain provider failures.</p></div>
+    <div class="card"><h3>Quality gates</h3><p>Every extraction is QA-scored on a 100-point model; low-confidence records are excluded from KPIs rather than silently averaged in.</p></div>
+    <div class="card"><h3>Full decision audit</h3><p>Every agent decision — what, why, evidence, alternatives — is exported as a machine-readable trail for audit and model-risk review.</p></div>
+    <div class="card"><h3>Human approval gate</h3><p>An optional human sign-off node sits before export — autonomy where it's safe, oversight where it matters.</p></div>
+    <div class="card"><h3>Engineering discipline</h3><p>342 automated tests, typed codebase, CI on every change. The governance is tested, not aspirational.</p></div>
+  </div>
+  <div class="footnote">Designed to align with emerging AI-governance expectations (EU AI Act-style transparency, sector regulators) without slowing the analysis loop.</div>
+</section>
+
+<!-- ─── 14 · Close ──────────────────────────────────────────────── -->
+<section class="slide inverse">
+  <div class="kicker">The takeaway</div>
+  <h1 style="font-size:46px; color:var(--paper);">Cost-to-serve is telecom's next margin frontier.<br>
+  <span class="accent">Agentic AI is how it gets crossed</span> — first to measure, then to resolve.</h1>
+  <div class="cols" style="margin-top:34px; flex:0;">
+    <div class="col">
+      <h3 style="color:var(--paper);">What exists today</h3>
+      <p style="color:#A8A69E;">A working end-to-end system: multi-agent pipeline, governance layer, KPI dashboard, REST API, CI-tested codebase — running on real telecom transcripts.</p>
+    </div>
+    <div class="col">
+      <h3 style="color:var(--paper);">What it demonstrates</h3>
+      <p style="color:#A8A69E;">Production judgment in applied AI: agent orchestration, cost discipline, auditability, and telecom domain depth — the combination operators are hiring and funding.</p>
+    </div>
+    <div class="col">
+      <h3 style="color:var(--paper);">Vinoth N</h3>
+      <p style="color:#A8A69E;">13 years in analytics &amp; AI leadership · delivered $27M in cost savings at Verizon · Chennai, India<br>vinoth.n@outlook.com</p>
+    </div>
+  </div>
+  <div class="footnote">Private repository and live dashboard available on request.</div>
+</section>
+
+</div>
+
+<div id="nav">
+  <button id="prev">←</button>
+  <span id="counter">1 / 14</span>
+  <button id="next">→</button>
+  <span class="muted" style="font-size:12px;">arrow keys to navigate · ⌘P for PDF</span>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  let i = 0;
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle("active", k === i));
+    document.getElementById("counter").textContent = `${i + 1} / ${slides.length}`;
+  }
+  document.getElementById("prev").onclick = () => show(i - 1);
+  document.getElementById("next").onclick = () => show(i + 1);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") show(i + 1);
+    if (e.key === "ArrowLeft") show(i - 1);
+  });
+  show(0);
+</script>
+</body>
+</html>
