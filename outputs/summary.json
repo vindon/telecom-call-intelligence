@@ -1,157 +1,151 @@
 {
   "meta": {
-    "total_calls_analyzed": 76,
-    "analysis_timestamp": "2026-06-01T11:47:24.753077",
+    "total_calls_analyzed": 78,
+    "analysis_timestamp": "2026-06-11T08:42:29.218925",
     "dataset": "talkmap/telecom-conversation-corpus",
     "model": "claude-haiku-4-5-20251001",
-    "inference_provider": "Anthropic",
-    "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark. Replace with actual ACD data for production.",
-    "insights_model": "meta/llama-3.3-70b-instruct",
-    "insights_provider": "NVIDIA NIM",
-    "pipeline_version": "v4.0"
+    "inference_provider": "Anthropic (Claude)",
+    "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark. Replace with actual ACD data for production."
   },
   "kpis": {
-    "total_calls_analyzed": 76,
-    "avg_handle_time_seconds": 151.5,
+    "total_calls_analyzed": 78,
+    "avg_handle_time_seconds": 152.5,
     "avg_handle_time_minutes": 2.5,
-    "fcr_rate_pct": 57.9,
-    "avoidable_call_rate_pct": 53.9,
-    "self_serve_deflection_pct": 57.9,
-    "agentic_ai_resolvable_pct": 38.2,
-    "proactive_outreach_pct": 28.9,
-    "all_issues_resolved_pct": 65.8,
-    "escalation_rate_pct": 28.9,
-    "upsell_attempted_pct": 35.5,
-    "upsell_conversion_pct": 88.9,
-    "sentiment_improved_pct": 86.8,
+    "fcr_rate_pct": 59.0,
+    "avoidable_call_rate_pct": 55.1,
+    "self_serve_deflection_pct": 56.4,
+    "agentic_ai_resolvable_pct": 42.3,
+    "proactive_outreach_pct": 26.9,
+    "all_issues_resolved_pct": 65.4,
+    "escalation_rate_pct": 25.6,
+    "upsell_attempted_pct": 35.9,
+    "upsell_conversion_pct": 89.3,
+    "sentiment_improved_pct": 83.3,
     "agent_tool_struggle_pct": 2.6,
-    "multi_issue_call_pct": 3.9,
-    "avg_issues_per_call": 1.0,
-    "avg_hold_time_seconds": 0.8,
+    "multi_issue_call_pct": 6.4,
+    "avg_issues_per_call": 1.1,
+    "avg_hold_time_seconds": 1.3,
     "avg_hold_count": 0.1,
     "avg_empathy_statements": 1.8
   },
   "phase_avg_seconds": {
-    "Welcome & Auth": 26.4,
-    "Discovery": 42.0,
-    "Diagnosis": 31.2,
-    "Resolution": 34.3,
-    "Hold": 0.8,
-    "Upsell": 14.2,
-    "Closing": 20.6
+    "Welcome & Auth": 26.8,
+    "Discovery": 41.3,
+    "Diagnosis": 29.6,
+    "Resolution": 35.0,
+    "Hold": 1.3,
+    "Upsell": 14.7,
+    "Closing": 21.4
   },
   "distributions": {
     "issue_category": {
-      "technical": 31,
-      "device": 16,
-      "information": 13,
-      "billing": 6,
+      "technical": 32,
+      "device": 19,
+      "information": 14,
+      "billing": 7,
       "plan": 5,
       "account": 4,
-      "service": 2,
-      "complaint": 1
+      "other": 1
     },
     "cost_driver": {
-      "technical": 28.9,
-      "information_only": 25.0,
-      "device": 18.4,
-      "plan_change": 14.5,
-      "billing": 5.3,
-      "complaint": 5.3,
-      "service": 1.3,
+      "technical": 26.9,
+      "information_only": 25.6,
+      "device": 17.9,
+      "plan_change": 14.1,
+      "complaint": 7.7,
+      "billing": 6.4,
       "account": 1.3
     },
     "agent_skill": {
-      "adequate": 55.3,
-      "proficient": 42.1,
-      "needs_improvement": 2.6
+      "proficient": 50.0,
+      "adequate": 46.2,
+      "needs_improvement": 3.8
     },
     "customer_sentiment_start": {
-      "frustrated": 51.3,
-      "neutral": 43.4,
-      "distressed": 3.9,
-      "positive": 1.3
+      "frustrated": 47.4,
+      "neutral": 44.9,
+      "distressed": 3.8,
+      "negative": 1.3,
+      "positive": 1.3,
+      "concerned": 1.3
     },
     "customer_sentiment_end": {
-      "positive": 78.9,
-      "neutral": 13.2,
-      "frustrated": 2.6,
-      "angry": 1.3,
-      "disappointed": 1.3,
-      "distressed": 1.3,
-      "resigned": 1.3
+      "positive": 75.6,
+      "neutral": 12.8,
+      "frustrated": 6.4,
+      "distressed": 2.6,
+      "resigned": 2.6
     },
     "handle_time_efficiency": {
-      "efficient": 73.7,
-      "average": 23.7,
+      "efficient": 75.6,
+      "average": 21.8,
       "inefficient": 2.6
     },
     "self_serve_channel": {
-      "app|website": 36.8,
-      "app": 31.6,
-      "none": 22.8,
-      "website": 8.8
+      "app|website": 40.4,
+      "app": 32.7,
+      "none": 15.4,
+      "website": 9.6,
+      "website|app": 1.9
     },
     "repeat_call_risk": {
-      "low": 69.7,
-      "high": 18.4,
-      "medium": 11.8
+      "low": 65.4,
+      "high": 19.2,
+      "medium": 15.4
     },
     "agent_disproportionate_phase": {
-      "diagnosis": 28.0,
+      "diagnosis": 36.0,
       "welcome": 20.0,
-      "discovery": 20.0,
-      "resolution": 16.0,
-      "closing": 12.0,
-      "none": 4.0
+      "closing": 16.0,
+      "discovery": 16.0,
+      "resolution": 12.0
     },
     "upsell_outcome": {
-      "not_attempted": 64.5,
-      "accepted": 31.6,
+      "not_attempted": 64.1,
+      "accepted": 32.1,
       "declined": 2.6,
       "pending": 1.3
     },
     "resolution_method_issue1": {
-      "agent_action": 52.0,
-      "escalated": 25.3,
-      "self_serve_guidance": 12.0,
-      "workaround": 8.0,
-      "unresolved": 1.3,
-      "agent_action|self_serve_guidance": 1.3
+      "agent_action": 51.9,
+      "escalated": 26.0,
+      "self_serve_guidance": 14.3,
+      "workaround": 3.9,
+      "unresolved": 2.6,
+      "workaround|escalated": 1.3
     },
     "account_type": {
-      "postpaid": 52.6,
-      "unknown": 38.2,
-      "business": 5.3,
-      "prepaid": 3.9
+      "postpaid": 56.4,
+      "unknown": 34.6,
+      "business": 5.1,
+      "prepaid": 3.8
     }
   },
   "cost_levers": {
     "cost_per_call_usd": 6.0,
     "monthly_volume_estimate": 100000,
     "baseline_monthly_cost_usd": 600000,
-    "self_serve_savings_usd": 295290,
-    "agentic_ai_savings_usd": 160440,
-    "proactive_care_savings_usd": 104040,
-    "total_savings_opportunity_usd": 559770,
-    "savings_pct_of_baseline": 93.3
+    "self_serve_savings_usd": 287640,
+    "agentic_ai_savings_usd": 177660,
+    "proactive_care_savings_usd": 96840,
+    "total_savings_opportunity_usd": 562140,
+    "savings_pct_of_baseline": 93.7
   },
   "token_usage": {
-    "model": "gemini-2.5-flash-lite",
-    "provider": "Google AI Studio",
-    "calls_with_usage": 76,
+    "model": "claude-haiku-4-5-20251001",
+    "provider": "Anthropic (Claude)",
+    "calls_with_usage": 78,
     "calls_missing_usage": 0,
-    "total_prompt_tokens": 446484,
-    "total_completion_tokens": 162859,
-    "total_tokens": 609343,
-    "avg_prompt_tokens_per_call": 5875.0,
-    "avg_completion_tokens_per_call": 2143.0,
-    "avg_total_tokens_per_call": 8018.0,
-    "total_cost_usd": 0.1098,
-    "avg_cost_per_call_usd": 0.001445,
-    "price_input_per_mtok_usd": 0.1,
-    "price_output_per_mtok_usd": 0.4,
-    "free_tier_note": "Free up to 500 req/day via Google AI Studio. Paid tier pricing shown above.",
-    "pricing_note": "Gemini 2.5 Flash Lite paid tier pricing as of 2026-Q2. At 100K calls/mo avg 8,018 tokens/call, monthly inference cost \u2248 $144.46 USD."
+    "total_prompt_tokens": 458526,
+    "total_completion_tokens": 167286,
+    "total_tokens": 625812,
+    "avg_prompt_tokens_per_call": 5879.0,
+    "avg_completion_tokens_per_call": 2145.0,
+    "avg_total_tokens_per_call": 8023.0,
+    "total_cost_usd": 1.036,
+    "avg_cost_per_call_usd": 0.013282,
+    "price_input_per_mtok_usd": 0.8,
+    "price_output_per_mtok_usd": 4.0,
+    "pricing_note": "claude-haiku-4-5-20251001 \u00b7 Paid tier pricing \u2014 no free tier for Claude Haiku. At 100K calls/mo avg 8,023 tokens/call, monthly inference cost \u2248 $1,328.16 USD."
   }
 }

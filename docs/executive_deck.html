@@ -167,7 +167,7 @@
     agentic AI removes cost — built for the economics of global telecom.
   </p>
   <div class="grid g3" style="margin-top:auto; padding-top:30px;">
-    <div><div class="stat-num accent" style="font-size:34px;">&lt;$0.01</div><div class="stat-label">to fully analyze a $6–12 call</div></div>
+    <div><div class="stat-num accent" style="font-size:34px;">~1¢</div><div class="stat-label">to fully analyze a $6–12 call</div></div>
     <div><div class="stat-num" style="font-size:34px;">70+ fields</div><div class="stat-label">of structured economics per conversation</div></div>
     <div><div class="stat-num" style="font-size:34px;">3 levers</div><div class="stat-label">deflection · agentic AI · proactive care — costed in dollars</div></div>
   </div>
@@ -288,22 +288,22 @@
   <div class="kicker">Sample output · public telecom corpus</div>
   <h2>The KPI layer an operator actually steers by.</h2>
   <div class="grid g4" style="margin-top:14px;">
-    <div class="card"><div class="stat-num">57.9%</div><div class="stat-label">First-call resolution — vs the 70–75% industry benchmark. Every point below is repeat-call cost.</div></div>
-    <div class="card"><div class="stat-num accent">53.9%</div><div class="stat-label">Avoidable-call rate — contacts a better journey would have prevented entirely.</div></div>
-    <div class="card"><div class="stat-num accent">38.2%</div><div class="stat-label">Agentic-AI-resolvable — calls a capable AI agent could close with no human.</div></div>
-    <div class="card"><div class="stat-num">28.9%</div><div class="stat-label">Escalation rate — supervisor and tier-2 cost concentrated in identifiable intents.</div></div>
+    <div class="card"><div class="stat-num">59.0%</div><div class="stat-label">First-call resolution — vs the 70–75% industry benchmark. Every point below is repeat-call cost.</div></div>
+    <div class="card"><div class="stat-num accent">55.1%</div><div class="stat-label">Avoidable-call rate — contacts a better journey would have prevented entirely.</div></div>
+    <div class="card"><div class="stat-num accent">42.3%</div><div class="stat-label">Agentic-AI-resolvable — calls a capable AI agent could close with no human.</div></div>
+    <div class="card"><div class="stat-num">25.6%</div><div class="stat-label">Escalation rate — supervisor and tier-2 cost concentrated in identifiable intents.</div></div>
   </div>
   <div class="cols" style="margin-top:20px;">
     <div class="col">
       <h3>Top cost drivers (share of calls)</h3>
-      <p style="font-size:14.5px;">Technical 28.9% · Information-only 25.0% · Device 18.4% · Plan change 14.5% · Billing 5.3%</p>
+      <p style="font-size:14.5px;">Technical 26.9% · Information-only 25.6% · Device 17.9% · Plan change 14.1% · Complaint 7.7% · Billing 6.4%</p>
     </div>
     <div class="col">
       <h3>Phase-level time use</h3>
       <p style="font-size:14.5px;">Per-call timing across welcome, discovery, diagnosis, resolution, hold, and upsell phases shows <em>where</em> handle time concentrates — coaching targets, not averages.</p>
     </div>
   </div>
-  <div class="footnote">Live results from a 76-call run on the public talkmap telecom corpus (synthetic data) — shown to demonstrate the measurement layer, not an operator's actuals. In production these numbers come from your calls.</div>
+  <div class="footnote">Live results from a 100-call production run on the public talkmap telecom corpus (78 calls passed validation and QA gates; synthetic data) — shown to demonstrate the measurement layer, not an operator's actuals. In production these numbers come from your calls.</div>
 </section>
 
 <!-- ─── 8 · Three levers ────────────────────────────────────────── -->
@@ -313,16 +313,16 @@
   <div class="cols" style="margin-top:8px;">
     <div class="col" style="flex:1.2;">
       <div class="lever">
-        <div class="row"><span><strong>1 · Self-serve deflection</strong> — route preventable intents to app/IVR/chatbot</span><span class="accent"><strong>$295K/mo</strong></span></div>
-        <div class="bar"><div class="fill" style="width:49%"></div></div>
+        <div class="row"><span><strong>1 · Self-serve deflection</strong> — route preventable intents to app/IVR/chatbot</span><span class="accent"><strong>$288K/mo</strong></span></div>
+        <div class="bar"><div class="fill" style="width:48%"></div></div>
       </div>
       <div class="lever">
-        <div class="row"><span><strong>2 · Agentic AI resolution</strong> — AI agents autonomously close eligible calls</span><span class="accent"><strong>$160K/mo</strong></span></div>
-        <div class="bar"><div class="fill l2" style="width:27%"></div></div>
+        <div class="row"><span><strong>2 · Agentic AI resolution</strong> — AI agents autonomously close eligible calls</span><span class="accent"><strong>$178K/mo</strong></span></div>
+        <div class="bar"><div class="fill l2" style="width:30%"></div></div>
       </div>
       <div class="lever">
-        <div class="row"><span><strong>3 · Proactive care</strong> — outage, billing-cycle, and usage outreach before the call</span><span class="accent"><strong>$104K/mo</strong></span></div>
-        <div class="bar"><div class="fill l3" style="width:17%"></div></div>
+        <div class="row"><span><strong>3 · Proactive care</strong> — outage, billing-cycle, and usage outreach before the call</span><span class="accent"><strong>$97K/mo</strong></span></div>
+        <div class="bar"><div class="fill l3" style="width:16%"></div></div>
       </div>
       <hr class="rule">
       <p style="font-size:15px;">Illustrative at <strong>100K calls/month × $6.00/call</strong> ($600K baseline), using the sample corpus rates and
@@ -355,7 +355,7 @@
     </div>
     <div class="col">
       <ul class="list">
-        <li><strong>This engine is the targeting system.</strong> It identifies the AI-resolvable 30–40% and ranks intents by volume × cost × risk.</li>
+        <li><strong>This engine is the targeting system.</strong> It identifies the AI-resolvable ~40% and ranks intents by volume × cost × risk.</li>
         <li><strong>It is also the measurement system.</strong> Re-run continuously, it shows deflected volume, FCR shift, and sentiment impact after each rollout wave.</li>
         <li><strong>And the safety case.</strong> Escalation, sentiment, and repeat-risk fields show where AI should <em>not</em> be deployed yet.</li>
       </ul>
@@ -385,11 +385,11 @@
 <!-- ─── 11 · Unit economics ─────────────────────────────────────── -->
 <section class="slide">
   <div class="kicker">Unit economics of the analysis itself</div>
-  <h2>It costs less than a cent<br>to understand a $6 call.</h2>
+  <h2>It costs about a cent<br>to understand a $6 call.</h2>
   <div class="grid g3" style="margin-top:16px;">
-    <div class="card"><div class="stat-num accent">&lt;$0.01</div><div class="stat-label">LLM cost to fully analyze one call (Claude Haiku, ~8K tokens) — roughly 1/800th of the cost of handling it.</div></div>
-    <div class="card"><div class="stat-num">~$800/mo</div><div class="stat-label">to analyze 100K calls — against a $600K monthly handling baseline and ~$560K/mo of identified levers in the sample run.</div></div>
-    <div class="card"><div class="stat-num">700×+</div><div class="stat-label">indicative ratio of identified savings opportunity to analysis cost. Even at 10% lever realization, payback is measured in days.</div></div>
+    <div class="card"><div class="stat-num accent">$0.013</div><div class="stat-label">measured LLM cost to fully analyze one call (Claude Haiku, ~8K tokens) — roughly 1/450th of the cost of handling it.</div></div>
+    <div class="card"><div class="stat-num">~$1.3K/mo</div><div class="stat-label">to analyze 100K calls — against a $600K monthly handling baseline and ~$562K/mo of identified levers in the sample run.</div></div>
+    <div class="card"><div class="stat-num">400×+</div><div class="stat-label">indicative ratio of identified savings opportunity to analysis cost. Even at 10% lever realization, payback is measured in days.</div></div>
   </div>
   <hr class="rule">
   <p style="max-width:920px;">
