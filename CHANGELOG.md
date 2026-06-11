@@ -6,6 +6,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.1.1] — 2026-06-11
+
+### Added — full unit-test coverage for the agent layer
+
+- **118 new tests (224 → 342)** covering the previously untested modules: all 6 agents (`tests/test_agents/`), `analyzer`, `aggregator`, `hf_loader`, `token_tracker`, and the FastAPI wrapper (`tests/test_api.py`)
+- All LLM calls stubbed at module boundaries — the suite still runs with zero API calls in ~6 s; governance singletons (BudgetGuard, QualityGate, PIIScanner) are exercised for real, per the no-mocking rule
+- Regression tests pinned for the v4.1.0 fixes: `False`/`0` not treated as missing fields, gap-fill token spend counted toward BudgetGuard, emergency export preserving `summary.json`, and the cross-process Gemini quota sentinel
+- New `conftest.py` factories: `make_record` (schema-accurate extraction record matching `qa_audit` REQUIRED_FIELDS/ENUM_RULES) and `make_transcript` (hf_loader output schema)
+
+### Known gap (documented, unchanged)
+
+- `_rule_based_insights()` pads with only 3 generic recommendations, so an all-healthy KPI profile yields 3 (not 5) recommendations — only the LLM paths guarantee exactly 5
+
+---
+
 ## [4.1.0] — 2026-06-10
 
 ### Fixed — ReAct correctness and cost accounting

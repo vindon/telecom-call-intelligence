@@ -52,7 +52,7 @@ Key files:
 
 ```bash
 make install-dev    # install all deps (prod + dev)
-make test           # run 224-test suite
+make test           # run 342-test suite
 make test-fast      # skip @slow and @integration tests
 make lint           # ruff linter
 make check          # lint + type-check + test (full gate)
@@ -152,11 +152,11 @@ Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `reac
 ## Running Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -v              # all 224 tests
+.venv/bin/python -m pytest tests/ -v              # all 342 tests
 .venv/bin/python -m pytest tests/ -m "not slow"   # skip API tests
 ```
 
-Expected: **224 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
+Expected: **342 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
 
 ---
 
