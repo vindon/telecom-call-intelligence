@@ -19,9 +19,10 @@
     --accent-deep: #B85C3D;
     --accent-tint: #F5E5DD;
     --hairline:    #E5E2D9;
-    --serif: "Tiempos Text", "Charter", Georgia, "Times New Roman", serif;
-    --sans:  "Styrene A", "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-    --mono:  "Berkeley Mono", "SF Mono", "Menlo", monospace;
+    /* Apple type set: New York (serif display) · SF Pro (text) · SF Mono (data) */
+    --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+    --sans:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, Arial, sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, monospace;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -144,6 +145,37 @@
     position: absolute; bottom: 26px; right: 34px; font-size: 12px; color: var(--ink-faint);
     font-family: var(--mono);
   }
+
+  /* Call-anatomy timeline */
+  .timeline { margin-top: 30px; }
+  .timeline .track { display: flex; height: 86px; border-radius: 10px; overflow: hidden; }
+  .timeline .seg { display: flex; flex-direction: column; justify-content: center; padding: 0 10px; min-width: 0; }
+  .timeline .seg .pn { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+  .timeline .seg .pv { font-family: var(--mono); font-size: 11.5px; opacity: 0.85; white-space: nowrap; }
+  .ph1 { background: #EAD3C6; color: var(--ink); }
+  .ph2 { background: #DFA181; color: var(--ink); }
+  .ph3 { background: #D97757; color: #FFF; }
+  .ph4 { background: #C2603C; color: #FFF; }
+  .ph5 { background: #8A4630; color: #FFF; }
+  .ph6 { background: #B7A695; color: var(--ink); }
+  .ph7 { background: #8F8D85; color: #FFF; }
+  .axis { position: relative; height: 26px; margin-top: 8px; border-top: 1px solid var(--ink); }
+  .axis .tick { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--mono);
+                font-size: 11px; color: var(--ink-faint); padding-top: 6px; }
+  .axis .tick::before { content: ""; position: absolute; top: -1px; left: 50%; width: 1px; height: 5px; background: var(--ink-faint); }
+
+  /* Horizontal phase bars */
+  .hbar { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+  .hbar .hl { width: 128px; font-size: 13.5px; font-weight: 600; text-align: right; flex-shrink: 0; }
+  .hbar .ht { flex: 1; height: 20px; background: var(--paper-deep); border-radius: 6px; overflow: hidden; }
+  .hbar .hf { height: 100%; border-radius: 6px; }
+  .hbar .hv { width: 122px; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); flex-shrink: 0; }
+
+  /* Mini distribution bars */
+  .mini { margin-bottom: 9px; }
+  .mini .mr { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .mini .mt { height: 8px; background: var(--paper-deep); border-radius: 999px; overflow: hidden; }
+  .mini .mf { height: 100%; background: var(--accent); border-radius: 999px; }
 
   /* ── Print: one slide per page ── */
   @media print {
@@ -304,6 +336,100 @@
     </div>
   </div>
   <div class="footnote">Live results from a 100-call production run on the public talkmap telecom corpus (78 calls passed validation and QA gates; synthetic data) — shown to demonstrate the measurement layer, not an operator's actuals. In production these numbers come from your calls.</div>
+</section>
+
+<!-- ─── 7b · Anatomy of the average call ────────────────────────── -->
+<section class="slide">
+  <div class="kicker">Sample output · phase timeline</div>
+  <h2>Anatomy of the average call:<br>a 2½-minute conversation, second by second.</h2>
+  <p style="max-width:880px;">The engine timestamps every phase of every call. Averaged across the production run,
+  this is where the average handle time actually goes:</p>
+  <div class="timeline">
+    <div class="track">
+      <div class="seg ph1" style="width:15.8%"><span class="pn">Welcome &amp; Auth</span><span class="pv">26.8s · 16%</span></div>
+      <div class="seg ph2" style="width:24.3%"><span class="pn">Discovery</span><span class="pv">41.3s · 24%</span></div>
+      <div class="seg ph3" style="width:17.4%"><span class="pn">Diagnosis</span><span class="pv">29.6s · 17%</span></div>
+      <div class="seg ph4" style="width:20.6%"><span class="pn">Resolution</span><span class="pv">35.0s · 21%</span></div>
+      <div class="seg ph5" style="width:0.8%"></div>
+      <div class="seg ph6" style="width:8.6%"><span class="pn">Upsell</span><span class="pv">14.7s</span></div>
+      <div class="seg ph7" style="width:12.6%"><span class="pn">Closing</span><span class="pv">21.4s</span></div>
+    </div>
+    <div class="axis">
+      <span class="tick" style="left:0%">0:00</span>
+      <span class="tick" style="left:17.6%">0:30</span>
+      <span class="tick" style="left:35.3%">1:00</span>
+      <span class="tick" style="left:52.9%">1:30</span>
+      <span class="tick" style="left:70.5%">2:00</span>
+      <span class="tick" style="left:88.2%">2:30</span>
+      <span class="tick" style="left:100%">2:50</span>
+    </div>
+  </div>
+  <div class="cols" style="margin-top:24px; flex:0;">
+    <div class="col"><p style="font-size:14px;"><strong>40% of the call is over before solving starts.</strong> Welcome, auth, and discovery — 68 seconds — are spent identifying the caller and re-learning the problem. CRM context-passing and voice auth attack this directly.</p></div>
+    <div class="col"><p style="font-size:14px;"><strong>The dark sliver is hold: 1.3s.</strong> This corpus has near-zero hold — on operator data this segment is typically the first thing executives ask about.</p></div>
+    <div class="col"><p style="font-size:14px;"><strong>Upsell occupies 9% of phase time</strong> and converts at 89% when attempted — evidence that the time is well spent, visible only because phases are timed.</p></div>
+  </div>
+  <div class="footnote">Wall-clock AHT is 2:33; phase clocks total 2:50 because phases can overlap when agents multitask (e.g., upsell woven into resolution) — a distinction only per-phase timestamping can show.</div>
+</section>
+
+<!-- ─── 7c · Combined phase time ────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">Sample output · combined phase time, all calls</div>
+  <h2>Where 3.7 hours of talk time<br>concentrated across the run.</h2>
+  <div class="cols" style="margin-top:14px;">
+    <div class="col" style="flex:1.35;">
+      <div class="hbar"><span class="hl">Discovery</span><div class="ht"><div class="hf ph2" style="width:100%"></div></div><span class="hv">53.7 min · 24%</span></div>
+      <div class="hbar"><span class="hl">Resolution</span><div class="ht"><div class="hf ph4" style="width:85%"></div></div><span class="hv">45.5 min · 21%</span></div>
+      <div class="hbar"><span class="hl">Diagnosis</span><div class="ht"><div class="hf ph3" style="width:72%"></div></div><span class="hv">38.4 min · 17%</span></div>
+      <div class="hbar"><span class="hl">Welcome &amp; Auth</span><div class="ht"><div class="hf ph1" style="width:65%"></div></div><span class="hv">34.8 min · 16%</span></div>
+      <div class="hbar"><span class="hl">Closing</span><div class="ht"><div class="hf ph7" style="width:52%"></div></div><span class="hv">27.8 min · 13%</span></div>
+      <div class="hbar"><span class="hl">Upsell</span><div class="ht"><div class="hf ph6" style="width:36%"></div></div><span class="hv">19.1 min · 9%</span></div>
+      <div class="hbar"><span class="hl">Hold</span><div class="ht"><div class="hf ph5" style="width:3%"></div></div><span class="hv">1.7 min · 1%</span></div>
+    </div>
+    <div class="col" style="flex:0.85;">
+      <div class="card tint" style="height:100%;">
+        <h3>What an operator does with this</h3>
+        <p style="font-size:14px; margin-bottom:10px;"><strong>Discovery is the biggest block (24%).</strong> Callers re-explain problems the system already knows — context-passing from IVR/app and AI agent-assist shrink it.</p>
+        <p style="font-size:14px; margin-bottom:10px;"><strong>Welcome + Auth is 16% pure overhead.</strong> Voice biometrics and CTI screen-pop remove most of it without touching the customer conversation.</p>
+        <p style="font-size:14px;"><strong>Agents themselves flag diagnosis</strong> as the disproportionate phase in 36% of flagged calls — the engine's per-call flags point coaching to the right minutes.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footnote">198 minutes of conversation across 78 analyzed calls; per-phase totals from per-call timestamped segments. Y axis: call phase · X axis: combined time spent (minutes and share of phase time).</div>
+</section>
+
+<!-- ─── 7d · Metadata extraction ────────────────────────────────── -->
+<section class="slide">
+  <div class="kicker">Sample output · metadata extraction</div>
+  <h2>The same pass also reads <span class="accent">what</span> the call was about — plans, products, account context.</h2>
+  <div class="cols" style="margin-top:16px;">
+    <div class="col">
+      <h3>Account type mix</h3>
+      <div class="mini"><div class="mr"><span>Postpaid</span><span>56.4%</span></div><div class="mt"><div class="mf" style="width:56.4%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Not stated on call</span><span>34.6%</span></div><div class="mt"><div class="mf" style="width:34.6%; opacity:.45"></div></div></div>
+      <div class="mini"><div class="mr"><span>Business</span><span>5.1%</span></div><div class="mt"><div class="mf" style="width:5.1%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Prepaid</span><span>3.8%</span></div><div class="mt"><div class="mf" style="width:3.8%"></div></div></div>
+      <p style="font-size:13px; margin-top:14px;" class="muted">Segment-level cost-to-serve falls out automatically: postpaid vs prepaid vs business, per intent.</p>
+    </div>
+    <div class="col">
+      <h3>Products referenced (mentions)</h3>
+      <div class="mini"><div class="mr"><span>Services</span><span>42</span></div><div class="mt"><div class="mf" style="width:100%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Devices</span><span>28</span></div><div class="mt"><div class="mf" style="width:67%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Plans</span><span>27</span></div><div class="mt"><div class="mf" style="width:64%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Accessories</span><span>21</span></div><div class="mt"><div class="mf" style="width:50%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Add-ons / roaming</span><span>23</span></div><div class="mt"><div class="mf" style="width:55%"></div></div></div>
+      <p style="font-size:13px; margin-top:14px;" class="muted">93% of calls reference at least one product — named: Galaxy S21, iPhone 12 Pro, IoT devices, call-forwarding, international calling.</p>
+    </div>
+    <div class="col">
+      <h3>Plans &amp; upsell funnel</h3>
+      <p style="font-size:14px; margin-bottom:12px;">Plans surfaced verbatim from conversations: international roaming tiers, 5GB/10GB data plans, student and pay-per-use plans — a live map of <strong>which products generate care cost</strong>.</p>
+      <div class="card tint">
+        <div class="stat-num accent" style="font-size:30px;">35.9% → 89.3%</div>
+        <div class="stat-label">of calls include an upsell attempt; 89.3% convert when attempted. Agents pitch only warm customers — visible because attempt, offer, and outcome are separate fields.</div>
+      </div>
+    </div>
+  </div>
+  <div class="footnote">All values extracted by the pipeline from the production run — no manual tagging. Per-product fields capture name, category, phase mentioned, context, and outcome (up to 5 per call).</div>
 </section>
 
 <!-- ─── 8 · Three levers ────────────────────────────────────────── -->
