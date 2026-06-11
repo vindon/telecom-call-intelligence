@@ -3,141 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conversation-Level Cost Intelligence for Telecom Customer Care — Briefing Document</title>
+<title>The Cost Inside Every Call — Briefing</title>
 <style>
+  /* Anthropic-inspired product narrative system:
+     warm cream canvas, white exhibit cards, serif display at scale,
+     one idea per page, accent used only for meaning. */
   :root {
-    --stage: #EDEBE4; --paper: #FFFFFF; --hairline: #E4E2DA; --rule: #1A1915;
-    --ink: #1A1915; --sub: #514F49; --faint: #8F8D84;
-    --accent: #B34E28; --wash: #FAF8F4;
-    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --stage:  #E8E5DC;
+    --canvas: #FAF9F5;
+    --card:   #FFFFFF;
+    --line:   #E6E2D7;
+    --ink:    #181816;
+    --sub:    #53514A;
+    --faint:  #8E8B81;
+    --clay:   #C15F3C;          /* book-cloth terracotta */
+    --kraft:  #D4A27F;
+    --wash:   #F3EFE7;
+    --serif: "Iowan Old Style", "New York", "Charter", Georgia, serif;
+    --sans:  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, monospace;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { height:100%; background:var(--stage); }
   body { font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; }
 
-  #stage { height:100vh; display:flex; align-items:center; justify-content:center; padding:22px; }
+  #stage { height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
   .page {
-    width:min(1260px,100%); aspect-ratio:16/9; background:var(--paper);
-    padding:0 78px; display:none; flex-direction:column; overflow:hidden; position:relative;
-    border:1px solid var(--hairline);
+    width:min(1280px,100%); aspect-ratio:16/9; background:var(--canvas);
+    padding:0 84px; display:none; flex-direction:column; overflow:hidden; position:relative;
+    border-radius:18px;
   }
   .page.active { display:flex; }
 
   .head {
     display:flex; justify-content:space-between; align-items:baseline;
-    padding:22px 0 11px; border-bottom:1px solid var(--hairline); margin-bottom:26px;
-    font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; color:var(--faint);
+    padding:30px 0 0; font-family:var(--mono); font-size:10px; letter-spacing:.18em; color:var(--faint);
   }
+  .head .r { color:var(--clay); }
   .foot {
     margin-top:auto; display:flex; justify-content:space-between; align-items:baseline;
-    padding:11px 0 20px; border-top:1px solid var(--hairline);
-    font-size:10.5px; color:var(--faint);
+    padding:14px 0 26px; font-size:11px; color:var(--faint);
   }
   .foot .pg { font-family:var(--mono); }
 
-  .secno { font-family:var(--mono); font-size:11px; letter-spacing:.16em; color:var(--accent); margin-bottom:10px; }
-  .stitle { font-size:28px; font-weight:650; line-height:1.25; letter-spacing:-0.018em; max-width:980px; margin-bottom:14px; }
-  .lede { font-size:15.5px; line-height:1.6; color:var(--sub); max-width:920px; }
-  p { font-size:14px; line-height:1.62; color:var(--sub); }
+  /* Typographic scale — display-first */
+  .eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.2em; color:var(--clay); margin:34px 0 18px; }
+  h1.display { font-family:var(--serif); font-weight:500; font-size:72px; line-height:1.04;
+               letter-spacing:-0.018em; max-width:1080px; }
+  h2.display { font-family:var(--serif); font-weight:500; font-size:48px; line-height:1.1;
+               letter-spacing:-0.015em; max-width:1060px; margin-bottom:18px; }
+  .lede { font-size:18px; line-height:1.55; color:var(--sub); max-width:900px; }
+  p { font-size:14.5px; line-height:1.62; color:var(--sub); }
   strong { color:var(--ink); font-weight:600; }
   .num { font-family:var(--mono); }
-  .fig { font-family:var(--mono); font-size:10px; letter-spacing:.13em; color:var(--faint); margin:16px 0 9px; }
-  .fig b { color:var(--accent); font-weight:600; }
   .small { font-size:11.5px; line-height:1.55; color:var(--faint); }
+  .fig { font-family:var(--mono); font-size:10px; letter-spacing:.14em; color:var(--faint); margin-bottom:10px; }
+  .fig b { color:var(--clay); }
 
-  .row { display:flex; gap:46px; flex:1; min-height:0; }
+  .row { display:flex; gap:48px; flex:1; min-height:0; }
   .col { flex:1; min-width:0; }
 
-  /* Definition / rationale notes */
-  .note { background:var(--wash); border:1px solid var(--hairline); padding:14px 18px; margin-top:14px; }
-  .note .nt { font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:var(--accent); display:block; margin-bottom:6px; }
-  .note p { font-size:13px; line-height:1.55; }
+  /* White exhibit card — the Anthropic move */
+  .exhibit { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 28px; }
+  .exhibit.flush { padding:24px 28px 18px; }
+
+  /* Big serif numerals */
+  .stat { font-family:var(--serif); font-size:64px; font-weight:500; letter-spacing:-0.02em; line-height:1; }
+  .stat .u { font-size:26px; color:var(--sub); }
+  .stat.clay { color:var(--clay); }
+  .statlabel { font-size:13.5px; color:var(--sub); margin-top:10px; line-height:1.5; max-width:300px; }
 
   table { width:100%; border-collapse:collapse; }
   thead th { font-family:var(--mono); font-size:9.5px; letter-spacing:.13em; text-align:left;
-             color:var(--faint); padding:0 14px 8px 0; border-bottom:1.5px solid var(--rule); }
-  tbody td { font-size:13px; line-height:1.5; color:var(--sub); padding:10px 14px 10px 0;
-             border-bottom:1px solid var(--hairline); vertical-align:top; }
+             color:var(--faint); padding:0 14px 9px 0; border-bottom:1px solid var(--ink); }
+  tbody td { font-size:13px; line-height:1.55; color:var(--sub); padding:11px 14px 11px 0;
+             border-bottom:1px solid var(--line); vertical-align:top; }
   tbody td:first-child { color:var(--ink); font-weight:600; }
   tbody tr:last-child td { border-bottom:none; }
-  td.why { color:var(--sub); font-size:12.5px; }
+  td.why { font-size:12.5px; }
 
-  /* Contents */
-  .toc { border-top:1.5px solid var(--rule); }
-  .toc .trow { display:flex; justify-content:space-between; align-items:baseline; padding:11px 0;
-               border-bottom:1px solid var(--hairline); font-size:14.5px; }
-  .toc .trow .tn { color:var(--ink); }
-  .toc .trow .tn .no { font-family:var(--mono); font-size:11px; color:var(--accent); margin-right:14px; }
+  .toc .trow { display:flex; justify-content:space-between; align-items:baseline; padding:13px 0;
+               border-bottom:1px solid var(--line); font-size:16px; }
+  .toc .trow .tn { color:var(--ink); font-weight:500; }
+  .toc .trow .tn .no { font-family:var(--mono); font-size:11px; color:var(--clay); margin-right:16px; }
   .toc .trow .tp { font-family:var(--mono); font-size:11px; color:var(--faint); }
 
   /* Timeline */
-  .phaseband { display:flex; height:54px; }
-  .phaseband.ghost { height:40px; }
+  .phaseband { display:flex; height:54px; border-radius:8px; overflow:hidden; }
+  .phaseband.ghost { height:38px; }
   .pseg { display:flex; flex-direction:column; justify-content:center; padding:0 9px; min-width:0; }
   .pseg .pn { font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; }
   .pseg .pv { font-family:var(--mono); font-size:9.5px; opacity:.85; white-space:nowrap; }
-  .c1 { background:#E9D5C7; color:var(--ink); } .c2 { background:#DE9E7C; color:var(--ink); }
-  .c3 { background:#C65B33; color:#FFF; }      .c4 { background:#9E4524; color:#FFF; }
-  .c5 { background:#5F2F1A; color:#FFF; }      .c6 { background:#C9BBA9; color:var(--ink); }
-  .c7 { background:#97948A; color:#FFF; }
-  .ghost .pseg { border-top:1px dashed #C9C6BC; border-bottom:1px dashed #C9C6BC; }
-  .ghost .c1 { background:#F4EBE3; } .ghost .c2 { background:#F0DACB; } .ghost .c3 { background:#EBC4B0; color:var(--ink); }
-  .ghost .c4 { background:#E3B49C; color:var(--ink); } .ghost .c5 { background:#D8A98F; color:var(--ink); }
-  .ghost .c6 { background:#EBE5DA; } .ghost .c7 { background:#E2E0D9; color:var(--ink); }
-  .taxis { position:relative; height:20px; border-top:1px solid var(--rule); }
+  .c1 { background:#EBD9CB; color:var(--ink); } .c2 { background:#DDA47F; color:var(--ink); }
+  .c3 { background:#C15F3C; color:#FFF; }      .c4 { background:#9A4524; color:#FFF; }
+  .c5 { background:#5E2F1A; color:#FFF; }      .c6 { background:#CBBDA9; color:var(--ink); }
+  .c7 { background:#999689; color:#FFF; }
+  .ghost .c1 { background:#F5ECE3; } .ghost .c2 { background:#F1DCCB; } .ghost .c3 { background:#EBC5B0; color:var(--ink); }
+  .ghost .c4 { background:#E4B59C; color:var(--ink); } .ghost .c5 { background:#D9AA8F; color:var(--ink); }
+  .ghost .c6 { background:#EFE9DD; } .ghost .c7 { background:#E5E3DA; color:var(--ink); }
+  .taxis { position:relative; height:20px; border-top:1px solid var(--ink); }
   .taxis .tick { position:absolute; top:0; transform:translateX(-50%); font-family:var(--mono);
                  font-size:9.5px; color:var(--faint); padding-top:4px; }
   .taxis .tick::before { content:""; position:absolute; top:-1px; left:50%; width:1px; height:4px; background:var(--faint); }
-  .pinrow { position:relative; height:86px; }
-  .pin { position:absolute; bottom:0; transform:translateX(-50%); text-align:center; width:162px; }
+  .pinrow { position:relative; height:84px; }
+  .pin { position:absolute; bottom:0; transform:translateX(-50%); text-align:center; width:160px; }
   .pin .pl { font-size:10.5px; line-height:1.35; color:var(--ink); }
-  .pin .pl b { color:var(--accent); }
+  .pin .pl b { color:var(--clay); }
   .pin .stem { width:1px; height:12px; background:var(--ink); margin:4px auto 0; }
-  .pin.t2 .stem { height:44px; }
+  .pin.t2 .stem { height:42px; }
   .pin.edge-l { transform:none; text-align:left; }  .pin.edge-l .stem { margin-left:1px; }
   .pin.edge-r { transform:translateX(-100%); text-align:right; }
   .pin.edge-r .stem { margin-right:1px; margin-left:auto; }
 
-  /* Bars */
   .hbar { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-  .hbar .hl { width:120px; font-size:12px; font-weight:600; text-align:right; flex-shrink:0; }
-  .hbar .ht { flex:1; height:16px; background:#F1EFE8; }
+  .hbar .hl { width:122px; font-size:12px; font-weight:600; text-align:right; flex-shrink:0; }
+  .hbar .ht { flex:1; height:16px; background:var(--wash); border-radius:5px; overflow:hidden; }
   .hbar .hf { height:100%; }
-  .hbar .hv { width:130px; font-family:var(--mono); font-size:10.5px; color:var(--sub); flex-shrink:0; }
+  .hbar .hv { width:132px; font-family:var(--mono); font-size:10.5px; color:var(--sub); flex-shrink:0; }
 
-  /* Waterfall */
-  .wf { display:flex; gap:0; margin-top:14px; }
+  .wf { display:flex; gap:0; margin-top:8px; }
   .wf .wcol { flex:1; }
-  .wf .wplot { position:relative; height:200px; border-bottom:1px solid var(--rule); }
-  .wf .wbar { position:absolute; left:16%; right:16%; }
+  .wf .wplot { position:relative; height:190px; border-bottom:1px solid var(--ink); }
+  .wf .wbar { position:absolute; left:15%; right:15%; border-radius:5px 5px 0 0; }
   .wf .wtag { position:absolute; left:0; right:0; text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--ink); }
   .wf .wlab { text-align:center; font-size:12px; font-weight:600; margin-top:8px; }
-  .wf .wval { text-align:center; font-family:var(--mono); font-size:10px; color:var(--faint); margin-top:2px; }
-  .wf .conn { position:absolute; height:1px; border-top:1px dashed #B9B6AC; left:-16%; right:-16%; }
+  .wf .wval { text-align:center; font-family:var(--mono); font-size:9.5px; color:var(--faint); margin-top:2px; }
+  .wf .conn { position:absolute; height:1px; border-top:1px dashed #BFBCB1; left:-15%; right:-15%; }
 
-  /* Architecture */
-  .arch { display:flex; align-items:stretch; gap:10px; margin-top:18px; }
-  .arch .anode { flex:1; border:1px solid var(--hairline); background:var(--wash); padding:12px 12px; }
-  .arch .anode .an { font-family:var(--mono); font-size:9.5px; color:var(--accent); display:block; margin-bottom:5px; }
+  /* Architecture stations */
+  .arch { display:flex; align-items:stretch; gap:9px; }
+  .arch .anode { flex:1; border:1px solid var(--line); background:var(--card); border-radius:10px; padding:13px 12px; }
+  .arch .anode .an { font-family:var(--mono); font-size:9px; color:var(--clay); display:block; margin-bottom:5px; letter-spacing:.08em; }
   .arch .anode h4 { font-size:12.5px; font-weight:650; margin-bottom:4px; }
-  .arch .anode p { font-size:11px; line-height:1.45; }
-  .arch .gap { align-self:center; color:var(--faint); font-size:13px; }
+  .arch .anode p { font-size:10.5px; line-height:1.45; }
+  .arch .gap { align-self:center; color:var(--kraft); font-size:14px; }
 
-  .findings .frow { display:flex; gap:20px; padding:12px 0; border-bottom:1px solid var(--hairline); }
+  .findings .frow { display:flex; gap:22px; padding:14px 0; border-bottom:1px solid var(--line); }
   .findings .frow:last-child { border-bottom:none; }
-  .findings .fn { font-family:var(--mono); font-size:11px; color:var(--accent); padding-top:3px; flex-shrink:0; width:26px; }
-  .findings .ft { font-size:14.5px; line-height:1.55; color:var(--sub); }
+  .findings .fn { font-family:var(--mono); font-size:11px; color:var(--clay); padding-top:4px; flex-shrink:0; width:28px; }
+  .findings .ft { font-size:15px; line-height:1.55; color:var(--sub); }
   .findings .ft b { color:var(--ink); }
 
-  #nav { position:fixed; bottom:13px; left:0; right:0; display:flex; justify-content:center; gap:16px;
+  .note { background:var(--wash); border-radius:10px; padding:16px 20px; }
+  .note .nt { font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:var(--clay); display:block; margin-bottom:7px; }
+  .note p { font-size:13px; line-height:1.55; }
+
+  #nav { position:fixed; bottom:12px; left:0; right:0; display:flex; justify-content:center; gap:16px;
          font-size:12px; color:var(--faint); user-select:none; align-items:center; }
-  #nav button { border:1px solid var(--hairline); background:var(--paper); color:var(--sub);
-                padding:5px 14px; cursor:pointer; font-size:12px; }
-  #nav button:hover { border-color:var(--accent); color:var(--accent); }
+  #nav button { border:1px solid var(--line); background:var(--canvas); color:var(--sub);
+                padding:5px 14px; cursor:pointer; font-size:12px; border-radius:7px; }
+  #nav button:hover { border-color:var(--clay); color:var(--clay); }
   @media print {
     #nav { display:none; } #stage { display:block; height:auto; padding:0; }
-    .page { display:flex !important; width:100%; border:0; page-break-after:always; aspect-ratio:auto; height:100vh; }
+    .page { display:flex !important; width:100%; border-radius:0; page-break-after:always; aspect-ratio:auto; height:100vh; }
   }
 </style>
 </head>
@@ -146,20 +164,15 @@
 
 <!-- 01 · Cover -->
 <section class="page">
-  <div class="head"><span>BRIEFING DOCUMENT</span><span>JUNE 2026</span></div>
+  <div class="head"><span>BRIEFING · TELECOM CUSTOMER CARE</span><span class="r">JUNE 2026</span></div>
   <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
-    <p class="secno">TELECOM OPERATIONS &amp; TECHNOLOGY LEADERSHIP</p>
-    <h1 style="font-size:40px; font-weight:650; letter-spacing:-0.022em; line-height:1.22; max-width:950px;">
-      Conversation-level cost intelligence for telecom customer care
-    </h1>
-    <p class="lede" style="margin-top:18px; font-size:17px;">
-      The design, rationale, and measured results of a multi-agent analysis system —
-      from the economics of assisted calls to a validated production run.
-    </p>
-    <p class="small" style="margin-top:34px; max-width:760px;">
-      This document explains the problem it addresses, how the system works, why each component
-      was included, and what a 100-call production run measured. Assumptions and limitations
-      are stated where they apply. All figures are sourced from the June 2026 run unless noted.
+    <p class="eyebrow" style="margin-top:0;">A WORKING SYSTEM AND ITS RESULTS</p>
+    <h1 class="display">The cost inside<br>every call.</h1>
+    <p class="lede" style="margin-top:26px; font-size:20px; max-width:820px;">
+      Customer-care conversations explain exactly why customers call, where minutes are lost,
+      and which contacts never needed to happen. This document describes a multi-agent AI system
+      that reads them at scale — how it works, why each part exists, and what it found in a
+      production run of one hundred calls.
     </p>
   </div>
   <div class="foot">
@@ -170,261 +183,274 @@
 
 <!-- 02 · Contents -->
 <section class="page">
-  <div class="head"><span>CONVERSATION-LEVEL COST INTELLIGENCE</span><span>CONTENTS</span></div>
-  <h2 class="stitle">Contents</h2>
-  <div class="row" style="margin-top:6px;">
+  <div class="head"><span>THE COST INSIDE EVERY CALL</span><span class="r">CONTENTS</span></div>
+  <p class="eyebrow">CONTENTS</p>
+  <h2 class="display" style="font-size:42px;">Three movements: the problem,<br>the system, the evidence.</h2>
+  <div class="row" style="margin-top:22px;">
     <div class="col">
       <div class="toc">
-        <div class="trow"><span class="tn"><span class="no">1</span>Purpose and scope</span><span class="tp">03</span></div>
-        <div class="trow"><span class="tn"><span class="no">2</span>Background — the economics of assisted care</span><span class="tp">04</span></div>
-        <div class="trow"><span class="tn"><span class="no">3</span>The measurement gap</span><span class="tp">05</span></div>
-        <div class="trow"><span class="tn"><span class="no">4</span>What changed — and what "agentic" means here</span><span class="tp">06</span></div>
-        <div class="trow"><span class="tn"><span class="no">5</span>Solution concept and design principles</span><span class="tp">07</span></div>
-        <div class="trow"><span class="tn"><span class="no">6</span>System architecture</span><span class="tp">08</span></div>
-        <div class="trow"><span class="tn"><span class="no">7</span>The agents — acquisition to quality (1–3)</span><span class="tp">09</span></div>
+        <div class="trow"><span class="tn"><span class="no">1</span>What this document is</span><span class="tp">03</span></div>
+        <div class="trow"><span class="tn"><span class="no">2</span>A billion-dollar line, managed on averages</span><span class="tp">04</span></div>
+        <div class="trow"><span class="tn"><span class="no">3</span>The tools measure how long — not why</span><span class="tp">05</span></div>
+        <div class="trow"><span class="tn"><span class="no">4</span>Reading a call now costs about a cent</span><span class="tp">06</span></div>
+        <div class="trow"><span class="tn"><span class="no">5</span>The idea, in one page</span><span class="tp">07</span></div>
+        <div class="trow"><span class="tn"><span class="no">6</span>How it works — the pipeline</span><span class="tp">08</span></div>
+        <div class="trow"><span class="tn"><span class="no">7</span>The agents: prepare, read, verify</span><span class="tp">09</span></div>
       </div>
     </div>
     <div class="col">
       <div class="toc">
-        <div class="trow"><span class="tn"><span class="no">8</span>The agents — economics to publication (4–6)</span><span class="tp">10</span></div>
-        <div class="trow"><span class="tn"><span class="no">9</span>Governance design</span><span class="tp">11</span></div>
-        <div class="trow"><span class="tn"><span class="no">10</span>Validation run — method</span><span class="tp">12</span></div>
-        <div class="trow"><span class="tn"><span class="no">11</span>Results — the anatomy of a call</span><span class="tp">13</span></div>
-        <div class="trow"><span class="tn"><span class="no">12</span>Results — indicators and content</span><span class="tp">14</span></div>
-        <div class="trow"><span class="tn"><span class="no">13</span>Economic interpretation</span><span class="tp">15</span></div>
-        <div class="trow"><span class="tn"><span class="no">14</span>Implementation pathway</span><span class="tp">16</span></div>
-        <div class="trow"><span class="tn"><span class="no">15</span>Conclusions · <span style="color:var(--sub); font-weight:400;">16 · Next step</span></span><span class="tp">17–18</span></div>
+        <div class="trow"><span class="tn"><span class="no">8</span>The agents: price, reason, publish</span><span class="tp">10</span></div>
+        <div class="trow"><span class="tn"><span class="no">9</span>Autonomy, governed</span><span class="tp">11</span></div>
+        <div class="trow"><span class="tn"><span class="no">10</span>The validation run</span><span class="tp">12</span></div>
+        <div class="trow"><span class="tn"><span class="no">11</span>Where two and a half minutes go</span><span class="tp">13</span></div>
+        <div class="trow"><span class="tn"><span class="no">12</span>What the run measured</span><span class="tp">14</span></div>
+        <div class="trow"><span class="tn"><span class="no">13</span>What the findings are worth</span><span class="tp">15</span></div>
+        <div class="trow"><span class="tn"><span class="no">14</span>Four phases to a closed loop</span><span class="tp">16</span></div>
+        <div class="trow"><span class="tn"><span class="no">15–16</span>Conclusions · The next step</span><span class="tp">17–18</span></div>
       </div>
     </div>
   </div>
-  <div class="foot"><span>Sections 2–4 set context; 5–9 describe the system; 10–13 report evidence; 14–16 conclude</span><span class="pg">02 / 18</span></div>
+  <div class="foot"><span>Sections 2–4 establish the problem · 5–9 explain the system · 10–14 present the evidence · 15–16 conclude</span><span class="pg">02 / 18</span></div>
 </section>
 
-<!-- 03 · 1 Purpose -->
+<!-- 03 · 1 What this is -->
 <section class="page">
-  <div class="head"><span>SECTION 1</span><span>PURPOSE AND SCOPE</span></div>
-  <div class="secno">1 · PURPOSE AND SCOPE</div>
-  <h2 class="stitle">What this document is, who it is for, and how to read it.</h2>
-  <div class="row" style="margin-top:8px;">
+  <div class="head"><span>SECTION 1</span><span class="r">WHAT THIS DOCUMENT IS</span></div>
+  <p class="eyebrow">1 · PURPOSE AND SCOPE</p>
+  <h2 class="display">A complete account: problem,<br>system, evidence, and limits.</h2>
+  <div class="row" style="margin-top:20px;">
     <div class="col">
-      <p style="margin-bottom:14px;"><strong>Subject.</strong> Customer care conversations contain detailed evidence about why customers call, how time is spent, and which contacts could be prevented or automated. That evidence is rarely analysed at scale. This document describes a working system that performs this analysis, and the results of running it.</p>
-      <p style="margin-bottom:14px;"><strong>Audience.</strong> Operations and technology leadership at telecom operators, and any reader evaluating whether conversation-level analytics justifies a pilot — or evaluating the author's approach to building governed AI systems.</p>
-      <p><strong>Method of the document.</strong> Context first, then the system and the reasoning behind each component, then measured evidence, then interpretation. Claims are tied to sources; planning assumptions are labelled as such.</p>
+      <p style="font-size:15.5px; margin-bottom:14px;">Written for operations and technology leadership at telecom operators — and for anyone evaluating how a governed AI system should be designed, explained, and validated.</p>
+      <p style="font-size:15.5px; margin-bottom:14px;">The document moves in order: why care conversations matter economically, why they go unread, what the system does about it, and what happened when it ran. Every figure is sourced from a June 2026 production run unless noted, and every assumption is labelled where it is used.</p>
+      <p style="font-size:15.5px;">Limitations appear <strong>before</strong> the results they qualify, not after.</p>
     </div>
     <div class="col">
-      <div class="note" style="margin-top:0;">
-        <span class="nt">SCOPE — WHAT THE SYSTEM DOES</span>
-        <p>Reads recorded call transcripts; extracts ~70 structured fields per call; scores its own extraction quality; aggregates operational indicators; estimates economic levers; produces strategy recommendations and a full audit trail.</p>
+      <div class="exhibit" style="margin-bottom:14px;">
+        <span class="fig"><b>IN SCOPE</b></span>
+        <p style="font-size:14px;">Reads recorded transcripts · extracts ~70 structured fields per call · scores its own extraction quality · aggregates indicators · prices reduction levers · writes strategy recommendations and a complete audit trail.</p>
       </div>
-      <div class="note">
-        <span class="nt">OUT OF SCOPE — WHAT IT DOES NOT DO</span>
-        <p>It does not interact with customers, modify accounts, or take any action on operator systems. It is an analysis system. This boundary is a deliberate design choice discussed in Section 5.</p>
+      <div class="exhibit">
+        <span class="fig"><b>DELIBERATELY OUT OF SCOPE</b></span>
+        <p style="font-size:14px;">It never speaks to customers, never modifies accounts, never touches operator systems. It is an analysis system — a boundary chosen so that autonomy can be earned in stages. Section 5 returns to this.</p>
       </div>
     </div>
   </div>
-  <div class="foot"><span>Companion documents: Part I — The Build (system deep-dive) · Part II — The Results (extended exhibits)</span><span class="pg">03 / 18</span></div>
+  <div class="foot"><span>Companion deep-dives available: Part I — The Build · Part II — The Results</span><span class="pg">03 / 18</span></div>
 </section>
 
-<!-- 04 · 2 Background -->
+<!-- 04 · 2 The cost line -->
 <section class="page">
-  <div class="head"><span>SECTION 2</span><span>BACKGROUND</span></div>
-  <div class="secno">2 · BACKGROUND</div>
-  <h2 class="stitle">The economics of assisted customer care.</h2>
-  <p class="lede">Customer care is among the largest controllable cost lines a telecom operator manages, and its unit economics are unusually transparent: every contact has a channel, and every channel has a cost.</p>
-  <div class="row" style="margin-top:16px;">
-    <div class="col">
-      <table>
-        <thead><tr><th>CONTACT CHANNEL</th><th>TYPICAL UNIT COST</th><th>NOTES</th></tr></thead>
-        <tbody>
-          <tr><td>Assisted voice call</td><td class="num">$6 – 12</td><td class="why">Agent time, telephony, occupancy, supervision</td></tr>
-          <tr><td>Assisted chat</td><td class="num">$2 – 5</td><td class="why">Concurrency lowers cost per contact</td></tr>
-          <tr><td>Self-service (app/IVR/web)</td><td class="num">&lt; $0.50</td><td class="why">Near-zero marginal cost once built</td></tr>
-        </tbody>
-      </table>
-      <p class="small" style="margin-top:12px;">Commonly cited industry ranges; an operator's ACD and workforce data replaces these in any serious analysis.</p>
+  <div class="head"><span>SECTION 2</span><span class="r">THE PROBLEM · ECONOMICS</span></div>
+  <p class="eyebrow">2 · BACKGROUND</p>
+  <h2 class="display">A billion-dollar cost line,<br>managed on averages.</h2>
+  <div class="row" style="margin-top:22px; align-items:flex-start;">
+    <div class="col" style="flex:0.85;">
+      <div class="stat">$6<span class="u">–</span>12</div>
+      <div class="statlabel">the cost of one assisted voice call — against under $0.50 when the same need is met in an app or IVR. That spread is the largest controllable gap in a care budget.</div>
     </div>
-    <div class="col">
-      <p style="margin-bottom:12px;">Volumes make the stakes concrete. A tier-1 operator with 50–100M subscribers handles on the order of <strong>100M assisted contacts a year</strong>; at the unit costs opposite, annual care expenditure reaches <strong>$0.6–1.2B</strong>. A national operator carries proportionally smaller but structurally identical exposure.</p>
-      <p>Two further properties matter for what follows. First, care interactions correlate with churn: unresolved or repeated contacts measurably raise leave-propensity, so cost and retention move together. Second, industry studies consistently estimate that <strong>20–40% of inbound contacts are avoidable</strong> — driven by billing confusion, status checks, and information-only queries that better journeys would prevent.</p>
+    <div class="col" style="flex:1.15;">
+      <div class="exhibit flush">
+        <span class="fig"><b>TABLE 2.1</b> — ANNUAL CARE EXPOSURE BY OPERATOR SCALE</span>
+        <table>
+          <thead><tr><th>OPERATOR</th><th>ASSISTED CONTACTS / YR</th><th>ANNUAL EXPOSURE</th></tr></thead>
+          <tbody>
+            <tr><td>Tier-1 group</td><td>100M+</td><td class="num">$0.6 – 1.2B</td></tr>
+            <tr><td>National operator</td><td>10–50M</td><td class="num">$60 – 500M</td></tr>
+            <tr><td>MVNO / regional</td><td>1–10M</td><td class="num">$6 – 60M</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:14px; font-size:14px;">Two properties sharpen the stakes: care contacts correlate with churn, so cost and retention move together — and industry studies consistently estimate that <strong>20–40% of inbound contacts are avoidable</strong>: billing confusion, status checks, information-only queries.</p>
     </div>
   </div>
-  <div class="foot"><span>Section 3 examines why this avoidable share is difficult to locate with existing tooling</span><span class="pg">04 / 18</span></div>
+  <div class="foot"><span>Unit costs are commonly cited industry ranges; an operator's ACD data replaces them in any serious analysis</span><span class="pg">04 / 18</span></div>
 </section>
 
 <!-- 05 · 3 The gap -->
 <section class="page">
-  <div class="head"><span>SECTION 3</span><span>THE MEASUREMENT GAP</span></div>
-  <div class="secno">3 · THE MEASUREMENT GAP</div>
-  <h2 class="stitle">Existing instrumentation measures duration and sentiment — not cause.</h2>
-  <p class="lede">Operators are well instrumented around the call but not inside it. Each existing source answers a different question, and none answers the one that drives cost reduction: <em>why did this call exist, and what would have prevented it?</em></p>
-  <div class="fig"><b>TABLE 3.1</b> — WHAT EACH EXISTING SOURCE CAN AND CANNOT ANSWER</div>
-  <table>
-    <thead><tr><th style="width:22%">SOURCE</th><th style="width:30%">ANSWERS</th><th>CANNOT ANSWER</th></tr></thead>
-    <tbody>
-      <tr><td>ACD / telephony data</td><td class="why">How long, which queue, what disposition code</td><td class="why">Whether the call was preventable; where inside the call time was lost</td></tr>
-      <tr><td>Post-call surveys</td><td class="why">How the customer felt afterwards</td><td class="why">What occurred during the call; responses skew to extremes</td></tr>
-      <tr><td>Human QA review</td><td class="why">Agent behaviour and compliance on the reviewed sample</td><td class="why">Anything about the other 98–99% — sampling exists to coach agents, not to find structural cost</td></tr>
-      <tr><td>Speech analytics (keyword)</td><td class="why">Mentions of configured phrases</td><td class="why">Multi-step reasoning: avoidability, resolvability, cross-field consistency</td></tr>
-    </tbody>
-  </table>
-  <p style="margin-top:14px; max-width:1000px;">The consequence is practical: deflection and automation roadmaps are typically prioritised in workshops, from anecdote and intuition, because the primary evidence — the conversations — is unread at scale.</p>
-  <div class="foot"><span>The information needed exists in every recorded call; the constraint has been the cost of reading them</span><span class="pg">05 / 18</span></div>
+  <div class="head"><span>SECTION 3</span><span class="r">THE PROBLEM · VISIBILITY</span></div>
+  <p class="eyebrow">3 · THE MEASUREMENT GAP</p>
+  <h2 class="display">The tools measure how long.<br>Only the conversation knows why.</h2>
+  <p class="lede" style="margin-top:6px;">Operators are well instrumented around the call, not inside it. Each source answers its own question — none answers the one that reduces cost: <em>why did this call exist, and what would have prevented it?</em></p>
+  <div class="exhibit flush" style="margin-top:18px;">
+    <span class="fig"><b>TABLE 3.1</b> — WHAT EACH SOURCE CAN AND CANNOT ANSWER</span>
+    <table>
+      <thead><tr><th style="width:21%">SOURCE</th><th style="width:33%">ANSWERS</th><th>CANNOT ANSWER</th></tr></thead>
+      <tbody>
+        <tr><td>ACD / telephony</td><td class="why">How long, which queue, what code</td><td class="why">Whether the call was preventable; where inside it time was lost</td></tr>
+        <tr><td>Surveys</td><td class="why">How the customer felt afterwards</td><td class="why">What actually happened; responses skew to extremes</td></tr>
+        <tr><td>Human QA <span class="num" style="color:var(--clay);">(1–2% of calls)</span></td><td class="why">Agent behaviour on the sample</td><td class="why">Anything about the other 98% — sampling exists to coach agents, not to find structural cost</td></tr>
+        <tr><td>Keyword speech analytics</td><td class="why">Mentions of configured phrases</td><td class="why">Reasoned judgments: avoidability, resolvability, consistency</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>The practical consequence: deflection and automation roadmaps get prioritised from anecdote, because the primary evidence is unread</span><span class="pg">05 / 18</span></div>
 </section>
 
 <!-- 06 · 4 What changed -->
 <section class="page">
-  <div class="head"><span>SECTION 4</span><span>WHAT CHANGED</span></div>
-  <div class="secno">4 · WHAT CHANGED</div>
-  <h2 class="stitle">Reading a call now costs a fraction of sampling it — and "agentic" systems can do the reading reliably.</h2>
-  <div class="row" style="margin-top:10px;">
-    <div class="col">
-      <div class="fig" style="margin-top:0;"><b>FIGURE 4.1</b> — COST TO PROCESS ONE CALL (USD)</div>
-      <div class="hbar"><span class="hl" style="width:160px;">Handle (voice)</span><div class="ht"><div class="hf" style="width:96%; background:#DDDBD2;"></div></div><span class="hv">$6 – 12</span></div>
-      <div class="hbar"><span class="hl" style="width:160px;">Human QA review</span><div class="ht"><div class="hf" style="width:36%; background:#DDDBD2;"></div></div><span class="hv">$2 – 4</span></div>
-      <div class="hbar"><span class="hl" style="width:160px;">LLM analysis (measured)</span><div class="ht"><div class="hf" style="width:2%; background:var(--accent);"></div></div><span class="hv">$0.013</span></div>
-      <p class="small" style="margin-top:10px;">Measured on the June 2026 run: $1.04 to analyse 100 calls with a small fast model (~8K tokens per call). At this price, analysing 100% of calls costs less than sampling 2% by hand.</p>
-    </div>
-    <div class="col">
-      <div class="note" style="margin-top:0;">
-        <span class="nt">DEFINITION — "AGENTIC" AS USED IN THIS DOCUMENT</span>
-        <p>An agentic system is one in which software components (<strong>agents</strong>) are given a goal, decide among permitted actions, observe the result, and adjust — rather than executing a fixed script. In this system that means concretely: an agent re-queries when its own output is incomplete, critiques and rewrites its own analysis, and falls back across providers on failure. Each such decision is recorded.</p>
+  <div class="head"><span>SECTION 4</span><span class="r">THE PROBLEM · WHAT CHANGED</span></div>
+  <p class="eyebrow">4 · WHAT CHANGED</p>
+  <h2 class="display">Reading a call now costs<br>about a cent.</h2>
+  <div class="row" style="margin-top:20px;">
+    <div class="col" style="flex:1.1;">
+      <div class="exhibit flush">
+        <span class="fig"><b>FIGURE 4.1</b> — COST TO PROCESS ONE CALL (USD)</span>
+        <div class="hbar"><span class="hl" style="width:165px;">Handle it (voice)</span><div class="ht"><div class="hf" style="width:96%; background:#DDD9CD;"></div></div><span class="hv">$6 – 12</span></div>
+        <div class="hbar"><span class="hl" style="width:165px;">Human QA review</span><div class="ht"><div class="hf" style="width:36%; background:#DDD9CD;"></div></div><span class="hv">$2 – 4</span></div>
+        <div class="hbar"><span class="hl" style="width:165px;">AI analysis — measured</span><div class="ht"><div class="hf" style="width:2%; background:var(--clay);"></div></div><span class="hv">$0.013</span></div>
       </div>
-      <p style="margin-top:14px;">Three enabling shifts arrived together: small fast models made full-coverage reading economical; structured-output techniques made 70-field extraction dependable; and orchestration frameworks made multi-step agent workflows an engineering discipline rather than a research exercise.</p>
+      <p class="small" style="margin-top:12px;">Measured on the validation run: $1.04 to analyse 100 calls. At this price, reading <em>every</em> call costs less than hand-sampling 2% of them.</p>
+    </div>
+    <div class="col" style="flex:0.9;">
+      <div class="note">
+        <span class="nt">WHAT "AGENTIC" MEANS IN THIS DOCUMENT</span>
+        <p>Software components — <strong>agents</strong> — that are given a goal, choose among permitted actions, observe the result, and adjust, rather than executing a fixed script. Concretely here: an agent re-queries when its own output is incomplete, critiques and rewrites its own analysis, and falls back across providers on failure. Every such choice is logged.</p>
+      </div>
+      <p style="margin-top:14px; font-size:14px;">Three shifts arrived together: small fast models made full coverage economical, structured-output techniques made 70-field extraction dependable, and orchestration frameworks made multi-agent workflows ordinary engineering.</p>
     </div>
   </div>
-  <div class="foot"><span>Source: measured run cost, June 2026; QA review cost estimated at 3–6 analyst-minutes per call</span><span class="pg">06 / 18</span></div>
+  <div class="foot"><span>Source: measured run cost, June 2026 · QA review estimated at 3–6 analyst-minutes per call</span><span class="pg">06 / 18</span></div>
 </section>
 
-<!-- 07 · 5 Solution concept -->
+<!-- 07 · 5 The idea -->
 <section class="page">
-  <div class="head"><span>SECTION 5</span><span>SOLUTION CONCEPT</span></div>
-  <div class="secno">5 · SOLUTION CONCEPT AND DESIGN PRINCIPLES</div>
-  <h2 class="stitle">Turn each conversation into structured economics; let nothing unverified reach a decision-maker.</h2>
-  <p class="lede">The system converts each transcript into ~70 structured fields — what the call was about, how each phase consumed time, whether it was resolved, whether it was preventable — then aggregates those fields into indicators and priced reduction levers. Four principles shaped every component:</p>
-  <div class="row" style="margin-top:14px;">
+  <div class="head"><span>SECTION 5</span><span class="r">THE SYSTEM · CONCEPT</span></div>
+  <p class="eyebrow">5 · THE IDEA, IN ONE PAGE</p>
+  <h2 class="display">Turn every conversation into<br>structured economics.</h2>
+  <p class="lede" style="margin-top:4px;">Each transcript becomes ~70 fields — what the call was about, how each phase spent its seconds, whether it was resolved, whether it was preventable. Aggregated, those fields become indicators and priced reduction levers. Four principles shaped everything that follows:</p>
+  <div class="row" style="margin-top:16px;">
     <div class="col">
       <div class="findings">
-        <div class="frow"><span class="fn">P1</span><span class="ft"><b>Analyse, don't act.</b> The system reads conversations; it never touches customers or operator systems. This keeps the failure cost low (a re-run, not an incident) and lets autonomy be earned in stages.</span></div>
-        <div class="frow"><span class="fn">P2</span><span class="ft"><b>Read everything, trust selectively.</b> Full coverage is the point — but every extraction is quality-scored, and records that fail the score are excluded from indicators rather than averaged in.</span></div>
+        <div class="frow"><span class="fn">P1</span><span class="ft"><b>Analyse, don't act.</b> The system reads; it never touches customers or operator systems. Failure costs a re-run, not an incident — so autonomy can be earned in stages.</span></div>
+        <div class="frow"><span class="fn">P2</span><span class="ft"><b>Read everything, trust selectively.</b> Full coverage is the point, but every extraction is quality-scored, and failing records are excluded — never averaged in.</span></div>
       </div>
     </div>
     <div class="col">
       <div class="findings">
-        <div class="frow"><span class="fn">P3</span><span class="ft"><b>Every machine decision on the record.</b> Each agent logs what it decided, why, the evidence, and the alternatives it rejected — so the system can be audited the way a financial process is audited.</span></div>
-        <div class="frow"><span class="fn">P4</span><span class="ft"><b>Match model size to task.</b> A small fast model performs the high-volume reading; a large model reasons once over the aggregate. Cost scales with call volume; reasoning quality does not need to.</span></div>
+        <div class="frow"><span class="fn">P3</span><span class="ft"><b>Every machine decision on the record.</b> What was decided, why, on what evidence, and what was rejected — auditable the way a financial process is auditable.</span></div>
+        <div class="frow"><span class="fn">P4</span><span class="ft"><b>Match model size to task.</b> A small fast model reads at volume; a large model reasons once over the aggregate. Cost scales with calls; reasoning doesn't have to.</span></div>
       </div>
     </div>
   </div>
-  <div class="foot"><span>Sections 6–9 show how these principles are implemented; Sections 10–13 test them against a production run</span><span class="pg">07 / 18</span></div>
+  <div class="foot"><span>Sections 6–9 implement these principles · Sections 10–13 test them against a production run</span><span class="pg">07 / 18</span></div>
 </section>
 
-<!-- 08 · 6 Architecture -->
+<!-- 08 · 6 Pipeline -->
 <section class="page">
-  <div class="head"><span>SECTION 6</span><span>SYSTEM ARCHITECTURE</span></div>
-  <div class="secno">6 · SYSTEM ARCHITECTURE</div>
-  <h2 class="stitle">Six agents and an approval gate, arranged as a directed graph with controlled hand-offs.</h2>
-  <p class="lede">The pipeline is implemented as a seven-node LangGraph state machine. Each node is a stateless agent: it receives the accumulated state, performs one responsibility, appends its outputs and decision records, and passes state forward immutably. A conditional route after quality scoring diverts failed datasets to a protective export path.</p>
-  <div class="fig"><b>FIGURE 6.1</b> — PIPELINE TOPOLOGY AND HAND-OFFS</div>
-  <div class="arch">
-    <div class="anode"><span class="an">NODE 1</span><h4>Data Ingestion</h4><p>Fetch, validate, redact PII</p></div><span class="gap">→</span>
-    <div class="anode"><span class="an">NODE 2</span><h4>Extraction</h4><p>~70 fields/call · self-scored coverage</p></div><span class="gap">→</span>
-    <div class="anode"><span class="an">NODE 3</span><h4>Quality</h4><p>100-pt audit · pass/fail route</p></div><span class="gap">→</span>
-    <div class="anode"><span class="an">NODE 4</span><h4>Aggregation</h4><p>Indicators, levers, cost model</p></div><span class="gap">→</span>
-    <div class="anode"><span class="an">NODE 5</span><h4>Insights</h4><p>3-pass strategy synthesis</p></div><span class="gap">→</span>
-    <div class="anode"><span class="an">NODE 6</span><h4>Approval</h4><p>Optional human gate</p></div><span class="gap">→</span>
-    <div class="anode"><span class="an">NODE 7</span><h4>Export</h4><p>Artifacts + audit trail</p></div>
+  <div class="head"><span>SECTION 6</span><span class="r">THE SYSTEM · ARCHITECTURE</span></div>
+  <p class="eyebrow">6 · HOW IT WORKS</p>
+  <h2 class="display" style="font-size:44px;">Seven stations. One governed pass.<br>Nothing unverified reaches a decision-maker.</h2>
+  <p class="lede" style="font-size:15.5px; margin-top:2px;">A seven-node LangGraph state machine: each node is a stateless agent that performs one responsibility, appends its outputs and decision records, and hands state forward immutably. After quality scoring, a conditional route diverts failing datasets to a protective export path.</p>
+  <div class="exhibit flush" style="margin-top:16px;">
+    <span class="fig"><b>FIGURE 6.1</b> — PIPELINE TOPOLOGY</span>
+    <div class="arch">
+      <div class="anode"><span class="an">NODE 1</span><h4>Ingestion</h4><p>Fetch · validate · redact PII</p></div><span class="gap">→</span>
+      <div class="anode"><span class="an">NODE 2</span><h4>Extraction</h4><p>~70 fields/call · self-scored</p></div><span class="gap">→</span>
+      <div class="anode"><span class="an">NODE 3</span><h4>Quality</h4><p>100-pt audit · pass/fail route</p></div><span class="gap">→</span>
+      <div class="anode"><span class="an">NODE 4</span><h4>Aggregation</h4><p>Indicators · cost model</p></div><span class="gap">→</span>
+      <div class="anode"><span class="an">NODE 5</span><h4>Insights</h4><p>3-pass strategy synthesis</p></div><span class="gap">→</span>
+      <div class="anode"><span class="an">NODE 6</span><h4>Approval</h4><p>Optional human gate</p></div><span class="gap">→</span>
+      <div class="anode"><span class="an">NODE 7</span><h4>Export</h4><p>Artifacts + audit trail</p></div>
+    </div>
   </div>
-  <div class="row" style="margin-top:18px; flex:0 0 auto;">
-    <div class="col"><p><strong>Why a graph rather than a script:</strong> conditional routing (the quality gate), retries, and checkpoint-resume require explicit state and edges. A failed batch resumes from its checkpoint rather than re-spending API budget — this mattered in practice during the validation run.</p></div>
-    <div class="col"><p><strong>Why two models:</strong> extraction runs on Claude Haiku 4.5 (small, fast, ~$0.01/call at 50 calls/min); strategy synthesis runs once per batch on Llama 3.3 70B via NVIDIA NIM. Provider choice is a single configuration constant — pricing, rate limits, and key validation follow from it, so there is no vendor lock-in.</p></div>
+  <div class="row" style="margin-top:16px; flex:0 0 auto;">
+    <div class="col"><p style="font-size:13.5px;"><strong>Why a graph, not a script:</strong> conditional routing, retries, and checkpoint-resume need explicit state and edges. A failed batch resumes from its checkpoint instead of re-spending budget — which mattered in practice during validation.</p></div>
+    <div class="col"><p style="font-size:13.5px;"><strong>Why two models:</strong> Claude Haiku 4.5 reads at ~$0.01/call and 50 calls/minute; Llama 3.3 70B (NVIDIA NIM) reasons once per batch. Provider choice is one configuration constant — pricing, rate limits, and key checks follow from it.</p></div>
   </div>
-  <div class="foot"><span>Stack: LangGraph · Claude Haiku 4.5 · Llama 3.3 70B (NVIDIA NIM) · Streamlit · FastAPI · 342-test CI suite</span><span class="pg">08 / 18</span></div>
+  <div class="foot"><span>Stack: LangGraph · Claude Haiku 4.5 · Llama 3.3 70B · Streamlit · FastAPI · 342-test CI suite</span><span class="pg">08 / 18</span></div>
 </section>
 
 <!-- 09 · 7 Agents 1-3 -->
 <section class="page">
-  <div class="head"><span>SECTION 7</span><span>THE AGENTS · 1–3</span></div>
-  <div class="secno">7 · THE AGENTS — ACQUISITION TO QUALITY</div>
-  <h2 class="stitle">Each agent has one responsibility, explicit thresholds, and a reason to exist.</h2>
-  <div class="fig" style="margin-top:4px;"><b>TABLE 7.1</b> — AGENTS 1–3: WHAT EACH DOES AND WHY IT WAS INCLUDED</div>
-  <table>
-    <thead><tr><th style="width:17%">AGENT</th><th style="width:42%">WHAT IT DOES</th><th>WHY IT WAS INCLUDED</th></tr></thead>
-    <tbody>
-      <tr>
-        <td>1 · Data Ingestion</td>
-        <td class="why">Loads transcripts; rejects those under 150 characters or 4 turns; scans and redacts PII (emails, card numbers, identifiers) before any text reaches a model; logs each rejection and redaction.</td>
-        <td class="why">Bad input corrupts every downstream number, so quality gating happens first. PII redaction sits here — not later — so that no external model ever receives unmasked customer data.</td>
-      </tr>
-      <tr>
-        <td>2 · Extraction</td>
-        <td class="why">Submits each transcript to the extraction model with a ~70-field schema; scores its own output against 7 critical fields; below 70% coverage, issues up to 2 targeted re-queries for the missing fields only (the ReAct pattern), then merges.</td>
-        <td class="why">Models occasionally return incomplete JSON. Without self-correction those nulls silently bias indicators; re-querying only missing fields recovers them at ~1/8th the cost of a full re-read.</td>
-      </tr>
-      <tr>
-        <td>3 · Quality</td>
-        <td class="why">Audits every extraction on a 100-point model — completeness (30), enum validity (25), cross-field consistency (25), plausibility (20). Grades ≥85 HIGH, 60–84 MEDIUM, &lt;60 LOW; LOW records are excluded from aggregation. A dataset-level gate routes catastrophic failures away from publication.</td>
-        <td class="why">An analysis system must know when its own output is untrustworthy. Consistency rules (e.g. "first-call-resolved" cannot coexist with "escalated") catch model errors that no single field check would find.</td>
-      </tr>
-    </tbody>
-  </table>
-  <div class="foot"><span>Thresholds shown are configuration constants, reviewable in one file; every decision these agents take is written to the decision log</span><span class="pg">09 / 18</span></div>
+  <div class="head"><span>SECTION 7</span><span class="r">THE SYSTEM · AGENTS 1–3</span></div>
+  <p class="eyebrow">7 · THE AGENTS — PREPARE, READ, VERIFY</p>
+  <h2 class="display" style="font-size:44px;">One responsibility each, explicit<br>thresholds, and a reason to exist.</h2>
+  <div class="exhibit flush" style="margin-top:14px;">
+    <span class="fig"><b>TABLE 7.1</b> — WHAT EACH AGENT DOES, AND WHY IT WAS INCLUDED</span>
+    <table>
+      <thead><tr><th style="width:16%">AGENT</th><th style="width:43%">WHAT IT DOES</th><th>WHY IT EXISTS</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1 · Ingestion</td>
+          <td class="why">Loads transcripts; rejects those under 150 characters or 4 turns; scans and redacts PII before any text reaches a model; logs every rejection and redaction.</td>
+          <td class="why">Bad input corrupts every downstream number — so gating comes first. PII redaction lives here so no external model ever sees unmasked customer data.</td>
+        </tr>
+        <tr>
+          <td>2 · Extraction</td>
+          <td class="why">Submits each transcript against the ~70-field schema; scores its own output on 7 critical fields; below 70% coverage, re-queries just the missing fields (up to twice), then merges.</td>
+          <td class="why">Models sometimes return incomplete JSON. Unrepaired, those nulls silently bias the indicators; targeted re-query repairs them at an eighth of a full re-read's cost.</td>
+        </tr>
+        <tr>
+          <td>3 · Quality</td>
+          <td class="why">Audits each extraction on 100 points — completeness 30, enum validity 25, cross-field consistency 25, plausibility 20. Below 60, the record is excluded; a dataset-level gate routes wholesale failures away from publication.</td>
+          <td class="why">An analysis system must know when its own output is untrustworthy. Consistency rules ("resolved first call" cannot coexist with "escalated") catch errors no single-field check would find.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Every threshold is a named configuration constant; every decision these agents take is written to the decision log</span><span class="pg">09 / 18</span></div>
 </section>
 
 <!-- 10 · 8 Agents 4-6 -->
 <section class="page">
-  <div class="head"><span>SECTION 8</span><span>THE AGENTS · 4–6</span></div>
-  <div class="secno">8 · THE AGENTS — ECONOMICS TO PUBLICATION</div>
-  <h2 class="stitle">From verified fields to indicators, strategy, and an audit trail.</h2>
-  <div class="fig" style="margin-top:4px;"><b>TABLE 8.1</b> — AGENTS 4–6 AND THE APPROVAL GATE</div>
-  <table>
-    <thead><tr><th style="width:17%">AGENT</th><th style="width:42%">WHAT IT DOES</th><th>WHY IT WAS INCLUDED</th></tr></thead>
-    <tbody>
-      <tr>
-        <td>4 · Aggregation</td>
-        <td class="why">Computes indicators (FCR, avoidability, resolvability, escalation, phase timings), distributions, and the three-lever economic model from QA-passed records only.</td>
-        <td class="why">Indicators built on unverified records inherit their errors. Restricting aggregation to graded records is what makes the numbers defensible in front of a finance audience.</td>
-      </tr>
-      <tr>
-        <td>5 · Insights</td>
-        <td class="why">A 70B model analyses the aggregate, then a second pass critiques each recommendation for data-grounding and specificity, then a third pass rewrites the weak ones. Falls back NIM → Claude → rule-based if providers fail.</td>
-        <td class="why">Single-pass LLM strategy output tends toward generic consulting language. The critique pass measurably removes it; the fallback chain means the pipeline completes even with two providers down.</td>
-      </tr>
-      <tr>
-        <td>Approval gate</td>
-        <td class="why">Optional human sign-off node between insights and export, with a timeout policy.</td>
-        <td class="why">Some organisations require a person in the loop before anything is published. The gate makes that a configuration choice rather than a process bolted on later.</td>
-      </tr>
-      <tr>
-        <td>6 · Export</td>
-        <td class="why">Writes dashboard data, per-call CSV, QA report, decision log, and an immutable run manifest. On the quality-failure path, preserves the last verified dashboard rather than overwriting it.</td>
-        <td class="why">The manifest makes every run reproducible and disputable. The protective failure path exists because a blank or corrupted executive dashboard destroys more trust than a delayed one.</td>
-      </tr>
-    </tbody>
-  </table>
-  <div class="foot"><span>Per-pass model usage is metered and reported; insights record their provider, pass count, and critique verdict in the output itself</span><span class="pg">10 / 18</span></div>
+  <div class="head"><span>SECTION 8</span><span class="r">THE SYSTEM · AGENTS 4–6</span></div>
+  <p class="eyebrow">8 · THE AGENTS — PRICE, REASON, PUBLISH</p>
+  <h2 class="display" style="font-size:44px;">From verified fields to indicators,<br>strategy, and an audit trail.</h2>
+  <div class="exhibit flush" style="margin-top:14px;">
+    <span class="fig"><b>TABLE 8.1</b> — AGENTS 4–6 AND THE APPROVAL GATE</span>
+    <table>
+      <thead><tr><th style="width:16%">AGENT</th><th style="width:43%">WHAT IT DOES</th><th>WHY IT EXISTS</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>4 · Aggregation</td>
+          <td class="why">Computes indicators (resolution, avoidability, resolvability, phase timings), distributions, and the three-lever economic model — from quality-passed records only.</td>
+          <td class="why">Numbers built on unverified records inherit their errors. Aggregating only graded records is what makes the output defensible to a finance audience.</td>
+        </tr>
+        <tr>
+          <td>5 · Insights</td>
+          <td class="why">A 70B model analyses the aggregate; a second pass critiques each recommendation for grounding and specificity; a third rewrites the weak ones. Falls back NIM → Claude → rules.</td>
+          <td class="why">Single-pass strategy output drifts toward generic consulting language; the critique pass removes it. The fallback chain means the pipeline finishes even with two providers down.</td>
+        </tr>
+        <tr>
+          <td>Approval gate</td>
+          <td class="why">Optional human sign-off between insights and export, with a timeout policy.</td>
+          <td class="why">Some organisations require a person in the loop. Here that is a configuration switch, not a process retrofitted later.</td>
+        </tr>
+        <tr>
+          <td>6 · Export</td>
+          <td class="why">Writes dashboard data, per-call CSV, QA report, decision log, and an immutable run manifest. On the failure path it preserves the last verified dashboard rather than overwriting it.</td>
+          <td class="why">The manifest makes every run reproducible and disputable. The protective path exists because a corrupted executive dashboard destroys more trust than a late one.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Insights record their provider, pass count, and critique verdict inside the output itself; per-pass model usage is metered</span><span class="pg">10 / 18</span></div>
 </section>
 
 <!-- 11 · 9 Governance -->
 <section class="page">
-  <div class="head"><span>SECTION 9</span><span>GOVERNANCE DESIGN</span></div>
-  <div class="secno">9 · GOVERNANCE DESIGN</div>
-  <h2 class="stitle">Five controls bound the system's autonomy; one artifact proves they ran.</h2>
-  <div class="row" style="margin-top:10px;">
-    <div class="col" style="flex:1.15;">
-      <table>
-        <thead><tr><th style="width:26%">CONTROL</th><th>MECHANISM AND FAILURE BEHAVIOUR</th></tr></thead>
-        <tbody>
-          <tr><td>PII protection</td><td class="why">Redaction before model contact; logged per call. Unredacted text cannot leave the ingestion boundary.</td></tr>
-          <tr><td>Budget ceiling</td><td class="why">Every run priced with model-aware rates including retries; exceeding the ceiling halts the run with work checkpointed.</td></tr>
-          <tr><td>Rate &amp; quota</td><td class="why">Per-provider limiters (50/min primary model); daily-quota exhaustion trips a circuit breaker that persists across batch processes.</td></tr>
-          <tr><td>Quality gate</td><td class="why">Dataset pass-rate threshold; failure routes to the protective export path instead of publication.</td></tr>
-          <tr><td>Human approval</td><td class="why">Optional sign-off before export, with timeout policy.</td></tr>
-        </tbody>
-      </table>
+  <div class="head"><span>SECTION 9</span><span class="r">THE SYSTEM · GOVERNANCE</span></div>
+  <p class="eyebrow">9 · AUTONOMY, GOVERNED</p>
+  <h2 class="display" style="font-size:44px;">Five controls bound the system.<br>One artifact proves they ran.</h2>
+  <div class="row" style="margin-top:16px;">
+    <div class="col" style="flex:1.1;">
+      <div class="exhibit flush">
+        <table>
+          <thead><tr><th style="width:27%">CONTROL</th><th>MECHANISM · FAILURE BEHAVIOUR</th></tr></thead>
+          <tbody>
+            <tr><td>PII boundary</td><td class="why">Redaction before model contact, logged per call — unmasked text cannot leave ingestion</td></tr>
+            <tr><td>Budget ceiling</td><td class="why">Every run priced with model-aware rates incl. retries; breach halts the run, work checkpointed</td></tr>
+            <tr><td>Rate &amp; quota</td><td class="why">Per-provider limiters (50/min primary); daily-quota breaker persists across processes</td></tr>
+            <tr><td>Quality gate</td><td class="why">Dataset pass-rate threshold; failure routes to protective export, not publication</td></tr>
+            <tr><td>Human approval</td><td class="why">Optional pre-publication sign-off with timeout</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="col" style="flex:0.95;">
-      <div class="fig" style="margin-top:0;"><b>FIGURE 9.1</b> — A DECISION RECORD FROM THE VALIDATION RUN (UNEDITED FIELDS)</div>
-      <div class="note" style="margin-top:0; font-family:var(--mono); font-size:11px; line-height:1.6; white-space:pre;">{
+      <div class="exhibit" style="font-family:var(--mono); font-size:11px; line-height:1.65; white-space:pre; color:var(--sub);"><span class="fig" style="display:block; font-family:var(--mono);"><b>FIGURE 9.1</b> — DECISION RECORD, UNEDITED</span>{
   "agent":        "InsightsAgent",
   "decision":     "NVIDIA NIM (3-pass deliberation)",
   "reason":       "Hierarchy: NIM → Claude → rules.
@@ -434,200 +460,215 @@
                    "Rule-based fallback",
                    "Skip insights"]
 }</div>
-      <p class="small" style="margin-top:10px;">Every agent emits records in this form — decision, reason, evidence, alternatives rejected. The complete log is exported with each run, which is what allows the system to be reviewed rather than merely trusted.</p>
+      <p class="small" style="margin-top:10px;">Every agent emits records in this form. The complete log ships with each run — the difference between a system you can review and one you must trust.</p>
     </div>
   </div>
-  <div class="foot"><span>Controls are designed against standard model-risk review questions: what did it see, what did it spend, what did it decide, who approved it</span><span class="pg">11 / 18</span></div>
+  <div class="foot"><span>Designed against the questions model-risk reviews ask: what did it see, spend, decide — and who approved it</span><span class="pg">11 / 18</span></div>
 </section>
 
 <!-- 12 · 10 Method -->
 <section class="page">
-  <div class="head"><span>SECTION 10</span><span>VALIDATION RUN · METHOD</span></div>
-  <div class="secno">10 · VALIDATION RUN — METHOD</div>
-  <h2 class="stitle">One hundred calls, processed end-to-end under production conditions.</h2>
-  <div class="row" style="margin-top:10px; flex:0 0 auto;">
+  <div class="head"><span>SECTION 10</span><span class="r">THE EVIDENCE · METHOD</span></div>
+  <p class="eyebrow">10 · THE VALIDATION RUN</p>
+  <h2 class="display" style="font-size:44px;">One hundred calls, end to end,<br>under production conditions.</h2>
+  <div class="row" style="margin-top:16px;">
     <div class="col">
-      <table>
-        <tbody>
-          <tr><td>Data</td><td class="why">talkmap telecom conversation corpus — public, synthetic, 200K conversations</td></tr>
-          <tr><td>Sample</td><td class="why">100 calls in 5 seeded, non-overlapping batches of 20; fully reproducible</td></tr>
-          <tr><td>Gating outcome</td><td class="why">78 of 100 passed validation and quality gates (the corpus contains sub-threshold calls)</td></tr>
-          <tr><td>Failures</td><td class="why">0 extraction failures; one provider rate-limit event absorbed by backoff without intervention</td></tr>
-          <tr><td>Cost</td><td class="why"><span class="num">$1.04</span> total · <span class="num">$0.013</span> per call</td></tr>
-        </tbody>
-      </table>
+      <div class="exhibit flush">
+        <table>
+          <tbody>
+            <tr><td>Data</td><td class="why">Public telecom corpus (synthetic, 200K conversations)</td></tr>
+            <tr><td>Sample</td><td class="why">100 calls · 5 seeded non-overlapping batches · reproducible</td></tr>
+            <tr><td>Gating</td><td class="why">78 of 100 passed validation + quality gates</td></tr>
+            <tr><td>Failures</td><td class="why">0 · one rate-limit event absorbed by backoff</td></tr>
+            <tr><td>Cost</td><td class="why"><span class="num">$1.04</span> total · <span class="num">$0.013</span> per call</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="col">
-      <div class="note" style="margin-top:0;">
-        <span class="nt">LIMITATIONS — STATED BEFORE THE RESULTS, NOT AFTER</span>
-        <p style="margin-bottom:8px;"><strong>L1.</strong> Corpus calls are shorter and simpler than live operator traffic (2:33 average vs a typical 4–8 minutes) and contain almost no hold time. Results demonstrate the measurement method; they do not predict any operator's baseline.</p>
-        <p style="margin-bottom:8px;"><strong>L2.</strong> Avoidability and resolvability rates in synthetic data run high. Treat the percentages as an existence proof of the classification, not as industry estimates.</p>
-        <p><strong>L3.</strong> Economic figures in Section 13 combine measured rates with stated planning assumptions; both are labelled.</p>
+      <div class="note">
+        <span class="nt">LIMITATIONS — STATED BEFORE THE RESULTS</span>
+        <p style="margin-bottom:8px;"><strong>L1 ·</strong> Corpus calls are shorter and simpler than operator traffic (2:33 average vs a typical 4–8 minutes) with almost no hold. Results demonstrate the method, not any operator's baseline.</p>
+        <p style="margin-bottom:8px;"><strong>L2 ·</strong> Avoidability rates in synthetic data run high — read the percentages as proof the classification works, not as industry estimates.</p>
+        <p><strong>L3 ·</strong> Economic figures in Section 13 combine measured rates with labelled planning assumptions.</p>
       </div>
     </div>
   </div>
-  <div class="foot"><span>All artifacts versioned with the run: summary, per-call CSV, QA report, decision log, manifest</span><span class="pg">12 / 18</span></div>
+  <div class="foot"><span>All artifacts versioned with the run: summary · per-call CSV · QA report · decision log · manifest</span><span class="pg">12 / 18</span></div>
 </section>
 
 <!-- 13 · 11 Anatomy -->
 <section class="page" style="padding:0 64px;">
-  <div class="head"><span>SECTION 11</span><span>RESULTS · CALL ANATOMY</span></div>
-  <div class="secno">11 · RESULTS — THE ANATOMY OF A CALL</div>
-  <h2 class="stitle" style="font-size:24px;">Phase timestamps reconstruct where the average call's time went; extracted metadata marks what was discussed, and when.</h2>
-  <div class="pinrow">
-    <div class="pin edge-l" style="left:0%;"><div class="pl"><b>47% begin frustrated</b><br>or distressed at 0:00</div><div class="stem"></div></div>
-    <div class="pin" style="left:28%;"><div class="pl"><b>▲ 86 product mentions</b><br>devices &amp; services surface in discovery</div><div class="stem"></div></div>
-    <div class="pin" style="left:66%;"><div class="pl"><b>▲ 24 mentions</b><br>plans &amp; fixes in resolution</div><div class="stem"></div></div>
-    <div class="pin t2" style="left:83.2%;"><div class="pl"><b>◆ upsell</b> · 35.9% of calls<br>89.3% convert when attempted</div><div class="stem"></div></div>
-    <div class="pin edge-r" style="left:100%;"><div class="pl"><b>76% end positive</b><br>improved on 83% of calls</div><div class="stem"></div></div>
+  <div class="head"><span>SECTION 11</span><span class="r">THE EVIDENCE · CALL ANATOMY</span></div>
+  <p class="eyebrow" style="margin:22px 0 10px;">11 · THE ANATOMY OF A CALL</p>
+  <h2 class="display" style="font-size:36px; margin-bottom:8px;">Where two and a half minutes go —<br>and what was said, pinned to when.</h2>
+  <div class="exhibit flush" style="margin-top:10px; padding:18px 24px 14px;">
+    <div class="pinrow">
+      <div class="pin edge-l" style="left:0%;"><div class="pl"><b>47% begin frustrated</b><br>or distressed at 0:00</div><div class="stem"></div></div>
+      <div class="pin" style="left:28%;"><div class="pl"><b>▲ 86 product mentions</b><br>devices &amp; services in discovery</div><div class="stem"></div></div>
+      <div class="pin" style="left:66%;"><div class="pl"><b>▲ 24 mentions</b><br>plans &amp; fixes in resolution</div><div class="stem"></div></div>
+      <div class="pin t2" style="left:83.2%;"><div class="pl"><b>◆ upsell</b> · 35.9% of calls<br>89.3% convert</div><div class="stem"></div></div>
+      <div class="pin edge-r" style="left:100%;"><div class="pl"><b>76% end positive</b><br>improved on 83% of calls</div><div class="stem"></div></div>
+    </div>
+    <div class="phaseband">
+      <div class="pseg c1" style="width:15.8%"><span class="pn">Welcome &amp; Auth</span><span class="pv">26.8s</span></div>
+      <div class="pseg c2" style="width:24.3%"><span class="pn">Discovery</span><span class="pv">41.3s · 24%</span></div>
+      <div class="pseg c3" style="width:17.4%"><span class="pn">Diagnosis</span><span class="pv">29.6s</span></div>
+      <div class="pseg c4" style="width:20.6%"><span class="pn">Resolution</span><span class="pv">35.0s · 21%</span></div>
+      <div class="pseg c5" style="width:0.8%"></div>
+      <div class="pseg c6" style="width:8.6%"><span class="pn">Upsell</span><span class="pv">14.7s</span></div>
+      <div class="pseg c7" style="width:12.6%"><span class="pn">Closing</span><span class="pv">21.4s</span></div>
+    </div>
+    <div class="taxis">
+      <span class="tick" style="left:0%">0:00</span><span class="tick" style="left:17.6%">0:30</span>
+      <span class="tick" style="left:35.3%">1:00</span><span class="tick" style="left:52.9%">1:30</span>
+      <span class="tick" style="left:70.5%">2:00</span><span class="tick" style="left:88.2%">2:30</span>
+      <span class="tick" style="left:100%">2:50</span>
+    </div>
+    <p class="small" style="margin:4px 0 12px;"><b style="color:var(--clay);">FIG 11.1 MEASURED</b> — corpus average · 2:33 AHT; phase clocks total 2:50 where agents multitask · the dark sliver is hold: 1.3s here</p>
+    <div class="phaseband ghost">
+      <div class="pseg c1" style="width:15.8%"><span class="pn">0:57</span></div>
+      <div class="pseg c2" style="width:24.3%"><span class="pn">Discovery 1:27</span></div>
+      <div class="pseg c3" style="width:17.4%"><span class="pn">1:03</span></div>
+      <div class="pseg c4" style="width:20.6%"><span class="pn">Resolution 1:14</span></div>
+      <div class="pseg c5" style="width:0.8%"></div>
+      <div class="pseg c6" style="width:8.6%"><span class="pn">0:31</span></div>
+      <div class="pseg c7" style="width:12.6%"><span class="pn">0:45</span></div>
+    </div>
+    <div class="taxis">
+      <span class="tick" style="left:0%">0:00</span><span class="tick" style="left:16.7%">1:00</span>
+      <span class="tick" style="left:33.3%">2:00</span><span class="tick" style="left:50%">3:00</span>
+      <span class="tick" style="left:66.7%">4:00</span><span class="tick" style="left:83.3%">5:00</span>
+      <span class="tick" style="left:100%">6:00</span>
+    </div>
+    <p class="small" style="margin-top:4px;"><b style="color:var(--clay);">FIG 11.2 ILLUSTRATIVE</b> — the same mix projected on a typical 6:00 operator call, for scale</p>
   </div>
-  <div class="phaseband">
-    <div class="pseg c1" style="width:15.8%"><span class="pn">Welcome &amp; Auth</span><span class="pv">26.8s</span></div>
-    <div class="pseg c2" style="width:24.3%"><span class="pn">Discovery</span><span class="pv">41.3s · 24%</span></div>
-    <div class="pseg c3" style="width:17.4%"><span class="pn">Diagnosis</span><span class="pv">29.6s</span></div>
-    <div class="pseg c4" style="width:20.6%"><span class="pn">Resolution</span><span class="pv">35.0s · 21%</span></div>
-    <div class="pseg c5" style="width:0.8%"></div>
-    <div class="pseg c6" style="width:8.6%"><span class="pn">Upsell</span><span class="pv">14.7s</span></div>
-    <div class="pseg c7" style="width:12.6%"><span class="pn">Closing</span><span class="pv">21.4s</span></div>
-  </div>
-  <div class="taxis">
-    <span class="tick" style="left:0%">0:00</span><span class="tick" style="left:17.6%">0:30</span>
-    <span class="tick" style="left:35.3%">1:00</span><span class="tick" style="left:52.9%">1:30</span>
-    <span class="tick" style="left:70.5%">2:00</span><span class="tick" style="left:88.2%">2:30</span>
-    <span class="tick" style="left:100%">2:50</span>
-  </div>
-  <p class="small" style="margin:4px 0 10px;"><b style="color:var(--accent);">FIGURE 11.1</b> — measured corpus average (2:33 AHT; phase clocks total 2:50 where agents multitask). Dark sliver after resolution is hold: 1.3s in this corpus.</p>
-  <div class="phaseband ghost">
-    <div class="pseg c1" style="width:15.8%"><span class="pn">0:57</span></div>
-    <div class="pseg c2" style="width:24.3%"><span class="pn">Discovery 1:27</span></div>
-    <div class="pseg c3" style="width:17.4%"><span class="pn">1:03</span></div>
-    <div class="pseg c4" style="width:20.6%"><span class="pn">Resolution 1:14</span></div>
-    <div class="pseg c5" style="width:0.8%"></div>
-    <div class="pseg c6" style="width:8.6%"><span class="pn">0:31</span></div>
-    <div class="pseg c7" style="width:12.6%"><span class="pn">0:45</span></div>
-  </div>
-  <div class="taxis">
-    <span class="tick" style="left:0%">0:00</span><span class="tick" style="left:16.7%">1:00</span>
-    <span class="tick" style="left:33.3%">2:00</span><span class="tick" style="left:50%">3:00</span>
-    <span class="tick" style="left:66.7%">4:00</span><span class="tick" style="left:83.3%">5:00</span>
-    <span class="tick" style="left:100%">6:00</span>
-  </div>
-  <p class="small" style="margin-top:4px;"><b style="color:var(--accent);">FIGURE 11.2</b> — the same phase mix projected onto a typical 6-minute operator call, for scale (illustrative). The structural observation carries across: roughly <strong style="color:var(--sub);">40% of call time — identification and re-explanation — passes before problem-solving begins</strong>, which is the share addressable by context-passing and authentication improvements alone.</p>
-  <div class="foot"><span>Source: 78 gated calls; per-call phase timestamps and product/sentiment/upsell fields; no manual tagging</span><span class="pg">13 / 18</span></div>
+  <p style="margin-top:12px; font-size:14.5px; max-width:1050px;">The structural finding survives the projection: <strong>about 40% of every call — identification and re-explanation — passes before problem-solving begins.</strong> That share is addressable by authentication and context-passing alone, before any conversation changes.</p>
+  <div class="foot"><span>Source: 78 gated calls · per-call phase timestamps, product, sentiment, and upsell fields · zero manual tagging</span><span class="pg">13 / 18</span></div>
 </section>
 
 <!-- 14 · 12 Indicators -->
 <section class="page">
-  <div class="head"><span>SECTION 12</span><span>RESULTS · INDICATORS AND CONTENT</span></div>
-  <div class="secno">12 · RESULTS — INDICATORS AND CALL CONTENT</div>
-  <h2 class="stitle">The indicator set, read against benchmarks — and what the calls were about.</h2>
-  <div class="row" style="margin-top:8px;">
+  <div class="head"><span>SECTION 12</span><span class="r">THE EVIDENCE · INDICATORS</span></div>
+  <p class="eyebrow">12 · WHAT THE RUN MEASURED</p>
+  <h2 class="display" style="font-size:44px;">Every percentage resolves to a list<br>of named calls.</h2>
+  <div class="row" style="margin-top:16px;">
     <div class="col">
-      <div class="fig" style="margin-top:0;"><b>TABLE 12.1</b> — CORE INDICATORS (CORPUS-MEASURED)</div>
-      <table>
-        <thead><tr><th>INDICATOR</th><th>MEASURED</th><th>BENCHMARK</th></tr></thead>
-        <tbody>
-          <tr><td>First-call resolution</td><td class="num">59.0%</td><td class="why">70–75% typical target</td></tr>
-          <tr><td>Avoidable-call rate</td><td class="num">55.1%</td><td class="why">20–40% industry estimate</td></tr>
-          <tr><td>Machine-resolvable</td><td class="num">42.3%</td><td class="why">ranked intent-by-intent</td></tr>
-          <tr><td>Escalation rate</td><td class="num">25.6%</td><td class="why">concentrated in few intents</td></tr>
-          <tr><td>Sentiment improved</td><td class="num">83.3%</td><td class="why">start → end, per call</td></tr>
-        </tbody>
-      </table>
-      <p class="small" style="margin-top:10px;">Each percentage resolves to a list of identified calls with intent, product, and phase detail — the property that turns an indicator into a work queue.</p>
+      <div class="exhibit flush">
+        <span class="fig"><b>TABLE 12.1</b> — CORE INDICATORS (CORPUS-MEASURED)</span>
+        <table>
+          <thead><tr><th>INDICATOR</th><th>MEASURED</th><th>REFERENCE</th></tr></thead>
+          <tbody>
+            <tr><td>First-call resolution</td><td class="num">59.0%</td><td class="why">70–75% typical target</td></tr>
+            <tr><td>Avoidable calls</td><td class="num">55.1%</td><td class="why">20–40% industry estimate</td></tr>
+            <tr><td>Machine-resolvable</td><td class="num">42.3%</td><td class="why">ranked intent by intent</td></tr>
+            <tr><td>Escalated</td><td class="num">25.6%</td><td class="why">few intents carry most of it</td></tr>
+            <tr><td>Sentiment improved</td><td class="num">83.3%</td><td class="why">start → end, per call</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="col">
-      <div class="fig" style="margin-top:0;"><b>FIGURE 12.2</b> — WHAT DRIVES THE CALLS / WHAT THEY REFERENCE</div>
-      <div class="hbar"><span class="hl">Technical</span><div class="ht"><div class="hf c3" style="width:100%"></div></div><span class="hv">26.9% of calls</span></div>
-      <div class="hbar"><span class="hl">Information-only</span><div class="ht"><div class="hf c2" style="width:95%"></div></div><span class="hv">25.6%</span></div>
-      <div class="hbar"><span class="hl">Device</span><div class="ht"><div class="hf c4" style="width:67%"></div></div><span class="hv">17.9%</span></div>
-      <div class="hbar"><span class="hl">Plan change</span><div class="ht"><div class="hf c6" style="width:52%"></div></div><span class="hv">14.1%</span></div>
-      <p style="font-size:13px; margin-top:12px;">93% of calls name at least one product. Extraction surfaced them verbatim — specific handsets, roaming tiers, data plans, services — each tagged with category, the phase where it arose, and outcome. Account mix (56% postpaid, 5% business) arrives from the same pass, giving segment-level cost-to-serve without a CRM join.</p>
+      <div class="exhibit flush">
+        <span class="fig"><b>FIGURE 12.2</b> — WHAT DRIVES THE CALLS</span>
+        <div class="hbar"><span class="hl">Technical</span><div class="ht"><div class="hf c3" style="width:100%"></div></div><span class="hv">26.9% of calls</span></div>
+        <div class="hbar"><span class="hl">Information-only</span><div class="ht"><div class="hf c2" style="width:95%"></div></div><span class="hv">25.6%</span></div>
+        <div class="hbar"><span class="hl">Device</span><div class="ht"><div class="hf c4" style="width:67%"></div></div><span class="hv">17.9%</span></div>
+        <div class="hbar"><span class="hl">Plan change</span><div class="ht"><div class="hf c6" style="width:52%"></div></div><span class="hv">14.1%</span></div>
+      </div>
+      <p style="font-size:13.5px; margin-top:12px;">93% of calls name at least one product — specific handsets, roaming tiers, data plans — each tagged with category, phase, and outcome. Account mix arrives from the same pass: segment-level cost-to-serve without a CRM join.</p>
     </div>
   </div>
+  <p style="margin-top:14px; font-size:14px;">The property that matters: each row above is backed by <strong>identified calls with intent, product, and phase detail</strong> — which is what turns an indicator into a work queue.</p>
   <div class="foot"><span>Source: 78 gated calls · complaint 7.7%, billing 6.4%, account 1.3% omitted from the chart for space</span><span class="pg">14 / 18</span></div>
 </section>
 
 <!-- 15 · 13 Economics -->
 <section class="page">
-  <div class="head"><span>SECTION 13</span><span>ECONOMIC INTERPRETATION</span></div>
-  <div class="secno">13 · ECONOMIC INTERPRETATION</div>
-  <h2 class="stitle">Three reduction levers, sized with stated assumptions.</h2>
-  <p class="lede" style="font-size:14.5px;">Each call is classified against three levers: <strong>self-serve deflection</strong> (the contact belonged in a cheaper channel), <strong>machine resolution</strong> (an AI agent could close it end-to-end), and <strong>proactive prevention</strong> (outreach would have pre-empted it). Applying the corpus-measured rates and the planning factors below to an illustrative 100K-call month:</p>
-  <div class="fig"><b>FIGURE 13.1</b> — LEVER SIZING · 100K CALLS/MONTH × $6.00 BASELINE (MEASURED RATES · ASSUMED EFFECTIVENESS)</div>
-  <div class="wf">
-    <div class="wcol">
-      <div class="wplot"><div class="wtag" style="bottom:206px;">$600K</div><div class="wbar" style="bottom:0; height:200px; background:#3A3935;"></div></div>
-      <div class="wlab">Baseline</div><div class="wval">100K × $6.00</div>
-    </div>
-    <div class="wcol">
-      <div class="wplot"><div class="conn" style="bottom:200px;"></div><div class="wtag" style="bottom:206px;">− $288K</div><div class="wbar" style="bottom:104px; height:96px; background:#C65B33;"></div></div>
-      <div class="wlab">Self-serve deflection</div><div class="wval">56.4% rate × 85% eff.</div>
-    </div>
-    <div class="wcol">
-      <div class="wplot"><div class="conn" style="bottom:104px;"></div><div class="wtag" style="bottom:110px;">− $178K</div><div class="wbar" style="bottom:45px; height:59px; background:#DE9E7C;"></div></div>
-      <div class="wlab">Machine resolution</div><div class="wval">42.3% × 70% eff.</div>
-    </div>
-    <div class="wcol">
-      <div class="wplot"><div class="conn" style="bottom:45px;"></div><div class="wtag" style="bottom:51px;">− $97K</div><div class="wbar" style="bottom:13px; height:32px; background:#E9D5C7;"></div></div>
-      <div class="wlab">Proactive prevention</div><div class="wval">26.9% × 60% eff.</div>
-    </div>
-    <div class="wcol">
-      <div class="wplot"><div class="conn" style="bottom:13px;"></div><div class="wtag" style="bottom:19px;">$38K</div><div class="wbar" style="bottom:0; height:13px; background:#97948A;"></div></div>
-      <div class="wlab">Residual</div><div class="wval">remaining</div>
+  <div class="head"><span>SECTION 13</span><span class="r">THE EVIDENCE · ECONOMICS</span></div>
+  <p class="eyebrow">13 · WHAT THE FINDINGS ARE WORTH</p>
+  <h2 class="display" style="font-size:42px;">Three levers, sized with<br>stated assumptions.</h2>
+  <p style="font-size:14px; max-width:1020px; margin-top:2px;">Each call is classified against three levers — <strong>self-serve deflection</strong> (belonged in a cheaper channel), <strong>machine resolution</strong> (an AI agent could close it), <strong>proactive prevention</strong> (outreach would have pre-empted it). Applying measured rates and the planning factors shown to an illustrative 100K-call month:</p>
+  <div class="exhibit flush" style="margin-top:12px;">
+    <span class="fig"><b>FIGURE 13.1</b> — LEVER SIZING · 100K CALLS × $6.00 BASELINE (MEASURED RATES · ASSUMED EFFECTIVENESS)</span>
+    <div class="wf">
+      <div class="wcol">
+        <div class="wplot"><div class="wtag" style="bottom:196px;">$600K</div><div class="wbar" style="bottom:0; height:190px; background:#3A3935;"></div></div>
+        <div class="wlab">Baseline</div><div class="wval">100K × $6.00</div>
+      </div>
+      <div class="wcol">
+        <div class="wplot"><div class="conn" style="bottom:190px;"></div><div class="wtag" style="bottom:196px;">− $288K</div><div class="wbar" style="bottom:99px; height:91px; background:#C15F3C;"></div></div>
+        <div class="wlab">Self-serve deflection</div><div class="wval">56.4% rate × 85% eff.</div>
+      </div>
+      <div class="wcol">
+        <div class="wplot"><div class="conn" style="bottom:99px;"></div><div class="wtag" style="bottom:105px;">− $178K</div><div class="wbar" style="bottom:43px; height:56px; background:#DDA47F;"></div></div>
+        <div class="wlab">Machine resolution</div><div class="wval">42.3% × 70% eff.</div>
+      </div>
+      <div class="wcol">
+        <div class="wplot"><div class="conn" style="bottom:43px;"></div><div class="wtag" style="bottom:49px;">− $97K</div><div class="wbar" style="bottom:12px; height:31px; background:#EBD9CB;"></div></div>
+        <div class="wlab">Proactive prevention</div><div class="wval">26.9% × 60% eff.</div>
+      </div>
+      <div class="wcol">
+        <div class="wplot"><div class="conn" style="bottom:12px;"></div><div class="wtag" style="bottom:18px;">$38K</div><div class="wbar" style="bottom:0; height:12px; background:#999689;"></div></div>
+        <div class="wlab">Residual</div><div class="wval">remaining</div>
+      </div>
     </div>
   </div>
-  <p class="small" style="margin-top:12px; max-width:1030px;">Read as identified opportunity, not forecast savings: levers overlap on live traffic, the corpus over-indexes on avoidable calls (limitation L2), and effectiveness factors are planning assumptions. The durable property is traceability — every dollar above resolves to named calls and intents, and the model recomputes on an operator's volumes and ACD costs.</p>
-  <div class="foot"><span>Source: lever rates from the run; volume, unit cost, and effectiveness factors are stated assumptions</span><span class="pg">15 / 18</span></div>
+  <p class="small" style="margin-top:10px; max-width:1040px;">Identified opportunity, not forecast: levers overlap on live traffic and the corpus over-indexes on avoidable calls (limitation L2). The durable property is traceability — every dollar resolves to named calls, recomputed on an operator's own volumes and costs.</p>
+  <div class="foot"><span>Source: lever rates from the run · volume, unit cost, and effectiveness factors are stated assumptions</span><span class="pg">15 / 18</span></div>
 </section>
 
 <!-- 16 · 14 Implementation -->
 <section class="page">
-  <div class="head"><span>SECTION 14</span><span>IMPLEMENTATION PATHWAY</span></div>
-  <div class="secno">14 · IMPLEMENTATION PATHWAY</div>
-  <h2 class="stitle">A staged route from historical transcripts to a closed measurement loop.</h2>
-  <p class="lede" style="font-size:14.5px;">The system was designed to produce evidence before requiring integration: phase 0 needs only a secure transcript export.</p>
-  <div class="fig"><b>TABLE 14.1</b> — PHASES, WORK, AND EXIT DELIVERABLES</div>
-  <table>
-    <thead><tr><th style="width:15%">PHASE</th><th style="width:14%">WINDOW</th><th style="width:42%">WORK</th><th>EXIT DELIVERABLE</th></tr></thead>
-    <tbody>
-      <tr><td>0 · Evidence</td><td>Weeks 1–4</td><td class="why">Run on 30–90 days of historical transcripts; no system integration required.</td><td class="why">The operator's own call anatomy, indicators, and sized levers</td></tr>
-      <tr><td>1 · Ground truth</td><td>Weeks 5–10</td><td class="why">Replace benchmark unit costs with ACD/WFM actuals; segment by queue, market, account type.</td><td class="why">A business case in the operator's own cost base</td></tr>
-      <tr><td>2 · First wave</td><td>Quarter 2</td><td class="why">Rebuild top avoidable journeys; deploy AI agents on highest-confidence intents; arm proactive triggers.</td><td class="why">Measured (not projected) deflection from the first wave</td></tr>
-      <tr><td>3 · Closed loop</td><td>Ongoing</td><td class="why">Continuous analysis tracks deflected volume, FCR movement, and sentiment per wave.</td><td class="why">The measurement system verifies each intervention it recommended</td></tr>
-    </tbody>
-  </table>
-  <div class="foot"><span>Integration surface throughout: transcripts in; indicators, recommendations, and audit artifacts out via API, dashboard, and CSV</span><span class="pg">16 / 18</span></div>
+  <div class="head"><span>SECTION 14</span><span class="r">THE EVIDENCE → ACTION</span></div>
+  <p class="eyebrow">14 · FOUR PHASES TO A CLOSED LOOP</p>
+  <h2 class="display" style="font-size:44px;">Evidence first. Integration later.<br>Verification always.</h2>
+  <div class="exhibit flush" style="margin-top:16px;">
+    <span class="fig"><b>TABLE 14.1</b> — PHASES, WORK, EXIT DELIVERABLES</span>
+    <table>
+      <thead><tr><th style="width:15%">PHASE</th><th style="width:14%">WINDOW</th><th style="width:42%">WORK</th><th>EXIT DELIVERABLE</th></tr></thead>
+      <tbody>
+        <tr><td>0 · Evidence</td><td>Weeks 1–4</td><td class="why">Run on 30–90 days of historical transcripts. A secure export is the only requirement.</td><td class="why">The operator's own anatomy, indicators, sized levers</td></tr>
+        <tr><td>1 · Ground truth</td><td>Weeks 5–10</td><td class="why">Replace benchmark costs with ACD/WFM actuals; segment by queue, market, account type.</td><td class="why">A business case in the operator's own cost base</td></tr>
+        <tr><td>2 · First wave</td><td>Quarter 2</td><td class="why">Rebuild top avoidable journeys; deploy AI agents on highest-confidence intents; arm proactive triggers.</td><td class="why">Measured — not projected — deflection</td></tr>
+        <tr><td>3 · Closed loop</td><td>Ongoing</td><td class="why">Continuous reading tracks deflected volume, resolution movement, sentiment per wave.</td><td class="why">The system that found the cost verifies its removal</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Integration surface throughout: transcripts in · indicators, recommendations, audit artifacts out — API, dashboard, CSV</span><span class="pg">16 / 18</span></div>
 </section>
 
 <!-- 17 · 15 Conclusions -->
 <section class="page">
-  <div class="head"><span>SECTION 15</span><span>CONCLUSIONS</span></div>
-  <div class="secno">15 · CONCLUSIONS</div>
-  <h2 class="stitle">What the work demonstrates.</h2>
-  <div class="findings" style="margin-top:10px;">
-    <div class="frow"><span class="fn">C1</span><span class="ft"><b>Full-coverage conversation analysis is economically viable today.</b> Measured at $0.013 per call, reading every conversation costs roughly 0.2% of handling one — below the cost of the 2% human sample it replaces.</span></div>
-    <div class="frow"><span class="fn">C2</span><span class="ft"><b>Structured extraction is dependable enough to steer by — when it is quality-gated.</b> Zero failures across the run; every record carries a quality grade, and only graded records reach the indicators.</span></div>
-    <div class="frow"><span class="fn">C3</span><span class="ft"><b>Phase-level timing reveals structure that duration metrics cannot.</b> Roughly 40% of call time precedes problem-solving — a finding invisible to ACD data and directly addressable by known interventions.</span></div>
-    <div class="frow"><span class="fn">C4</span><span class="ft"><b>A material share of contacts is classifiable as preventable or automatable, call by call.</b> The classifications arrive as lists of named calls with intent and product context — implementable, not just reportable.</span></div>
-    <div class="frow"><span class="fn">C5</span><span class="ft"><b>Agentic autonomy can be governed to audit standard.</b> Budget ceilings, quality gates, PII boundaries, and a complete decision log held under production conditions, including a provider failure absorbed without intervention.</span></div>
+  <div class="head"><span>SECTION 15</span><span class="r">CONCLUSIONS</span></div>
+  <p class="eyebrow">15 · CONCLUSIONS</p>
+  <h2 class="display">What the work demonstrates.</h2>
+  <div class="findings" style="margin-top:16px;">
+    <div class="frow"><span class="fn">C1</span><span class="ft"><b>Full-coverage conversation analysis is economically viable today.</b> Measured at $0.013 per call — roughly 0.2% of handling cost, below the price of the 2% human sample it replaces.</span></div>
+    <div class="frow"><span class="fn">C2</span><span class="ft"><b>Structured extraction is dependable when it is quality-gated.</b> Zero failures across the run; every record graded; only graded records reach the indicators.</span></div>
+    <div class="frow"><span class="fn">C3</span><span class="ft"><b>Phase timing reveals structure that duration metrics cannot.</b> Roughly 40% of call time precedes problem-solving — invisible to ACD data, addressable by known interventions.</span></div>
+    <div class="frow"><span class="fn">C4</span><span class="ft"><b>Preventable and automatable contacts can be identified call by call.</b> Classifications arrive as lists of named calls with intent and product context — implementable, not just reportable.</span></div>
+    <div class="frow"><span class="fn">C5</span><span class="ft"><b>Agentic autonomy can be governed to audit standard.</b> Budget ceilings, quality gates, PII boundaries, and a complete decision log held under production conditions.</span></div>
   </div>
-  <div class="foot"><span>Each conclusion is traceable to the sections above and to the versioned artifacts of the June 2026 run</span><span class="pg">17 / 18</span></div>
+  <div class="foot"><span>Each conclusion traces to the sections above and to the versioned artifacts of the June 2026 run</span><span class="pg">17 / 18</span></div>
 </section>
 
 <!-- 18 · 16 Next step -->
 <section class="page">
-  <div class="head"><span>SECTION 16</span><span>NEXT STEP</span></div>
-  <div class="secno">16 · RECOMMENDED NEXT STEP</div>
-  <h2 class="stitle">A four-week evidence phase on operator data.</h2>
-  <div class="row" style="margin-top:10px;">
+  <div class="head"><span>SECTION 16</span><span class="r">THE NEXT STEP</span></div>
+  <p class="eyebrow">16 · RECOMMENDED NEXT STEP</p>
+  <h2 class="display" style="font-size:46px;">Four weeks, your transcripts,<br>your numbers.</h2>
+  <div class="row" style="margin-top:20px;">
     <div class="col">
-      <p style="margin-bottom:14px;">The corpus results establish that the method works; they deliberately do not claim what any operator's numbers will be. The appropriate next step is the smallest decision that resolves that question: <strong>phase 0 of Section 14</strong> — thirty to ninety days of historical transcripts, analysed under the governance described in Section 9, returning the operator's own call anatomy, indicators, and sized levers.</p>
-      <p>It requires a transcript export and a data-protection review. It requires no system integration, no customer-facing change, and no commitment beyond the four weeks.</p>
+      <p style="font-size:15px; margin-bottom:14px;">The corpus results establish that the method works; they deliberately do not claim what any operator's numbers will be. The smallest decision that resolves the question is <strong>phase 0</strong>: thirty to ninety days of historical transcripts, analysed under the governance of Section 9, returning the operator's own call anatomy, indicators, and sized levers.</p>
+      <p style="font-size:15px;">It requires a transcript export and a data-protection review — no integration, no customer-facing change, no commitment beyond the four weeks.</p>
     </div>
     <div class="col">
-      <p style="margin-bottom:14px;"><strong>About the author.</strong> Vinoth N has led analytics and AI delivery for thirteen years, including programmes at Verizon that delivered $27M in cost savings. This system — design, build, governance, and validation — is individual work, intended to demonstrate the standard he applies to production AI: evidence first, every claim sourced, every machine decision on the record.</p>
-      <p><strong>Contact.</strong> vinoth.n@outlook.com · Chennai, India · open to global leadership roles and operator pilots. The repository, live dashboard, and companion deep-dive documents are available on request.</p>
+      <div class="exhibit">
+        <span class="fig"><b>ABOUT THE AUTHOR</b></span>
+        <p style="font-size:14px; margin-bottom:10px;">Vinoth N has led analytics and AI delivery for thirteen years, including programmes at Verizon that delivered $27M in cost savings. This system — design, build, governance, validation — is individual work, and it reflects the standard he applies to production AI: evidence first, every claim sourced, every machine decision on the record.</p>
+        <p style="font-size:14px;"><strong>vinoth.n@outlook.com</strong> · Chennai, India · open to global leadership roles and operator pilots. Repository, live dashboard, and companion documents on request.</p>
+      </div>
     </div>
   </div>
   <div class="foot"><span>End of document · Companions: Part I — The Build · Part II — The Results</span><span class="pg">18 / 18</span></div>
