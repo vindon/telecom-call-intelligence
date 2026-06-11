@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Cost-to-Serve Engine · Part I — The Build</title>
+<style>
+  /* Light editorial system — document, not deck-template */
+  :root {
+    --stage: #EDEBE4; --paper: #FFFFFF; --hairline: #E4E2DA; --rule: #1A1915;
+    --ink: #1A1915; --sub: #55534C; --faint: #918F86;
+    --accent: #C65B33; --tint: #F6E7DF;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:var(--stage); }
+  body { font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; }
+
+  #stage { height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .slide {
+    width:min(1240px,100%); aspect-ratio:16/9; background:var(--paper);
+    padding:0 72px; display:none; flex-direction:column; overflow:hidden; position:relative;
+    border:1px solid var(--hairline);
+  }
+  .slide.active { display:flex; }
+
+  /* Document chrome */
+  .doc-head {
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:26px 0 14px; border-bottom:1px solid var(--rule); margin-bottom:34px;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; color:var(--ink);
+  }
+  .doc-head .r { color:var(--accent); }
+  .doc-foot {
+    margin-top:auto; display:flex; justify-content:space-between; align-items:baseline;
+    padding:14px 0 24px; border-top:1px solid var(--hairline);
+    font-size:11px; color:var(--faint);
+  }
+  .doc-foot .pg { font-family:var(--mono); }
+
+  /* Typography */
+  .atitle { font-size:31px; font-weight:650; line-height:1.22; letter-spacing:-0.022em; max-width:980px; margin-bottom:8px; }
+  .atitle em { font-style:normal; color:var(--accent); }
+  .dek { font-size:16px; line-height:1.5; color:var(--sub); max-width:860px; margin-bottom:10px; }
+  p { font-size:15px; line-height:1.55; color:var(--sub); }
+  strong { color:var(--ink); font-weight:600; }
+  .num { font-family:var(--mono); }
+  .exh { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; color:var(--accent);
+         margin:18px 0 10px; }
+  .small { font-size:12.5px; line-height:1.5; color:var(--faint); }
+
+  .row { display:flex; gap:48px; flex:1; min-height:0; }
+  .col { flex:1; min-width:0; }
+
+  /* Numbered argument list — editorial, not cards */
+  .arg { display:flex; gap:18px; padding:14px 0; border-bottom:1px solid var(--hairline); }
+  .arg:last-child { border-bottom:none; }
+  .arg .n { font-family:var(--mono); font-size:12px; color:var(--accent); padding-top:3px; flex-shrink:0; }
+  .arg .t { font-size:15px; line-height:1.45; color:var(--sub); }
+  .arg .t b { display:block; color:var(--ink); font-weight:600; font-size:15.5px; margin-bottom:2px; }
+
+  /* Big statistic, editorial */
+  .bignum { font-size:64px; font-weight:700; letter-spacing:-0.03em; line-height:1; font-family:var(--sans); }
+  .bignum .u { font-size:26px; font-weight:600; color:var(--sub); }
+  .biglabel { font-size:13.5px; color:var(--sub); margin-top:8px; max-width:300px; line-height:1.45; }
+
+  /* Engine flow — stations on a spine, not boxes-and-arrows */
+  .flow { position:relative; margin:36px 0 8px; }
+  .flow .spine { position:absolute; top:13px; left:0; right:0; height:1px; background:var(--rule); }
+  .flow .stations { display:flex; justify-content:space-between; position:relative; }
+  .flow .st { width:15%; }
+  .flow .dot { width:9px; height:9px; border-radius:50%; background:var(--paper); border:2px solid var(--rule); margin-bottom:14px; position:relative; top:5px; }
+  .flow .st.hot .dot { background:var(--accent); border-color:var(--accent); }
+  .flow .st h4 { font-size:13.5px; font-weight:650; margin-bottom:5px; letter-spacing:-0.01em; }
+  .flow .st p { font-size:12px; line-height:1.45; color:var(--sub); }
+  .flow .st .art { font-family:var(--mono); font-size:10px; color:var(--faint); display:block; margin-top:7px; }
+
+  /* Table — consulting style */
+  table { width:100%; border-collapse:collapse; }
+  thead th { font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-align:left;
+             color:var(--faint); padding:0 16px 9px 0; border-bottom:1.5px solid var(--rule); }
+  tbody td { font-size:13.5px; line-height:1.45; color:var(--sub); padding:11px 16px 11px 0;
+             border-bottom:1px solid var(--hairline); vertical-align:top; }
+  tbody td:first-child { color:var(--ink); font-weight:600; white-space:nowrap; }
+  tbody tr:last-child td { border-bottom:none; }
+
+  /* Code artifact */
+  .artifact { background:#FBFAF7; border:1px solid var(--hairline); border-left:3px solid var(--accent);
+              padding:18px 20px; font-family:var(--mono); font-size:11.5px; line-height:1.6; color:var(--sub);
+              white-space:pre; overflow:hidden; }
+  .artifact .k { color:var(--accent); }
+  .artifact .v { color:var(--ink); }
+
+  /* Simple annotated bar comparison */
+  .cmp { margin-top:10px; }
+  .cmp .crow { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+  .cmp .cl { width:200px; font-size:13px; color:var(--sub); text-align:right; flex-shrink:0; }
+  .cmp .ct { flex:1; }
+  .cmp .cb { height:22px; background:var(--accent); }
+  .cmp .cb.ghost { background:#DDDBD2; }
+  .cmp .cv { font-family:var(--mono); font-size:12px; color:var(--ink); margin-left:10px; white-space:nowrap; }
+
+  #nav { position:fixed; bottom:14px; left:0; right:0; display:flex; justify-content:center; gap:16px;
+         font-size:12px; color:var(--faint); user-select:none; align-items:center; }
+  #nav button { border:1px solid var(--hairline); background:var(--paper); color:var(--sub);
+                padding:5px 14px; cursor:pointer; font-size:12px; }
+  #nav button:hover { border-color:var(--accent); color:var(--accent); }
+
+  @media print {
+    #nav { display:none; } #stage { display:block; height:auto; padding:0; }
+    .slide { display:flex !important; width:100%; border:0; page-break-after:always; aspect-ratio:auto; height:100vh; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- 1 · Cover -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">PART I — THE BUILD</span></div>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <p class="num" style="font-size:11px; letter-spacing:.18em; color:var(--accent); margin-bottom:22px;">WHY · WHAT · HOW OF THE SYSTEM</p>
+    <h1 style="font-size:54px; font-weight:700; letter-spacing:-0.028em; line-height:1.1; max-width:980px;">
+      A working agentic AI system that reads telecom calls and finds the cost inside them.
+    </h1>
+    <p class="dek" style="margin-top:24px; font-size:17px;">
+      Six specialised agents, one governed pipeline: transcripts in, per-call economics out.
+      Built, tested, and run on production infrastructure — this document explains why it exists,
+      what it is, and how it works.
+    </p>
+  </div>
+  <div class="doc-foot">
+    <span>Vinoth N · Senior Analytics &amp; AI Leadership · vinoth.n@outlook.com · June 2026</span>
+    <span class="pg">I / 01</span>
+  </div>
+</section>
+
+<!-- 2 · WHY: the thesis -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHY — THE THESIS</span></div>
+  <h2 class="atitle">Telecom customer care is the strongest real-world case for agentic AI available today.</h2>
+  <p class="dek">Most agentic AI proposals fail one of five tests: volume, data readiness, measurability, time-to-start, or risk. Telecom care passes all five.</p>
+  <div class="row" style="margin-top:6px;">
+    <div class="col">
+      <div class="arg"><span class="n">01</span><span class="t"><b>The volume is industrial.</b> A tier-1 operator handles 100M+ assisted contacts a year. Marginal intelligence per call compounds like interest.</span></div>
+      <div class="arg"><span class="n">02</span><span class="t"><b>The data already exists.</b> Calls are recorded and transcribed today. No new instrumentation, no data programme — the raw material is sitting in storage.</span></div>
+      <div class="arg"><span class="n">03</span><span class="t"><b>The economics are measurable per unit.</b> Every call has a knowable cost ($6–12 assisted). Every improvement is countable in calls avoided, minutes saved, escalations prevented.</span></div>
+    </div>
+    <div class="col">
+      <div class="arg"><span class="n">04</span><span class="t"><b>It starts without integration.</b> Analysis needs only a transcript export. The first business case is built before any system is touched.</span></div>
+      <div class="arg"><span class="n">05</span><span class="t"><b>Failure is cheap; the loop is safe.</b> The agents analyse — they don't act on customers. Wrong output costs a re-run, not a regulatory incident. Autonomy can be earned in stages.</span></div>
+      <p class="small" style="margin-top:16px;">The same five tests disqualify most alternatives: network self-healing fails test 4 (deep OSS integration), AI sales agents fail test 5 (customer-facing risk on day one), generic copilots fail test 3 (unmeasurable).</p>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Part I — The Build · Why</span><span class="pg">I / 02</span></div>
+</section>
+
+<!-- 3 · WHY NOW -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHY — NOW</span></div>
+  <h2 class="atitle">The economics crossed over: reading a call now costs <em>0.2%</em> of handling it.</h2>
+  <p class="dek">Until small fast models matured, conversation analytics meant sampling. At ~1¢ per call, full coverage became cheaper than the QA team that samples 2%.</p>
+  <div class="exh">EXHIBIT 1 — COST PER CALL: HANDLING VS UNDERSTANDING (USD, LOG-SCALE POSITIONS ILLUSTRATIVE)</div>
+  <div class="cmp">
+    <div class="crow"><span class="cl">Assisted voice call, industry range</span><div class="ct"><div class="cb ghost" style="width:96%"></div></div><span class="cv">$6.00 – $12.00</span></div>
+    <div class="crow"><span class="cl">Human QA review of one call</span><div class="ct"><div class="cb ghost" style="width:42%"></div></div><span class="cv">~$2 – $4 (3–6 min of analyst time)</span></div>
+    <div class="crow"><span class="cl">This engine, measured</span><div class="ct"><div class="cb" style="width:2.2%"></div></div><span class="cv">$0.013 / call · Claude Haiku, ~8K tokens</span></div>
+  </div>
+  <div class="row" style="margin-top:26px; flex:0;">
+    <div class="col"><p><strong>Two-model design keeps it flat at scale.</strong> A small fast model does the high-volume reading; a 70B model reasons once over the aggregate. Cost scales with calls, intelligence doesn't need to.</p></div>
+    <div class="col"><p><strong>The agentic toolkit matured in parallel.</strong> ReAct self-correction, multi-pass deliberation, and graph orchestration moved from papers to dependable engineering patterns — this system uses all three in production form.</p></div>
+  </div>
+  <div class="doc-foot"><span>Source: measured run cost, 100-call production batch, June 2026 · industry handling-cost ranges as commonly cited benchmarks</span><span class="pg">I / 03</span></div>
+</section>
+
+<!-- 4 · WHAT: concept → output -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHAT — THE ENGINE</span></div>
+  <h2 class="atitle">From raw conversation to costed action plan in six stations.</h2>
+  <p class="dek">One governed pass. Each station is an autonomous agent that logs every decision it makes; state moves forward immutably and nothing reaches the output without clearing the gates.</p>
+  <div class="exh">EXHIBIT 2 — CONCEPT TO OUTPUT</div>
+  <div class="flow">
+    <div class="spine"></div>
+    <div class="stations">
+      <div class="st"><div class="dot"></div><h4>Ingest &amp; protect</h4><p>Validate transcripts; scan and redact PII before any model sees text.</p><span class="art">validation_errors · pii_log</span></div>
+      <div class="st hot"><div class="dot"></div><h4>Read</h4><p>70+ structured fields per call — phases, issues, products, sentiment, resolution.</p><span class="art">claude-haiku-4-5 · ReAct retry</span></div>
+      <div class="st"><div class="dot"></div><h4>Score</h4><p>100-point QA per extraction; low-confidence records excluded, not averaged in.</p><span class="art">qa_report.json</span></div>
+      <div class="st"><div class="dot"></div><h4>Price</h4><p>KPIs, distributions, and the three savings levers in dollars.</p><span class="art">summary.json</span></div>
+      <div class="st hot"><div class="dot"></div><h4>Reason</h4><p>70B model drafts strategy, critiques itself, rewrites — three passes.</p><span class="art">llama-3.3-70b · NIM</span></div>
+      <div class="st"><div class="dot"></div><h4>Publish</h4><p>Dashboard, REST API, CSV, decision log, immutable run manifest.</p><span class="art">audit trail · manifest</span></div>
+    </div>
+  </div>
+  <p class="small" style="margin-top:30px; max-width:880px;">Governance spine under all six stations: a hard budget stop, rate limiting and quota circuit-breakers, a quality gate that routes failures to a safe emergency export, and an optional human approval node before publish.</p>
+  <div class="doc-foot"><span>Part I — The Build · What</span><span class="pg">I / 04</span></div>
+</section>
+
+<!-- 5 · WHAT: the agents -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHAT — THE AGENTS</span></div>
+  <h2 class="atitle">Six agents, each accountable for one stage and for explaining itself.</h2>
+  <div class="exh" style="margin-top:10px;">EXHIBIT 3 — AGENT ROSTER AND THE DECISIONS EACH ONE LOGS</div>
+  <table>
+    <thead><tr><th style="width:19%">AGENT</th><th style="width:43%">RESPONSIBILITY</th><th>DECISIONS IT MUST JUSTIFY ON THE RECORD</th></tr></thead>
+    <tbody>
+      <tr><td>1 · Data Ingestion</td><td>Fetch transcripts; enforce quality thresholds; redact PII pre-LLM</td><td>Every skipped transcript, every redaction — with reason and evidence</td></tr>
+      <tr><td>2 · Extraction</td><td>70+ fields per call; scores its own coverage; targeted ReAct re-query when fields are missing</td><td>Every gap-fill trigger and its measured coverage improvement</td></tr>
+      <tr><td>3 · Quality</td><td>100-pt QA score across completeness, validity, consistency, plausibility</td><td>Every excluded record; borderline grades flagged for review</td></tr>
+      <tr><td>4 · Aggregation</td><td>KPIs, distributions, lever math from QA-passed records only</td><td>Aggregation scope; which cost model was applied and why</td></tr>
+      <tr><td>5 · Insights</td><td>Analyse → critique → synthesise strategy over the aggregate</td><td>Provider chain selected (NIM → Claude → rules); critique verdict</td></tr>
+      <tr><td>6 · Export</td><td>All artifacts + immutable manifest; protects the dashboard on failure paths</td><td>Full vs emergency export scope — and what it refused to overwrite</td></tr>
+    </tbody>
+  </table>
+  <div class="doc-foot"><span>Part I — The Build · What</span><span class="pg">I / 05</span></div>
+</section>
+
+<!-- 6 · HOW: agentic patterns -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">HOW — AGENTIC PATTERNS</span></div>
+  <h2 class="atitle">"Agentic" here is engineered behaviour, not branding.</h2>
+  <div class="row" style="margin-top:18px;">
+    <div class="col">
+      <div class="arg"><span class="n">01</span><span class="t"><b>Self-correction (ReAct).</b> After each extraction the agent scores its own field coverage. Below threshold, it reasons about what's missing and issues a targeted re-query — recovering critical fields instead of shipping nulls into KPIs.</span></div>
+      <div class="arg"><span class="n">02</span><span class="t"><b>Self-critique (deliberation).</b> Strategy output is drafted, then graded by a critique pass for data-grounding and specificity, then rewritten. Generic recommendations are caught before an executive sees them.</span></div>
+      <div class="arg"><span class="n">03</span><span class="t"><b>Autonomous degradation.</b> Provider failures cascade through NIM → Claude → rule-based fallbacks; daily-quota exhaustion circuit-breaks across batch processes via a persisted sentinel.</span></div>
+    </div>
+    <div class="col">
+      <div class="exh" style="margin-top:0;">EXHIBIT 4 — AN ACTUAL DECISION RECORD FROM THE JUNE RUN</div>
+      <div class="artifact">{
+  <span class="k">"agent"</span>:         <span class="v">"InsightsAgent"</span>,
+  <span class="k">"decision_type"</span>: <span class="v">"provider_selected"</span>,
+  <span class="k">"decision"</span>: <span class="v">"NVIDIA NIM (3-pass deliberation)"</span>,
+  <span class="k">"reason"</span>: <span class="v">"Hierarchy: NIM → Claude → rule-based.
+             Selected 'llm_deliberated' after 3 passes."</span>,
+  <span class="k">"confidence"</span>: <span class="v">"high"</span>,
+  <span class="k">"alternatives"</span>: [<span class="v">"Claude single-pass",
+                    "Rule-based fallback", "Skip insights"</span>]
+}</div>
+      <p class="small" style="margin-top:12px;">Every behaviour on the left emits records like this — what was decided, why, the evidence, and the roads not taken. The reasoning is auditable end to end.</p>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Source: decisions_20260611.json, production run artifact (excerpt, unedited fields)</span><span class="pg">I / 06</span></div>
+</section>
+
+<!-- 7 · HOW: governance -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">HOW — GOVERNANCE</span></div>
+  <h2 class="atitle">Autonomy is bounded by five controls that run on every pass.</h2>
+  <div class="exh" style="margin-top:10px;">EXHIBIT 5 — CONTROL FRAMEWORK</div>
+  <table>
+    <thead><tr><th style="width:22%">CONTROL</th><th style="width:46%">MECHANISM</th><th>FAILURE BEHAVIOUR</th></tr></thead>
+    <tbody>
+      <tr><td>PII protection</td><td>Pattern scan and redaction before any transcript reaches a model; redactions logged per call</td><td>Data never leaves the gate unredacted</td></tr>
+      <tr><td>Cost ceiling</td><td>Hard budget guard prices every run with model-aware rates, including retry spend</td><td>Run halts; partial work checkpointed, resumable</td></tr>
+      <tr><td>Quality gate</td><td>Dataset-level pass-rate threshold on QA scores</td><td>Routes to emergency export; refuses to overwrite the last good dashboard</td></tr>
+      <tr><td>Rate &amp; quota</td><td>Per-provider limiters; cross-process circuit breaker on daily quota</td><td>Backs off and degrades, never hammers a provider</td></tr>
+      <tr><td>Human approval</td><td>Optional sign-off node before publish, with timeout policy</td><td>Blocks export until a person agrees</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:16px;">Designed against the questions a model-risk or AI-governance review will actually ask: what did it see, what did it spend, what did it decide, who approved it.</p>
+  <div class="doc-foot"><span>Part I — The Build · How</span><span class="pg">I / 07</span></div>
+</section>
+
+<!-- 8 · HOW: engineering proof -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">HOW — DISCIPLINE</span></div>
+  <h2 class="atitle">The claims are tested, not asserted.</h2>
+  <div class="row" style="margin-top:26px; align-items:flex-start;">
+    <div class="col" style="flex:0.9;">
+      <div class="bignum">342</div>
+      <div class="biglabel">automated tests across every agent, the governance layer, and the API — running in ~6 seconds with zero network calls, gating every change through CI.</div>
+    </div>
+    <div class="col" style="flex:0.9;">
+      <div class="bignum">0<span class="u"> failed calls</span></div>
+      <div class="biglabel">in the June production run — 100 calls across 5 batches, one provider rate-limit event absorbed by backoff without operator intervention.</div>
+    </div>
+    <div class="col" style="flex:1.2;">
+      <p style="margin-bottom:14px;"><strong>What the suite actually pins down:</strong> the regression that made gap-fill treat <span class="num">false</span> as a missing value; retry token spend escaping the budget guard; the emergency path silently blanking the dashboard; the quota sentinel surviving across processes.</p>
+      <p>These are the failure modes that quietly corrupt analytics platforms. Each one is now a permanent test.</p>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Repository: private GitHub, CI on main · ruff + mypy + pytest gate</span><span class="pg">I / 08</span></div>
+</section>
+
+<!-- 9 · HOW: scale path -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">HOW — SCALE</span></div>
+  <h2 class="atitle">Nothing in the architecture is bespoke to one operator, language, or market.</h2>
+  <div class="row" style="margin-top:18px;">
+    <div class="col">
+      <div class="arg"><span class="n">01</span><span class="t"><b>Transcript-agnostic.</b> Voice transcription, chat logs, BPO exports — the schema doesn't care where the conversation happened.</span></div>
+      <div class="arg"><span class="n">02</span><span class="t"><b>Language-agnostic.</b> LLM extraction reads Hindi, German, or Tagalog against the same 70-field schema. No per-market rule engineering or retraining cycle.</span></div>
+      <div class="arg"><span class="n">03</span><span class="t"><b>Model-agnostic.</b> One config constant switches extraction provider; pricing, rate limits, and key validation follow automatically. No vendor lock.</span></div>
+      <div class="arg"><span class="n">04</span><span class="t"><b>Batch today, stream tomorrow.</b> The same graph that processes 5×20 overnight batches runs per-call behind the existing REST endpoint for near-real-time scoring.</span></div>
+    </div>
+    <div class="col" style="flex:0.85;">
+      <div class="exh" style="margin-top:0;">SCALING ARITHMETIC</div>
+      <p style="margin-bottom:14px;">At measured cost, a <strong>1M-call/month operator</strong> spends ≈ <span class="num">$13K/mo</span> to read every conversation — against a <span class="num">$6–12M</span> monthly handling baseline it then learns to shrink.</p>
+      <p style="margin-bottom:14px;">Group-wide, the same engine produces <strong>comparable league tables across markets</strong> — which opco's discovery phase runs long, which product drives calls where.</p>
+      <p class="small">Throughput scales with provider rate limits and parallel batches; the orchestrator already plans non-overlapping work splits.</p>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Part I — The Build · How</span><span class="pg">I / 09</span></div>
+</section>
+
+<!-- 10 · Close -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">PART I — CLOSE</span></div>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <h2 style="font-size:40px; font-weight:700; letter-spacing:-0.025em; line-height:1.18; max-width:1000px;">
+      Built to be judged: every claim in this document is reproducible from the repository —
+      <span style="color:var(--accent);">the results are Part II.</span>
+    </h2>
+    <div class="row" style="margin-top:40px; flex:0;">
+      <div class="col">
+        <p class="small" style="font-family:var(--mono); letter-spacing:.1em; margin-bottom:8px;">CONTINUES IN</p>
+        <p><strong>Part II — The Results:</strong> what a 100-call production run revealed — the call anatomy timeline, where the minutes and dollars sit, and the three levers priced.</p>
+      </div>
+      <div class="col">
+        <p class="small" style="font-family:var(--mono); letter-spacing:.1em; margin-bottom:8px;">AUTHOR</p>
+        <p><strong>Vinoth N</strong> — 13 years in analytics &amp; AI leadership; $27M in delivered cost savings at Verizon. Chennai, India · vinoth.n@outlook.com</p>
+      </div>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Private repository and live dashboard available on request</span><span class="pg">I / 10</span></div>
+</section>
+
+</div>
+<div id="nav"><button id="prev">←</button><span id="counter">1 / 10</span><button id="next">→</button><span style="font-size:11px;">arrow keys · ⌘P for PDF</span></div>
+<script>
+  const slides=[...document.querySelectorAll(".slide")];let i=0;
+  function show(n){i=Math.max(0,Math.min(slides.length-1,n));slides.forEach((s,k)=>s.classList.toggle("active",k===i));document.getElementById("counter").textContent=`${i+1} / ${slides.length}`;}
+  prev.onclick=()=>show(i-1);next.onclick=()=>show(i+1);
+  document.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key===" ")show(i+1);if(e.key==="ArrowLeft")show(i-1);});
+  show(0);
+</script>
+</body>
+</html>

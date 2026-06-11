@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Cost-to-Serve Engine · Part II — The Results</title>
+<style>
+  :root {
+    --stage: #EDEBE4; --paper: #FFFFFF; --hairline: #E4E2DA; --rule: #1A1915;
+    --ink: #1A1915; --sub: #55534C; --faint: #918F86;
+    --accent: #C65B33; --tint: #F6E7DF;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:var(--stage); }
+  body { font-family:var(--sans); color:var(--ink); -webkit-font-smoothing:antialiased; }
+
+  #stage { height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .slide {
+    width:min(1240px,100%); aspect-ratio:16/9; background:var(--paper);
+    padding:0 72px; display:none; flex-direction:column; overflow:hidden; position:relative;
+    border:1px solid var(--hairline);
+  }
+  .slide.active { display:flex; }
+
+  .doc-head {
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:26px 0 14px; border-bottom:1px solid var(--rule); margin-bottom:30px;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; color:var(--ink);
+  }
+  .doc-head .r { color:var(--accent); }
+  .doc-foot {
+    margin-top:auto; display:flex; justify-content:space-between; align-items:baseline;
+    padding:13px 0 22px; border-top:1px solid var(--hairline);
+    font-size:11px; color:var(--faint);
+  }
+  .doc-foot .pg { font-family:var(--mono); }
+
+  .atitle { font-size:30px; font-weight:650; line-height:1.22; letter-spacing:-0.022em; max-width:1000px; margin-bottom:8px; }
+  .atitle em { font-style:normal; color:var(--accent); }
+  .dek { font-size:15.5px; line-height:1.5; color:var(--sub); max-width:880px; margin-bottom:8px; }
+  p { font-size:14.5px; line-height:1.55; color:var(--sub); }
+  strong { color:var(--ink); font-weight:600; }
+  .num { font-family:var(--mono); }
+  .exh { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; color:var(--accent); margin:14px 0 10px; }
+  .small { font-size:12px; line-height:1.5; color:var(--faint); }
+
+  .row { display:flex; gap:44px; flex:1; min-height:0; }
+  .col { flex:1; min-width:0; }
+
+  .arg { display:flex; gap:18px; padding:13px 0; border-bottom:1px solid var(--hairline); }
+  .arg:last-child { border-bottom:none; }
+  .arg .n { font-family:var(--mono); font-size:12px; color:var(--accent); padding-top:3px; flex-shrink:0; }
+  .arg .t { font-size:14.5px; line-height:1.45; color:var(--sub); }
+  .arg .t b { display:block; color:var(--ink); font-weight:600; font-size:15px; margin-bottom:2px; }
+
+  .bignum { font-size:58px; font-weight:700; letter-spacing:-0.03em; line-height:1; }
+  .bignum .u { font-size:22px; font-weight:600; color:var(--sub); }
+  .bignum.acc { color:var(--accent); }
+  .biglabel { font-size:13px; color:var(--sub); margin-top:8px; line-height:1.45; }
+  .delta { font-family:var(--mono); font-size:11.5px; color:var(--accent); display:block; margin-top:6px; }
+
+  table { width:100%; border-collapse:collapse; }
+  thead th { font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-align:left;
+             color:var(--faint); padding:0 16px 9px 0; border-bottom:1.5px solid var(--rule); }
+  tbody td { font-size:13.5px; line-height:1.45; color:var(--sub); padding:10px 16px 10px 0;
+             border-bottom:1px solid var(--hairline); vertical-align:top; }
+  tbody td:first-child { color:var(--ink); font-weight:600; white-space:nowrap; }
+  tbody tr:last-child td { border-bottom:none; }
+
+  /* ── Timeline exhibit ── */
+  .phaseband { display:flex; height:58px; }
+  .phaseband.ghost { height:44px; }
+  .pseg { display:flex; flex-direction:column; justify-content:center; padding:0 9px; min-width:0; }
+  .pseg .pn { font-size:11.5px; font-weight:600; white-space:nowrap; overflow:hidden; }
+  .pseg .pv { font-family:var(--mono); font-size:10px; opacity:.85; white-space:nowrap; }
+  .c1 { background:#E9D5C7; color:var(--ink); } .c2 { background:#DE9E7C; color:var(--ink); }
+  .c3 { background:#C65B33; color:#FFF; }      .c4 { background:#9E4524; color:#FFF; }
+  .c5 { background:#5F2F1A; color:#FFF; }      .c6 { background:#C9BBA9; color:var(--ink); }
+  .c7 { background:#97948A; color:#FFF; }
+  .ghost .pseg { border-top:1px dashed #C9C6BC; border-bottom:1px dashed #C9C6BC; }
+  .ghost .c1 { background:#F4EBE3; } .ghost .c2 { background:#F0DACB; } .ghost .c3 { background:#EBC4B0; color:var(--ink); }
+  .ghost .c4 { background:#E3B49C; color:var(--ink); } .ghost .c5 { background:#D8A98F; color:var(--ink); }
+  .ghost .c6 { background:#EBE5DA; } .ghost .c7 { background:#E2E0D9; color:var(--ink); }
+
+  .taxis { position:relative; height:22px; border-top:1px solid var(--rule); }
+  .taxis .tick { position:absolute; top:0; transform:translateX(-50%); font-family:var(--mono);
+                 font-size:10px; color:var(--faint); padding-top:5px; }
+  .taxis .tick::before { content:""; position:absolute; top:-1px; left:50%; width:1px; height:4px; background:var(--faint); }
+
+  /* Metadata pins above the measured band — two stagger tiers to avoid collisions */
+  .pinrow { position:relative; height:98px; }
+  .pin { position:absolute; bottom:0; transform:translateX(-50%); text-align:center; width:168px; }
+  .pin .pl { font-size:11px; line-height:1.35; color:var(--ink); }
+  .pin .pl b { color:var(--accent); }
+  .pin .stem { width:1px; height:14px; background:var(--ink); margin:5px auto 0; }
+  .pin.t2 .stem { height:52px; }
+  .pin.edge-l { transform:none; text-align:left; }
+  .pin.edge-l .stem { margin-left:1px; }
+  .pin.edge-r { transform:translateX(-100%); text-align:right; }
+  .pin.edge-r .stem { margin-right:1px; margin-left:auto; }
+
+  /* Horizontal bars */
+  .hbar { display:flex; align-items:center; gap:12px; margin-bottom:11px; }
+  .hbar .hl { width:122px; font-size:12.5px; font-weight:600; text-align:right; flex-shrink:0; }
+  .hbar .ht { flex:1; height:18px; background:#F1EFE8; }
+  .hbar .hf { height:100%; }
+  .hbar .hv { width:128px; font-family:var(--mono); font-size:11px; color:var(--sub); flex-shrink:0; }
+
+  /* Waterfall — bars absolutely positioned on a 240px money scale */
+  .wf { display:flex; gap:0; margin-top:18px; }
+  .wf .wcol { flex:1; }
+  .wf .wplot { position:relative; height:240px; border-bottom:1px solid var(--rule); }
+  .wf .wbar { position:absolute; left:16%; right:16%; }
+  .wf .wtag { position:absolute; left:0; right:0; text-align:center; font-family:var(--mono);
+              font-size:11px; color:var(--ink); }
+  .wf .wlab { text-align:center; font-size:12.5px; font-weight:600; margin-top:10px; }
+  .wf .wval { text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--faint); margin-top:3px; }
+  .wf .conn { position:absolute; height:1px; border-top:1px dashed #B9B6AC; left:-16%; right:-16%; }
+
+  .mini { margin-bottom:8px; }
+  .mini .mr { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:3px; }
+  .mini .mt { height:7px; background:#F1EFE8; }
+  .mini .mf { height:100%; background:var(--accent); }
+
+  #nav { position:fixed; bottom:14px; left:0; right:0; display:flex; justify-content:center; gap:16px;
+         font-size:12px; color:var(--faint); user-select:none; align-items:center; }
+  #nav button { border:1px solid var(--hairline); background:var(--paper); color:var(--sub);
+                padding:5px 14px; cursor:pointer; font-size:12px; }
+  #nav button:hover { border-color:var(--accent); color:var(--accent); }
+
+  @media print {
+    #nav { display:none; } #stage { display:block; height:auto; padding:0; }
+    .slide { display:flex !important; width:100%; border:0; page-break-after:always; aspect-ratio:auto; height:100vh; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- 1 · Cover -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">PART II — THE RESULTS</span></div>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <p class="num" style="font-size:11px; letter-spacing:.18em; color:var(--accent); margin-bottom:22px;">WHY · WHAT · HOW OF THE OUTPUT</p>
+    <h1 style="font-size:52px; font-weight:700; letter-spacing:-0.028em; line-height:1.12; max-width:1000px;">
+      What 100 telecom calls look like when a machine reads every second of them.
+    </h1>
+    <p class="dek" style="margin-top:24px; font-size:17px;">
+      A production run of the cost-to-serve engine: the anatomy of the average call,
+      where the minutes and the dollars concentrate, and three levers priced in money.
+      Every number in this document comes from that run.
+    </p>
+  </div>
+  <div class="doc-foot">
+    <span>Vinoth N · vinoth.n@outlook.com · June 2026 · companion to Part I — The Build</span>
+    <span class="pg">II / 01</span>
+  </div>
+</section>
+
+<!-- 2 · WHY -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHY — THE BLIND SPOT</span></div>
+  <h2 class="atitle">Operators steer a multi-billion-dollar cost line using a 2% sample of the evidence.</h2>
+  <div class="row" style="margin-top:24px; align-items:flex-start;">
+    <div class="col">
+      <div class="bignum">1–2<span class="u">%</span></div>
+      <div class="biglabel">of calls are reviewed by human QA. The other 98% — where the avoidable cost hides — are never analysed.</div>
+    </div>
+    <div class="col">
+      <div class="bignum">$6–12</div>
+      <div class="biglabel">cost of one assisted voice call, against under $0.50 self-served. Routing is the single biggest controllable spread in care.</div>
+    </div>
+    <div class="col">
+      <div class="bignum acc">20–40<span class="u">%</span></div>
+      <div class="biglabel">of inbound contacts are commonly estimated avoidable — billing confusion, status checks, information-only queries.</div>
+    </div>
+  </div>
+  <p style="max-width:980px; margin-top:10px;">ACD systems record <strong>how long</strong> calls take; surveys record <strong>how customers felt</strong>. Neither records <strong>why the call existed</strong> or what would have prevented it — that answer lives inside the conversation, at a volume no QA team can read. This is the gap the engine closes.</p>
+  <div class="doc-foot"><span>Industry benchmark ranges as commonly cited; replaced by operator ACD actuals in production deployment</span><span class="pg">II / 02</span></div>
+</section>
+
+<!-- 3 · Method -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHAT — THE RUN</span></div>
+  <h2 class="atitle">The evidence base: one production run, fully audited, repeatable by anyone with the repository.</h2>
+  <div class="exh">EXHIBIT 1 — RUN PARAMETERS AND DISPOSITION</div>
+  <div class="row" style="flex:0;">
+    <div class="col">
+      <table>
+        <tbody>
+          <tr><td>Corpus</td><td>talkmap/telecom-conversation-corpus — public, synthetic, 200K conversations</td></tr>
+          <tr><td>Sample</td><td>100 calls, 5 non-overlapping batches of 20, seeded and reproducible</td></tr>
+          <tr><td>Passed gates</td><td>78 of 100 (validation + QA exclusion; corpus contains sub-threshold calls)</td></tr>
+          <tr><td>Extraction failures</td><td>0 — one provider rate-limit event absorbed by backoff</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <table>
+        <tbody>
+          <tr><td>Reader model</td><td>Claude Haiku 4.5 · 70+ fields/call · ReAct gap-fill enabled</td></tr>
+          <tr><td>Strategy model</td><td>Llama 3.3 70B (NVIDIA NIM) · 3-pass deliberation completed</td></tr>
+          <tr><td>Measured cost</td><td><span class="num">$1.04</span> total · <span class="num">$0.013</span> per call</td></tr>
+          <tr><td>Artifacts</td><td>summary.json, per-call CSV, QA report, decision log, run manifest</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="small" style="margin-top:18px; max-width:980px;">A note on honesty: this corpus averages shorter, simpler calls than live operator traffic (2:33 vs a typical 4–8 minutes), and its avoidability rates run high. The figures demonstrate the <strong style="color:var(--sub);">measurement capability</strong>; an operator's own numbers replace them in week one of a pilot.</p>
+  <div class="doc-foot"><span>Source: run_manifest_20260611.json · all artifacts versioned with the run</span><span class="pg">II / 03</span></div>
+</section>
+
+<!-- 4 · HERO: anatomy timeline with metadata pins -->
+<section class="slide" style="padding:0 64px;">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHAT — CALL ANATOMY</span></div>
+  <h2 class="atitle" style="font-size:26px;">The average call, reconstructed second by second — with what was said pinned to when it was said.</h2>
+  <div class="exh" style="margin-top:8px;">EXHIBIT 2 — AVERAGE CALL TIMELINE, ALL CALLS · PHASE AVERAGES WITH EXTRACTED METADATA</div>
+
+  <div class="pinrow">
+    <div class="pin edge-l" style="left:0%;"><div class="pl"><b>47% arrive frustrated</b><br>or distressed at 0:00</div><div class="stem"></div></div>
+    <div class="pin" style="left:28%;"><div class="pl"><b>▲ 86 product mentions</b><br>devices &amp; services surface in discovery</div><div class="stem"></div></div>
+    <div class="pin" style="left:66%;"><div class="pl"><b>▲ 24 mentions</b><br>plans &amp; fixes land in resolution</div><div class="stem"></div></div>
+    <div class="pin t2" style="left:83.2%;"><div class="pl"><b>◆ upsell moment</b><br>35.9% attempted · 89.3% convert</div><div class="stem"></div></div>
+    <div class="pin edge-r" style="left:100%;"><div class="pl"><b>76% leave positive</b><br>improved on 83% of calls</div><div class="stem"></div></div>
+  </div>
+
+  <div class="phaseband">
+    <div class="pseg c1" style="width:15.8%"><span class="pn">Welcome &amp; Auth</span><span class="pv">26.8s</span></div>
+    <div class="pseg c2" style="width:24.3%"><span class="pn">Discovery</span><span class="pv">41.3s · 24%</span></div>
+    <div class="pseg c3" style="width:17.4%"><span class="pn">Diagnosis</span><span class="pv">29.6s</span></div>
+    <div class="pseg c4" style="width:20.6%"><span class="pn">Resolution</span><span class="pv">35.0s · 21%</span></div>
+    <div class="pseg c5" style="width:0.8%"></div>
+    <div class="pseg c6" style="width:8.6%"><span class="pn">Upsell</span><span class="pv">14.7s</span></div>
+    <div class="pseg c7" style="width:12.6%"><span class="pn">Closing</span><span class="pv">21.4s</span></div>
+  </div>
+  <div class="taxis">
+    <span class="tick" style="left:0%">0:00</span><span class="tick" style="left:17.6%">0:30</span>
+    <span class="tick" style="left:35.3%">1:00</span><span class="tick" style="left:52.9%">1:30</span>
+    <span class="tick" style="left:70.5%">2:00</span><span class="tick" style="left:88.2%">2:30</span>
+    <span class="tick" style="left:100%">2:50</span>
+  </div>
+  <p class="small" style="margin:6px 0 14px;">MEASURED — corpus average · phase clocks total 2:50 vs 2:33 wall-clock AHT (phases overlap when agents multitask) · dark sliver after resolution is hold: 1.3s avg in this corpus</p>
+
+  <div class="phaseband ghost">
+    <div class="pseg c1" style="width:15.8%"><span class="pn">0:57</span></div>
+    <div class="pseg c2" style="width:24.3%"><span class="pn">Discovery 1:27</span></div>
+    <div class="pseg c3" style="width:17.4%"><span class="pn">1:03</span></div>
+    <div class="pseg c4" style="width:20.6%"><span class="pn">Resolution 1:14</span></div>
+    <div class="pseg c5" style="width:0.8%"></div>
+    <div class="pseg c6" style="width:8.6%"><span class="pn">0:31</span></div>
+    <div class="pseg c7" style="width:12.6%"><span class="pn">0:45</span></div>
+  </div>
+  <div class="taxis">
+    <span class="tick" style="left:0%">0:00</span><span class="tick" style="left:16.7%">1:00</span>
+    <span class="tick" style="left:33.3%">2:00</span><span class="tick" style="left:50%">3:00</span>
+    <span class="tick" style="left:66.7%">4:00</span><span class="tick" style="left:83.3%">5:00</span>
+    <span class="tick" style="left:100%">6:00</span>
+  </div>
+  <p class="small" style="margin-top:6px;">ILLUSTRATIVE — the same phase mix projected onto a typical 6-minute operator call. Industry AHT runs 4–8 minutes; on live traffic the engine measures your mix, including hold, which this corpus barely has.</p>
+  <div class="doc-foot"><span>Source: 78 analysed calls, phase timestamps + product/sentiment/upsell fields extracted per call · no manual tagging</span><span class="pg">II / 04</span></div>
+</section>
+
+<!-- 5 · Combined phase time -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHAT — WHERE TIME CONCENTRATES</span></div>
+  <h2 class="atitle">Two-fifths of all talk time passes before solving starts.</h2>
+  <div class="exh">EXHIBIT 3 — COMBINED PHASE TIME ACROSS THE RUN (198 CONVERSATION-MINUTES, 78 CALLS)</div>
+  <div class="row">
+    <div class="col" style="flex:1.35;">
+      <div class="hbar"><span class="hl">Discovery</span><div class="ht"><div class="hf c2" style="width:100%"></div></div><span class="hv">53.7 min · 24%</span></div>
+      <div class="hbar"><span class="hl">Resolution</span><div class="ht"><div class="hf c4" style="width:85%"></div></div><span class="hv">45.5 min · 21%</span></div>
+      <div class="hbar"><span class="hl">Diagnosis</span><div class="ht"><div class="hf c3" style="width:72%"></div></div><span class="hv">38.4 min · 17%</span></div>
+      <div class="hbar"><span class="hl">Welcome &amp; Auth</span><div class="ht"><div class="hf c1" style="width:65%"></div></div><span class="hv">34.8 min · 16%</span></div>
+      <div class="hbar"><span class="hl">Closing</span><div class="ht"><div class="hf c7" style="width:52%"></div></div><span class="hv">27.8 min · 13%</span></div>
+      <div class="hbar"><span class="hl">Upsell</span><div class="ht"><div class="hf c6" style="width:36%"></div></div><span class="hv">19.1 min · 9%</span></div>
+      <div class="hbar"><span class="hl">Hold</span><div class="ht"><div class="hf c5" style="width:3%"></div></div><span class="hv">1.7 min · 1%</span></div>
+    </div>
+    <div class="col" style="flex:0.95; border-left:1px solid var(--hairline); padding-left:36px;">
+      <p style="margin-bottom:13px;"><strong>Discovery is the largest single block (24%)</strong> — callers re-explaining what the operator's systems already know. IVR/app context-passing and AI agent-assist attack it directly.</p>
+      <p style="margin-bottom:13px;"><strong>Welcome + auth is 16% pure overhead.</strong> Voice biometrics and CTI screen-pop remove most of it without touching the conversation itself.</p>
+      <p><strong>Agents agree with the data:</strong> where they flagged a disproportionate phase, diagnosis led at 36% — per-call flags that point coaching at the right minutes, not at averages.</p>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Source: per-call phase timestamps, 100-call production run, June 2026</span><span class="pg">II / 05</span></div>
+</section>
+
+<!-- 6 · KPI layer -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHAT — THE KPI LAYER</span></div>
+  <h2 class="atitle">Four numbers an operator would act on the same week.</h2>
+  <div class="row" style="margin-top:22px; flex:0; align-items:flex-start;">
+    <div class="col">
+      <div class="bignum">59.0<span class="u">%</span></div>
+      <div class="biglabel">First-call resolution</div>
+      <span class="delta">11–16 pts below the 70–75% benchmark — each point is repeat-call cost</span>
+    </div>
+    <div class="col">
+      <div class="bignum acc">55.1<span class="u">%</span></div>
+      <div class="biglabel">Avoidable-call rate</div>
+      <span class="delta">contacts a better journey would have prevented entirely</span>
+    </div>
+    <div class="col">
+      <div class="bignum acc">42.3<span class="u">%</span></div>
+      <div class="biglabel">Agentic-AI-resolvable</div>
+      <span class="delta">closable by an AI agent with no human — ranked by intent</span>
+    </div>
+    <div class="col">
+      <div class="bignum">25.6<span class="u">%</span></div>
+      <div class="biglabel">Escalation rate</div>
+      <span class="delta">tier-2 cost concentrated in identifiable intents</span>
+    </div>
+  </div>
+  <div class="exh" style="margin-top:30px;">EXHIBIT 4 — WHAT DRIVES THE CALLS (SHARE OF CALLS BY PRIMARY COST DRIVER)</div>
+  <div class="hbar"><span class="hl">Technical</span><div class="ht"><div class="hf c3" style="width:100%"></div></div><span class="hv">26.9%</span></div>
+  <div class="hbar"><span class="hl">Information-only</span><div class="ht"><div class="hf c2" style="width:95%"></div></div><span class="hv">25.6% — purest deflection target</span></div>
+  <div class="hbar"><span class="hl">Device</span><div class="ht"><div class="hf c4" style="width:67%"></div></div><span class="hv">17.9%</span></div>
+  <div class="hbar"><span class="hl">Plan change</span><div class="ht"><div class="hf c6" style="width:52%"></div></div><span class="hv">14.1%</span></div>
+  <div class="doc-foot"><span>Source: 78 analysed calls · complaint 7.7%, billing 6.4%, account 1.3% omitted from chart for space</span><span class="pg">II / 06</span></div>
+</section>
+
+<!-- 7 · Metadata: what the calls were about -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">WHAT — PRODUCTS &amp; PLANS</span></div>
+  <h2 class="atitle">The engine names the products and plans generating the cost — verbatim from the calls.</h2>
+  <div class="row" style="margin-top:14px;">
+    <div class="col">
+      <div class="exh" style="margin-top:0;">PRODUCTS REFERENCED — 93% OF CALLS NAME AT LEAST ONE</div>
+      <div class="mini"><div class="mr"><span>Services <span class="small">(call-forwarding, intl. calling…)</span></span><span class="num">42</span></div><div class="mt"><div class="mf" style="width:100%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Devices <span class="small">(Galaxy S21, iPhone 12 Pro, IoT)</span></span><span class="num">28</span></div><div class="mt"><div class="mf" style="width:67%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Plans <span class="small">(roaming tiers, 5/10GB, student)</span></span><span class="num">27</span></div><div class="mt"><div class="mf" style="width:64%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Accessories</span><span class="num">21</span></div><div class="mt"><div class="mf" style="width:50%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Add-ons &amp; roaming packs</span><span class="num">23</span></div><div class="mt"><div class="mf" style="width:55%"></div></div></div>
+      <p class="small" style="margin-top:12px;">Each mention carries category, the phase it appeared in, context, and outcome — up to five products per call.</p>
+    </div>
+    <div class="col">
+      <div class="exh" style="margin-top:0;">ACCOUNT MIX — SEGMENT COST-TO-SERVE FOR FREE</div>
+      <div class="mini"><div class="mr"><span>Postpaid</span><span class="num">56.4%</span></div><div class="mt"><div class="mf" style="width:56.4%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Not stated on call</span><span class="num">34.6%</span></div><div class="mt"><div class="mf" style="width:34.6%; opacity:.4"></div></div></div>
+      <div class="mini"><div class="mr"><span>Business</span><span class="num">5.1%</span></div><div class="mt"><div class="mf" style="width:5.1%"></div></div></div>
+      <div class="mini"><div class="mr"><span>Prepaid</span><span class="num">3.8%</span></div><div class="mt"><div class="mf" style="width:3.8%"></div></div></div>
+      <p style="margin-top:16px;"><strong>Why it matters:</strong> cross product × intent × segment and you get the report every product head asks for — <em style="color:var(--accent); font-style:normal;">which products create care cost, for which customers, at which moment of the call</em> — generated from conversations alone.</p>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Source: product_1–5 and account fields, 78 analysed calls · no CRM join required for this view</span><span class="pg">II / 07</span></div>
+</section>
+
+<!-- 8 · Levers waterfall -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">HOW — THE MONEY</span></div>
+  <h2 class="atitle">Three levers, priced: $562K of a $600K monthly baseline is addressable.</h2>
+  <div class="exh">EXHIBIT 5 — SAVINGS WATERFALL AT 100K CALLS/MONTH × $6.00/CALL (ILLUSTRATIVE VOLUME, MEASURED RATES)</div>
+  <div class="wf">
+    <div class="wcol">
+      <div class="wplot"><div class="wtag" style="bottom:246px;">$600K</div><div class="wbar" style="bottom:0; height:240px; background:#3A3935;"></div></div>
+      <div class="wlab">Baseline</div><div class="wval">100K calls × $6.00</div>
+    </div>
+    <div class="wcol">
+      <div class="wplot"><div class="conn" style="bottom:240px;"></div><div class="wtag" style="bottom:246px;">− $288K</div><div class="wbar" style="bottom:125px; height:115px; background:#C65B33;"></div></div>
+      <div class="wlab">Self-serve deflection</div><div class="wval">56.4% of calls × 85% eff.</div>
+    </div>
+    <div class="wcol">
+      <div class="wplot"><div class="conn" style="bottom:125px;"></div><div class="wtag" style="bottom:131px;">− $178K</div><div class="wbar" style="bottom:54px; height:71px; background:#DE9E7C;"></div></div>
+      <div class="wlab">Agentic AI resolution</div><div class="wval">42.3% × 70% eff.</div>
+    </div>
+    <div class="wcol">
+      <div class="wplot"><div class="conn" style="bottom:54px;"></div><div class="wtag" style="bottom:60px;">− $97K</div><div class="wbar" style="bottom:15px; height:39px; background:#E9D5C7;"></div></div>
+      <div class="wlab">Proactive care</div><div class="wval">26.9% × 60% eff.</div>
+    </div>
+    <div class="wcol">
+      <div class="wplot"><div class="conn" style="bottom:15px;"></div><div class="wtag" style="bottom:21px;">$38K</div><div class="wbar" style="bottom:0; height:15px; background:#97948A;"></div></div>
+      <div class="wlab">Residual</div><div class="wval">remaining baseline</div>
+    </div>
+  </div>
+  <p class="small" style="margin-top:16px; max-width:1000px;">Read as identified opportunity, not promised savings: levers overlap on real traffic, effectiveness factors (85/70/60%) are planning assumptions, and this corpus over-indexes on avoidable calls. The point is the <strong style="color:var(--sub);">method</strong> — every dollar traces to specific calls, intents, and fields, recomputed with operator volume and ACD costs in a pilot.</p>
+  <div class="doc-foot"><span>Source: cost_levers, summary.json · lever rates measured, volume and $/call benchmarked</span><span class="pg">II / 08</span></div>
+</section>
+
+<!-- 9 · Scale -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">HOW — THE SCALE</span></div>
+  <h2 class="atitle">The arithmetic holds from a regional MVNO to a 300M-subscriber group.</h2>
+  <div class="exh">EXHIBIT 6 — CARE COST EXPOSURE AND ANALYSIS COST BY OPERATOR PROFILE</div>
+  <table>
+    <thead><tr><th style="width:24%">OPERATOR PROFILE</th><th style="width:20%">ASSISTED CONTACTS/YR</th><th style="width:22%">CARE COST EXPOSURE</th><th style="width:16%">COST TO READ 100%</th><th>RATIO</th></tr></thead>
+    <tbody>
+      <tr><td>Tier-1 group, multi-market</td><td>100M+</td><td>$0.6–1.2B+</td><td class="num">~$1.3M/yr</td><td class="num">~1 : 700</td></tr>
+      <tr><td>Tier-2 national operator</td><td>10–50M</td><td>$60–500M</td><td class="num">$130–650K/yr</td><td class="num">~1 : 700</td></tr>
+      <tr><td>MVNO / regional</td><td>1–10M</td><td>$6–60M</td><td class="num">$13–130K/yr</td><td class="num">~1 : 700</td></tr>
+      <tr><td>BPO / outsourcer</td><td>per client book</td><td>margin on every seat</td><td class="num">pennies per call</td><td>pricing evidence</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:18px; max-width:980px;">The ratio is the argument: <strong>reading every conversation costs ~0.14% of handling them.</strong> If full-coverage intelligence moves the cost line by even half a percent, it pays for itself seventy times over — and the measured levers above suggest far more than half a percent is addressable.</p>
+  <div class="doc-foot"><span>Analysis cost at measured $0.013/call · exposure at $6–12/contact benchmark</span><span class="pg">II / 09</span></div>
+</section>
+
+<!-- 10 · Implementation -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">HOW — THE PATH</span></div>
+  <h2 class="atitle">Four phases from transcript export to closed loop — value lands in week four, not quarter four.</h2>
+  <div class="exh">EXHIBIT 7 — IMPLEMENTATION SEQUENCE</div>
+  <table>
+    <thead><tr><th style="width:14%">PHASE</th><th style="width:16%">WINDOW</th><th style="width:40%">WORK</th><th>EXIT DELIVERABLE</th></tr></thead>
+    <tbody>
+      <tr><td>0 · Evidence</td><td>Weeks 1–4</td><td>Run on 30–90 days of historical transcripts. No integration — an export is enough.</td><td>Baseline KPIs; levers sized on your calls</td></tr>
+      <tr><td>1 · Ground truth</td><td>Weeks 5–10</td><td>Swap benchmark costs for ACD/WFM actuals; segment by queue, market, account type.</td><td>Board-grade business case</td></tr>
+      <tr><td>2 · Deploy levers</td><td>Quarter 2</td><td>Rebuild top avoidable journeys; launch agentic AI on highest-confidence intents; arm proactive triggers.</td><td>First measured deflection wave</td></tr>
+      <tr><td>3 · Closed loop</td><td>Ongoing</td><td>Continuous analysis tracks deflection, FCR, sentiment shift per wave.</td><td>The engine that found the cost verifies its removal</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:16px;">Integration surface stays deliberately small throughout: transcripts in — KPIs, recommendations, and audit trail out, via REST API, dashboard, and CSV into existing BI stacks.</p>
+  <div class="doc-foot"><span>Part II — The Results · How</span><span class="pg">II / 10</span></div>
+</section>
+
+<!-- 11 · Close -->
+<section class="slide">
+  <div class="doc-head"><span>COST-TO-SERVE ENGINE</span><span class="r">PART II — CLOSE</span></div>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <h2 style="font-size:38px; font-weight:700; letter-spacing:-0.025em; line-height:1.2; max-width:1020px;">
+      The best agentic AI use case is the one you can run this quarter, measure in dollars,
+      and govern on the record. <span style="color:var(--accent);">In telecom, this is it.</span>
+    </h2>
+    <div class="row" style="margin-top:38px; flex:0;">
+      <div class="col">
+        <p class="small" style="font-family:var(--mono); letter-spacing:.1em; margin-bottom:8px;">THE ARGUMENT IN THREE LINES</p>
+        <p>Care conversations are the largest unread dataset in telecom. Reading them now costs ~0.2% of handling them. What they reveal — avoidability, AI-resolvability, phase waste — converts directly into the industry's most defensible AI business case.</p>
+      </div>
+      <div class="col">
+        <p class="small" style="font-family:var(--mono); letter-spacing:.1em; margin-bottom:8px;">NEXT STEP</p>
+        <p><strong>A four-week evidence pilot on your transcripts.</strong> Your calls, your numbers, the same engine — Part I documents exactly what it is and how it's governed.</p>
+        <p style="margin-top:12px;"><strong>Vinoth N</strong> · vinoth.n@outlook.com · Chennai, India</p>
+      </div>
+    </div>
+  </div>
+  <div class="doc-foot"><span>Companion document: Part I — The Build · private repository and live dashboard on request</span><span class="pg">II / 11</span></div>
+</section>
+
+</div>
+<div id="nav"><button id="prev">←</button><span id="counter">1 / 11</span><button id="next">→</button><span style="font-size:11px;">arrow keys · ⌘P for PDF</span></div>
+<script>
+  const slides=[...document.querySelectorAll(".slide")];let i=0;
+  function show(n){i=Math.max(0,Math.min(slides.length-1,n));slides.forEach((s,k)=>s.classList.toggle("active",k===i));document.getElementById("counter").textContent=`${i+1} / ${slides.length}`;}
+  prev.onclick=()=>show(i-1);next.onclick=()=>show(i+1);
+  document.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key===" ")show(i+1);if(e.key==="ArrowLeft")show(i-1);});
+  show(0);
+</script>
+</body>
+</html>
