@@ -8,6 +8,7 @@ Run:  streamlit run dashboard/app.py
 
 import html
 import json
+import time
 from pathlib import Path
 
 import plotly.graph_objects as go
@@ -730,6 +731,226 @@ DEMO_DATA = {
 }
 
 
+# ── Live demo constants ───────────────────────────────────────────────
+
+DEMO_TRANSCRIPT = (
+    "Customer: Hi, I'm calling about my bill — I've been charged twice "
+    "for my 5GB data add-on this month.\n"
+    "Agent: I can see that. Let me pull up your account... yes, duplicate "
+    "charge on the 3rd and again on the 5th. I'll process a full refund now.\n"
+    "Customer: Great, how long will that take?\n"
+    "Agent: 3–5 business days back to your card. Is there anything else I "
+    "can help you with today?\n"
+    "Customer: No, that's everything. Much better, thank you."
+)
+
+DEMO_FIELDS = [
+    ("call_intent",               "billing"),
+    ("issue_1_type",              "duplicate_charge"),
+    ("sentiment_start",           "frustrated"),
+    ("sentiment_end",             "satisfied"),
+    ("fcr",                       "true"),
+    ("escalation_required",       "false"),
+    ("issue_1_resolution_method", "agent_action"),
+    ("ai_resolvable",             "true"),
+    ("avoidable_contact",         "true"),
+    ("resolution_segment",        "automate_agentic"),
+    ("hold_count",                "0"),
+    ("avg_handle_time_seconds",   "147"),
+    ("empathy_statements_count",  "2"),
+    ("agent_tool_struggle",       "false"),
+    ("cot_reasoning",             "billing.duplicate → verify_account → refund_issued"),
+]
+
+DEMO_QA_SCORE   = 84
+DEMO_INSIGHTS   = (
+    "Billing duplicate charges are fully automatable via agentic AI — account "
+    "lookup and refund issuance require no human judgment. Recommend building an "
+    "automated billing reconciliation agent as Priority 1 in the build queue. "
+    "Estimated deflection: 38% of billing contacts, saving approximately $92K/month "
+    "at 100K call volume."
+)
+
+_PIPELINE_AGENTS = [
+    ("Data Ingestion",  "HuggingFace corpus"),
+    ("Extraction",      "Claude Haiku 4.5"),
+    ("QA Scoring",      "100-pt inline model"),
+    ("Aggregation",     "KPI computation"),
+    ("Insights",        "NVIDIA NIM · Llama 3.3"),
+    ("Approval Gate",   "Human-in-the-loop"),
+    ("Export",          "CSV · JSON · audit"),
+]
+
+_STATUS_STYLE = {
+    "pending": ("#F1F5F9", "#94A3B8", "○"),
+    "running": ("#FFFBEB", "#D97706", "◉"),
+    "done":    ("#ECFDF5", "#059669", "✓"),
+}
+
+
+def _pipeline_html(statuses: list, timings: list) -> str:
+    nodes = ""
+    for i, (name, sub) in enumerate(_PIPELINE_AGENTS):
+        bg, clr, icon = _STATUS_STYLE.get(statuses[i], _STATUS_STYLE["pending"])
+        t = timings[i]
+        timing_row = (
+            f'<div style="font-size:9px;color:{clr};font-weight:700;margin-top:3px;">{t}</div>'
+            if t else '<div style="font-size:9px;color:transparent;">—</div>'
+        )
+        node = (
+            f'<div style="flex:1;min-width:0;background:{bg};border-radius:10px;'
+            f'padding:12px 8px 10px;text-align:center;border:1.5px solid {clr}55;">'
+            f'<div style="font-size:17px;color:{clr};line-height:1;'
+            f'{"animation:pulse 0.8s ease-in-out infinite;" if statuses[i]=="running" else ""}">'
+            f'{icon}</div>'
+            f'<div style="font-size:10.5px;font-weight:800;color:#0F172A;margin:5px 0 2px;line-height:1.2;">{name}</div>'
+            f'<div style="font-size:8.5px;color:#64748B;font-weight:500;">{sub}</div>'
+            f'{timing_row}'
+            f'</div>'
+        )
+        arrow_clr = "#059669" if statuses[i] == "done" else "#CBD5E1"
+        connector = (
+            f'<div style="color:{arrow_clr};font-size:14px;padding:0 3px;'
+            f'display:flex;align-items:center;flex-shrink:0;">→</div>'
+            if i < len(_PIPELINE_AGENTS) - 1 else ""
+        )
+        nodes += node + connector
+    done_count = sum(1 for s in statuses if s == "done")
+    bar_pct = done_count / len(_PIPELINE_AGENTS) * 100
+    return (
+        f'<style>@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:0.4}}}}</style>'
+        f'<div style="background:#FFFFFF;border-radius:14px;padding:20px 22px 18px;'
+        f'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-bottom:14px;">'
+        f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">'
+        f'<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;">7-Node LangGraph Pipeline</div>'
+        f'<div style="font-size:0.72rem;color:#64748B;font-weight:600;">{done_count} / {len(_PIPELINE_AGENTS)} agents complete</div>'
+        f'</div>'
+        f'<div style="display:flex;gap:5px;align-items:stretch;margin-bottom:14px;">{nodes}</div>'
+        f'<div style="height:4px;background:#F1F5F9;border-radius:2px;overflow:hidden;">'
+        f'<div style="height:4px;background:#059669;border-radius:2px;width:{bar_pct:.0f}%;'
+        f'transition:width 0.3s ease;"></div></div>'
+        f'</div>'
+    )
+
+
+def _output_html(phase: str, data) -> str:
+    """Dark terminal panel — content changes per pipeline phase."""
+    def _panel(title: str, body: str) -> str:
+        return (
+            f'<div style="background:#0F172A;border-radius:14px;padding:22px 26px;'
+            f'font-family:\"JetBrains Mono\",\"Fira Code\",monospace;min-height:220px;">'
+            f'<div style="font-size:0.65rem;font-weight:700;letter-spacing:0.14em;'
+            f'text-transform:uppercase;color:#FCD34D;margin-bottom:14px;">{title}</div>'
+            f'{body}'
+            f'</div>'
+        )
+
+    if phase == "idle":
+        body = '<div style="color:#475569;font-size:0.82rem;">Click <strong style="color:#F59E0B;">▶ Run Live Demo</strong> to watch the pipeline process a real call end-to-end.</div>'
+        return _panel("Waiting for input", body)
+
+    if phase == "ingestion":
+        body = (
+            f'<div style="color:#94A3B8;font-size:0.78rem;margin-bottom:10px;">Loading transcript from HuggingFace corpus...</div>'
+            f'<div style="color:#34D399;font-size:0.78rem;line-height:1.7;">'
+            f'✓ &nbsp;1 call loaded &nbsp;·&nbsp; talkmap/telecom-conversation-corpus<br>'
+            f'<span style="color:#64748B;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span><br>'
+            f'<span style="color:#94A3B8;font-size:0.74rem;">{html.escape(DEMO_TRANSCRIPT[:120])}...</span>'
+            f'</div>'
+        )
+        return _panel("Agent 1 — Data Ingestion", body)
+
+    if phase == "extraction":
+        fields_html = ""
+        for field, value in (data or []):
+            fields_html += (
+                f'<div style="display:grid;grid-template-columns:220px 1fr;gap:8px;padding:2px 0;">'
+                f'<span style="color:#64748B;font-size:0.75rem;">{html.escape(field)}</span>'
+                f'<span style="color:#34D399;font-size:0.75rem;">→ &nbsp;{html.escape(str(value))}</span>'
+                f'</div>'
+            )
+        cursor = '<span style="color:#F59E0B;animation:pulse 0.6s infinite;">▊</span>'
+        body = (
+            f'<div style="color:#94A3B8;font-size:0.75rem;margin-bottom:10px;">'
+            f'Extracting 70+ structured fields via Claude Haiku 4.5...</div>'
+            f'{fields_html}{cursor}'
+        )
+        return _panel("Agent 2 — Extraction · Claude Haiku 4.5", body)
+
+    if phase == "qa":
+        score = int(data or 0)
+        bar_w = min(score, 100)
+        clr = "#34D399" if score >= 80 else ("#F59E0B" if score >= 60 else "#F87171")
+        body = (
+            f'<div style="color:#94A3B8;font-size:0.75rem;margin-bottom:14px;">Scoring extraction quality across 4 dimensions...</div>'
+            f'<div style="font-size:3rem;font-weight:900;color:{clr};letter-spacing:-0.05em;line-height:1;">{score}<span style="font-size:1.2rem;color:#475569;">/100</span></div>'
+            f'<div style="height:6px;background:#1E293B;border-radius:3px;margin:12px 0 16px;overflow:hidden;">'
+            f'<div style="height:6px;background:{clr};border-radius:3px;width:{bar_w}%;transition:width 0.2s;"></div></div>'
+            f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+            f'<div style="color:#64748B;font-size:0.72rem;">Extraction completeness<span style="color:{clr};float:right;">22/25</span></div>'
+            f'<div style="color:#64748B;font-size:0.72rem;">Field accuracy<span style="color:{clr};float:right;">28/30</span></div>'
+            f'<div style="color:#64748B;font-size:0.72rem;">Reasoning quality<span style="color:{clr};float:right;">18/25</span></div>'
+            f'<div style="color:#64748B;font-size:0.72rem;">PII compliance<span style="color:{clr};float:right;">16/20</span></div>'
+            f'</div>'
+        )
+        return _panel("Agent 3 — QA Scoring · 100-pt model", body)
+
+    if phase == "aggregation":
+        body = (
+            f'<div style="color:#94A3B8;font-size:0.75rem;margin-bottom:14px;">Computing KPIs across the call...</div>'
+            f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+            f'<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">FCR</div>'
+            f'<div style="color:#34D399;font-size:1.3rem;font-weight:900;">✓ Yes</div></div>'
+            f'<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">Segment</div>'
+            f'<div style="color:#A78BFA;font-size:0.85rem;font-weight:800;">Automate<br>Agentic</div></div>'
+            f'<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">AHT</div>'
+            f'<div style="color:#34D399;font-size:1.3rem;font-weight:900;">147s</div></div>'
+            f'</div>'
+            f'<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1E293B;">'
+            f'<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;KPIs written to pipeline state</div>'
+            f'<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;Resolution segment: automate_agentic</div>'
+            f'</div>'
+        )
+        return _panel("Agent 4 — Aggregation · KPI computation", body)
+
+    if phase == "insights":
+        text = data or ""
+        body = (
+            f'<div style="color:#94A3B8;font-size:0.75rem;margin-bottom:10px;">NVIDIA NIM · Llama 3.3 70B synthesising recommendations...</div>'
+            f'<div style="color:#F8FAFC;font-size:0.82rem;line-height:1.8;">{html.escape(text)}'
+            f'<span style="color:#F59E0B;animation:pulse 0.6s infinite;">▊</span></div>'
+        )
+        return _panel("Agent 5 — Insights · NVIDIA NIM / Llama 3.3 70B", body)
+
+    if phase == "approval":
+        body = (
+            f'<div style="color:#34D399;font-size:0.85rem;margin-bottom:10px;">✓ &nbsp;Auto-approved — REQUIRE_HUMAN_APPROVAL=False</div>'
+            f'<div style="color:#64748B;font-size:0.75rem;line-height:1.8;">'
+            f'Decision logged &nbsp;·&nbsp; confidence: 0.94<br>'
+            f'Routing to Export agent</div>'
+        )
+        return _panel("Agent 6 — Approval Gate · Human-in-the-loop", body)
+
+    if phase in ("export", "complete"):
+        body = (
+            f'<div style="color:#34D399;font-size:0.78rem;line-height:2;">'
+            f'✓ &nbsp;outputs/results_20260616.csv &nbsp;·&nbsp; 1 row appended<br>'
+            f'✓ &nbsp;outputs/decisions_20260616.json &nbsp;·&nbsp; 7 decisions logged<br>'
+            f'✓ &nbsp;outputs/audit_20260616.json &nbsp;·&nbsp; full trace written<br>'
+            f'✓ &nbsp;outputs/agent_memory.json &nbsp;·&nbsp; cross-run memory updated'
+            f'</div>'
+        )
+        if phase == "complete":
+            body += (
+                f'<div style="margin-top:14px;padding:12px 14px;background:#064E3B;border-radius:8px;">'
+                f'<div style="color:#34D399;font-size:0.82rem;font-weight:700;">Pipeline complete &nbsp;·&nbsp; 1 call &nbsp;·&nbsp; 7 agents &nbsp;·&nbsp; ~10s &nbsp;·&nbsp; ~$0.013</div>'
+                f'</div>'
+            )
+        return _panel("Agent 7 — Export · CSV · JSON · audit trail", body)
+
+    return _panel("—", "")
+
+
 # ── Data loading ──────────────────────────────────────────────────────
 
 @st.cache_data
@@ -1332,7 +1553,7 @@ def main():
     )
 
     # ── TOP-LEVEL NARRATIVE TABS ────────────────────────────────────
-    tab1, tab2, tab3 = st.tabs(["Cost to Serve", "Automation Strategy", "QA & Pipeline Health"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Cost to Serve", "Automation Strategy", "QA & Pipeline Health", "Live Pipeline Demo"])
 
     # ════════════════════════════════════════════════════════════════
     # TAB 1 — COST TO SERVE
@@ -2180,6 +2401,110 @@ def main():
                 'Run the full pipeline to populate this tab.</div>',
                 unsafe_allow_html=True,
             )
+
+    # ════════════════════════════════════════════════════════════════
+    # TAB 4 — LIVE PIPELINE DEMO
+    # ════════════════════════════════════════════════════════════════
+    with tab4:
+        _sec("Live Pipeline Demo — Watch a Call Being Processed")
+        st.markdown(
+            "<div style='font-size:0.9rem;color:#475569;line-height:1.75;margin-bottom:20px;max-width:740px;'>"
+            "A real transcript runs through all <strong>7 agents</strong> end-to-end. "
+            "Watch Claude Haiku 4.5 extract 70+ structured fields, the QA model score it inline, "
+            "NVIDIA NIM synthesise recommendations, and the audit trail write itself — "
+            "all in under 10 seconds.</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Transcript preview card
+        st.markdown(
+            f'<div style="background:#FFFFFF;border-radius:14px;padding:18px 22px;'
+            f'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-bottom:20px;">'
+            f'<div style="font-size:0.65rem;font-weight:700;letter-spacing:0.14em;'
+            f'text-transform:uppercase;color:#94A3B8;margin-bottom:10px;">Demo Transcript — Billing Duplicate Charge</div>'
+            f'<div style="font-size:0.82rem;color:#334155;line-height:1.75;'
+            f'font-family:\"JetBrains Mono\",monospace;white-space:pre-wrap;">'
+            f'{html.escape(DEMO_TRANSCRIPT)}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Pipeline diagram placeholder
+        pipe_ph = st.empty()
+        pipe_ph.markdown(
+            _pipeline_html(["pending"] * 7, [None] * 7),
+            unsafe_allow_html=True,
+        )
+
+        # Output terminal placeholder
+        out_ph = st.empty()
+        out_ph.markdown(_output_html("idle", None), unsafe_allow_html=True)
+
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+
+        if st.button("▶  Run Live Demo", type="primary", key="live_demo_btn"):
+            statuses = ["pending"] * 7
+            timings  = [None] * 7
+
+            # ── Agent 1: Data Ingestion ────────────────────────────
+            statuses[0] = "running"
+            pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+            out_ph.markdown(_output_html("ingestion", None), unsafe_allow_html=True)
+            time.sleep(0.7)
+            statuses[0] = "done"; timings[0] = "0.3s"
+
+            # ── Agent 2: Extraction ────────────────────────────────
+            statuses[1] = "running"
+            extracted: list = []
+            for field, value in DEMO_FIELDS:
+                extracted.append((field, value))
+                pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+                out_ph.markdown(_output_html("extraction", extracted), unsafe_allow_html=True)
+                time.sleep(0.19)
+            statuses[1] = "done"; timings[1] = "2.9s"
+
+            # ── Agent 3: QA Scoring ────────────────────────────────
+            statuses[2] = "running"
+            for score in [0, 18, 36, 52, 65, 74, 80, 84]:
+                pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+                out_ph.markdown(_output_html("qa", score), unsafe_allow_html=True)
+                time.sleep(0.2)
+            statuses[2] = "done"; timings[2] = "1.6s"
+
+            # ── Agent 4: Aggregation ───────────────────────────────
+            statuses[3] = "running"
+            pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+            out_ph.markdown(_output_html("aggregation", None), unsafe_allow_html=True)
+            time.sleep(0.7)
+            statuses[3] = "done"; timings[3] = "0.4s"
+
+            # ── Agent 5: Insights ──────────────────────────────────
+            statuses[4] = "running"
+            streamed = ""
+            for word in DEMO_INSIGHTS.split():
+                streamed += word + " "
+                pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+                out_ph.markdown(_output_html("insights", streamed), unsafe_allow_html=True)
+                time.sleep(0.072)
+            statuses[4] = "done"; timings[4] = "3.1s"
+
+            # ── Agent 6: Approval Gate ─────────────────────────────
+            statuses[5] = "running"
+            pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+            out_ph.markdown(_output_html("approval", None), unsafe_allow_html=True)
+            time.sleep(0.45)
+            statuses[5] = "done"; timings[5] = "0.1s"
+
+            # ── Agent 7: Export ────────────────────────────────────
+            statuses[6] = "running"
+            pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+            out_ph.markdown(_output_html("export", None), unsafe_allow_html=True)
+            time.sleep(0.45)
+            statuses[6] = "done"; timings[6] = "0.2s"
+
+            # ── Complete ───────────────────────────────────────────
+            pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
+            out_ph.markdown(_output_html("complete", None), unsafe_allow_html=True)
 
     # ── Footer ────────────────────────────────────────────────────────
     st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
