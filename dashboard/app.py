@@ -476,6 +476,37 @@ st.markdown("""
   }
 
   #MainMenu, footer, header { visibility: hidden; }
+
+  /* ── Responsive (≤768px) ── */
+  @media (max-width: 768px) {
+    .hero { padding: 16px 20px 14px; }
+    .hero-headline { font-size: 1.5rem; }
+    .hero-bottom { flex-direction: column; gap: 12px; }
+    .hero-meta-row { text-align: left; }
+    .hero-meta, .hero-disclaimer { white-space: normal; text-align: left; }
+    .hero-agentic { max-width: 100%; }
+    .cts-grid { grid-template-columns: 1fr !important; }
+    .pah-row { flex-direction: column; }
+    .pah-card { flex: none; }
+    .it-queue-head { flex-direction: column; gap: 4px; }
+    [data-testid="stTabs"] button[role="tab"] p,
+    [data-testid="stTabs"] button[role="tab"] span,
+    [data-testid="stTabs"] button[role="tab"] div { font-size: 0.85rem !important; }
+    .roi-grid { grid-template-columns: 1fr 1fr !important; }
+    .bench-grid { grid-template-columns: 1fr !important; }
+  }
+
+  /* ── Print / Export PDF ── */
+  @media print {
+    #MainMenu, footer, header, .stDeployButton { display: none !important; }
+    [data-testid="stSidebar"] { display: none !important; }
+    [data-testid="stTabs"] [data-baseweb="tab-list"] { display: none !important; }
+    [data-testid="stTabPanel"] { display: block !important; visibility: visible !important; }
+    .hero { border-radius: 0; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .block-container { padding: 0 !important; }
+    .scard, .seg, .insight, .pah-card, .cts-card { break-inside: avoid; }
+    @page { margin: 1.5cm; size: A4 landscape; }
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1289,8 +1320,19 @@ def main():
           <strong>Demo mode.</strong> Run <code>python run_pipeline.py</code> to replace with live results.
         </div>""", unsafe_allow_html=True)
 
+    # ── Print / Export button ─────────────────────────────────────
+    st.markdown(
+        '<div style="display:flex;justify-content:flex-end;margin-top:12px;">'
+        '<button onclick="window.print()" style="'
+        'background:#0F172A;color:#FFFFFF;border:none;border-radius:8px;'
+        'padding:8px 18px;font-size:0.75rem;font-weight:700;letter-spacing:0.06em;'
+        'text-transform:uppercase;cursor:pointer;font-family:Inter,sans-serif;">'
+        '&#8595; Export PDF</button></div>',
+        unsafe_allow_html=True,
+    )
+
     # ── TOP-LEVEL NARRATIVE TABS ────────────────────────────────────
-    tab1, tab2 = st.tabs(["Cost to Serve", "Automation Strategy"])
+    tab1, tab2, tab3 = st.tabs(["Cost to Serve", "Automation Strategy", "QA & Pipeline Health"])
 
     # ════════════════════════════════════════════════════════════════
     # TAB 1 — COST TO SERVE
@@ -1783,6 +1825,67 @@ def main():
                         unsafe_allow_html=True)
 
         # ═══════════════════════════════════════════════════════════════
+        # ROI CALCULATOR
+        # ═══════════════════════════════════════════════════════════════
+        _sec("ROI Calculator — Your Numbers")
+        st.markdown(
+            "<div style='font-size:0.88rem;color:#64748B;line-height:1.65;margin-bottom:18px;'>"
+            "Plug in your actual contact centre volume and cost — the pipeline's classification "
+            "rates apply automatically to project your saving opportunity.</div>",
+            unsafe_allow_html=True,
+        )
+        rc1, rc2, rc3 = st.columns(3)
+        with rc1:
+            roi_vol = st.slider("Monthly call volume", 10_000, 2_000_000, vol, step=10_000, format="%d")
+        with rc2:
+            roi_cpp = st.slider("Cost per call ($)", 3.0, 20.0, float(cpp), step=0.25, format="$%.2f")
+        with rc3:
+            roi_defl = st.slider(
+                "Deflection rate achieved (%)", 10, 90,
+                int(round(min(total_auto * 0.8, 80))), step=5,
+            )
+        roi_base     = roi_vol * roi_cpp
+        roi_deflected = roi_vol * roi_defl / 100
+        roi_saving   = roi_deflected * roi_cpp
+        roi_annual   = roi_saving * 12
+        roi_pct      = roi_saving / roi_base * 100 if roi_base else 0
+        st.markdown(
+            f'<div class="roi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px;">'
+            f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
+            f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #0F172A;">'
+            f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Baseline Monthly Cost</div>'
+            f'<div style="font-size:2rem;font-weight:900;color:#0F172A;letter-spacing:-0.03em;">${roi_base/1000:.0f}K</div>'
+            f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">{roi_vol:,} calls × ${roi_cpp:.2f}</div>'
+            f'</div>'
+            f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
+            f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #7C3AED;">'
+            f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Calls Deflected / Month</div>'
+            f'<div style="font-size:2rem;font-weight:900;color:#7C3AED;letter-spacing:-0.03em;">{roi_deflected:,.0f}</div>'
+            f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">{roi_defl}% of {roi_vol:,}</div>'
+            f'</div>'
+            f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
+            f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #059669;">'
+            f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Monthly Saving</div>'
+            f'<div style="font-size:2rem;font-weight:900;color:#059669;letter-spacing:-0.03em;">${roi_saving/1000:.0f}K</div>'
+            f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">{roi_pct:.0f}% of baseline</div>'
+            f'</div>'
+            f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
+            f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #CD040B;">'
+            f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Annual Recovery</div>'
+            f'<div style="font-size:2rem;font-weight:900;color:#CD040B;letter-spacing:-0.03em;">${roi_annual/1e6:.1f}M</div>'
+            f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">at {roi_defl}% deflection rate</div>'
+            f'</div>'
+            f'</div>'
+            f'<div class="data-footnote" style="margin-top:10px;">'
+            f'Deflection rate = share of contacts resolved without a live human agent. '
+            f'Industry benchmark: 30–50% IVR/digital; 60–70% with full agentic AI. '
+            f'This dataset classification ({total_auto:.0f}% addressable) is the theoretical ceiling. '
+            f'Default is set at 80% of that ceiling as a realistic first-year target.'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        # ═══════════════════════════════════════════════════════════════
         # 6 — ISSUE TREE: CALL TYPE → AGENT ACTIVITY → BUILD SEGMENT
         # ═══════════════════════════════════════════════════════════════
         _sec("6 — Issue Tree: Call Type, Agent Activity & Build Order")
@@ -1892,6 +1995,191 @@ def main():
                     f'</div>',
                     unsafe_allow_html=True,
                 )
+
+    # ════════════════════════════════════════════════════════════════
+    # TAB 3 — QA & PIPELINE HEALTH
+    # ════════════════════════════════════════════════════════════════
+    with tab3:
+        tu = data.get("token_usage", {})
+
+        # ── Pipeline run summary ──────────────────────────────────
+        _sec("Pipeline Run — Model & Inference")
+        total_tokens  = tu.get("total_tokens", 0)
+        total_cost    = tu.get("total_cost_usd", 0)
+        avg_tokens    = tu.get("avg_total_tokens_per_call", 0)
+        avg_cost_call = tu.get("avg_cost_per_call_usd", 0)
+        calls_w_usage = tu.get("calls_with_usage", n_calls)
+        prompt_tok    = tu.get("total_prompt_tokens", 0)
+        completion_tok = tu.get("total_completion_tokens", 0)
+
+        p1, p2, p3, p4 = st.columns(4)
+        pipe_cards = [
+            (p1, "Calls Processed",    f"{calls_w_usage:,}",         "#0F172A",  f"of {n_calls:,} total"),
+            (p2, "Total Tokens Used",  f"{total_tokens/1000:.0f}K",  "#7C3AED",  f"{avg_tokens:,.0f} avg / call"),
+            (p3, "Total Inference Cost", f"${total_cost:.3f}",       "#059669",  f"${avg_cost_call*100:.3f}¢ / call"),
+            (p4, "Model",              meta.get("model", "—")[:22],  "#0F172A",  meta.get("inference_provider", "")),
+        ]
+        for col, label, val, color, note in pipe_cards:
+            with col:
+                st.markdown(
+                    f'<div class="scard" style="border-top:3px solid {color};">'
+                    f'<div class="scard-label">{label}</div>'
+                    f'<div class="scard-val" style="color:{color};font-size:1.8rem;">{val}</div>'
+                    f'<div class="scard-note">{note}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+        if prompt_tok and completion_tok:
+            tok_total = prompt_tok + completion_tok or 1
+            prompt_pct  = prompt_tok  / tok_total * 100
+            compl_pct   = completion_tok / tok_total * 100
+            st.markdown(
+                f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 26px;'
+                f'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-top:18px;">'
+                f'<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:14px;">Token Split — Prompt vs. Completion</div>'
+                f'<div style="display:flex;height:36px;border-radius:8px;overflow:hidden;margin-bottom:12px;">'
+                f'<div style="background:#7C3AED;width:{prompt_pct:.1f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">'
+                f'Prompt {prompt_pct:.0f}%</div>'
+                f'<div style="background:#A78BFA;width:{compl_pct:.1f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">'
+                f'Completion {compl_pct:.0f}%</div>'
+                f'</div>'
+                f'<div style="display:flex;gap:24px;font-size:0.78rem;color:#64748B;font-weight:600;">'
+                f'<span>Prompt: <strong style="color:#7C3AED;">{prompt_tok:,} tokens</strong></span>'
+                f'<span>Completion: <strong style="color:#A78BFA;">{completion_tok:,} tokens</strong></span>'
+                f'<span>Price input: <strong>${tu.get("price_input_per_mtok_usd", 0):.2f}/Mtok</strong></span>'
+                f'<span>Price output: <strong>${tu.get("price_output_per_mtok_usd", 0):.2f}/Mtok</strong></span>'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        # ── KPI scorecard vs industry benchmark ───────────────────
+        _sec("KPI Scorecard — Achieved vs. Industry Benchmark")
+        st.markdown(
+            "<div style='font-size:0.88rem;color:#64748B;line-height:1.65;margin-bottom:18px;'>"
+            "Pipeline-extracted metrics benchmarked against telecom contact centre industry averages. "
+            "Green = at or above benchmark · Amber = within 10pts · Red = below benchmark.</div>",
+            unsafe_allow_html=True,
+        )
+
+        # (metric_label, achieved_val, benchmark_val, unit, higher_is_better)
+        benchmarks = [
+            ("First Call Resolution",      kpis.get("fcr_rate_pct", 0),              70.0,  "%",     True),
+            ("All Issues Resolved",        kpis.get("all_issues_resolved_pct", 0),   70.0,  "%",     True),
+            ("Escalation Rate",            kpis.get("escalation_rate_pct", 0),       15.0,  "%",     False),
+            ("Sentiment Improved",         kpis.get("sentiment_improved_pct", 0),    60.0,  "%",     True),
+            ("Avoidable Call Rate",        kpis.get("avoidable_call_rate_pct", 0),   35.0,  "%",     False),
+            ("Upsell Conversion",          kpis.get("upsell_conversion_pct", 0),     50.0,  "%",     True),
+            ("Agent Tool Struggle",        kpis.get("agent_tool_struggle_pct", 0),   10.0,  "%",     False),
+            ("Agentic AI Resolvable",      kpis.get("agentic_ai_resolvable_pct", 0), 30.0,  "%",     True),
+        ]
+
+        bench_html = '<div class="bench-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">'
+        for label, achieved, benchmark, unit, higher_good in benchmarks:
+            if higher_good:
+                gap = achieved - benchmark
+                good = gap >= 0
+                near = -10 <= gap < 0
+            else:
+                gap = benchmark - achieved
+                good = gap >= 0
+                near = -10 <= gap < 0
+
+            dot_color = "#059669" if good else ("#D97706" if near else "#DC2626")
+            bar_pct   = min(achieved / max(benchmark * 1.5, 1) * 100, 100)
+            bm_pct    = min(benchmark / max(benchmark * 1.5, 1) * 100, 100)
+            direction = "↑ above" if gap > 0 else ("↓ below" if gap < 0 else "= at")
+            gap_text  = f"{abs(gap):.0f}{unit} {direction} benchmark"
+            status    = "On target" if good else ("Near target" if near else "Below target")
+
+            bench_html += (
+                f'<div style="background:#FFFFFF;border-radius:14px;padding:18px 22px;'
+                f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-left:4px solid {dot_color};">'
+                f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">'
+                f'<div style="font-size:0.82rem;font-weight:700;color:#0F172A;">{label}</div>'
+                f'<div style="font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:12px;'
+                f'background:{dot_color}22;color:{dot_color};">{status}</div>'
+                f'</div>'
+                f'<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;">'
+                f'<div style="font-size:1.6rem;font-weight:900;color:{dot_color};letter-spacing:-0.03em;">{achieved:.0f}{unit}</div>'
+                f'<div style="font-size:0.75rem;color:#94A3B8;font-weight:600;">{gap_text}</div>'
+                f'</div>'
+                f'<div style="position:relative;height:6px;background:#F1F5F9;border-radius:3px;overflow:visible;">'
+                f'<div style="height:6px;background:{dot_color};border-radius:3px;width:{bar_pct:.0f}%;opacity:0.7;"></div>'
+                f'<div style="position:absolute;top:-4px;left:{bm_pct:.0f}%;width:2px;height:14px;background:#0F172A;border-radius:1px;" title="Benchmark {benchmark}{unit}"></div>'
+                f'</div>'
+                f'<div style="font-size:0.68rem;color:#94A3B8;margin-top:6px;">Industry benchmark: {benchmark}{unit}</div>'
+                f'</div>'
+            )
+        bench_html += '</div>'
+        st.markdown(bench_html, unsafe_allow_html=True)
+
+        # ── Agent quality signals ─────────────────────────────────
+        _sec("Agent Quality Signals")
+        skill_dist = dist.get("agent_skill", {})
+        disp_dist  = dist.get("agent_disproportionate_phase", {})
+
+        aq1, aq2 = st.columns(2)
+        with aq1:
+            if skill_dist:
+                prof  = float(skill_dist.get("proficient", 0))
+                adeq  = float(skill_dist.get("adequate", 0))
+                needs = float(skill_dist.get("needs_improvement", 0))
+                st.markdown(
+                    f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 26px;'
+                    f'box-shadow:0 1px 4px rgba(15,23,42,.08);">'
+                    f'<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:16px;">Agent Skill Distribution</div>'
+                    f'<div style="display:flex;height:40px;border-radius:8px;overflow:hidden;margin-bottom:14px;">'
+                    f'<div style="background:#059669;width:{prof:.0f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">Proficient {prof:.0f}%</div>'
+                    f'<div style="background:#D97706;width:{adeq:.0f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">Adequate {adeq:.0f}%</div>'
+                    f'<div style="background:#DC2626;width:{needs:.0f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">Needs improvement {needs:.0f}%</div>'
+                    f'</div>'
+                    f'<div style="font-size:0.8rem;color:#334155;line-height:1.6;">'
+                    f'<strong style="color:#DC2626;">{needs:.0f}%</strong> of agents show knowledge or tool gaps '
+                    f'— primary targets for AI-assisted agent tooling and coaching programmes.'
+                    f'</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+        with aq2:
+            if disp_dist:
+                phase_overruns = {k: float(v) for k, v in disp_dist.items() if k != "none" and float(v) > 0}
+                none_pct = float(disp_dist.get("none", 0))
+                overrun_rows = "".join(
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                    f'padding:8px 0;border-bottom:1px solid #F1F5F9;">'
+                    f'<span style="font-size:0.84rem;font-weight:600;color:#0F172A;text-transform:capitalize;">{phase}</span>'
+                    f'<div style="display:flex;align-items:center;gap:10px;">'
+                    f'<div style="width:100px;height:6px;background:#F1F5F9;border-radius:3px;overflow:hidden;">'
+                    f'<div style="height:6px;background:#F97316;border-radius:3px;width:{pct:.0f}%;"></div></div>'
+                    f'<span style="font-size:0.88rem;font-weight:800;color:#F97316;width:36px;text-align:right;">{pct:.0f}%</span>'
+                    f'</div></div>'
+                    for phase, pct in sorted(phase_overruns.items(), key=lambda x: -x[1])
+                )
+                st.markdown(
+                    f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 26px;'
+                    f'box-shadow:0 1px 4px rgba(15,23,42,.08);">'
+                    f'<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:16px;">Phase Overrun — Calls with Disproportionate Phase Time</div>'
+                    f'<div style="font-size:0.82rem;color:#64748B;margin-bottom:12px;">'
+                    f'{none_pct:.0f}% of calls showed no phase overrun · {100-none_pct:.0f}% had an agent overrunning one phase</div>'
+                    f'{overrun_rows}'
+                    f'<div style="font-size:0.78rem;color:#94A3B8;margin-top:12px;line-height:1.55;">'
+                    f'Phase overrun = call where an agent spent disproportionate time in a single phase vs. the dataset average. '
+                    f'High diagnosis overrun signals knowledge gaps; high discovery overrun signals intent-capture friction.'
+                    f'</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+        if not tu:
+            st.markdown(
+                '<div class="callout" style="margin-top:14px;">'
+                'Token usage and pipeline cost data not found in <code>summary.json</code>. '
+                'Run the full pipeline to populate this tab.</div>',
+                unsafe_allow_html=True,
+            )
 
     # ── Footer ────────────────────────────────────────────────────────
     st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
