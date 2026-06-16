@@ -34,25 +34,80 @@ st.markdown("""
 
   /* ── Hero ── */
   .hero {
-    background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 60%, #1D4ED8 100%);
-    padding: 48px 52px 44px;
+    background: linear-gradient(135deg, #8B0007 0%, #CD040B 60%, #E8000A 100%);
+    padding: 20px 44px 18px;
     margin: -1rem -1rem 0;
-    border-radius: 0 0 24px 24px;
+    border-radius: 0 0 20px 20px;
+  }
+  .hero-top { text-align: center; margin-bottom: 16px; }
+  .hero-bottom {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 32px; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;
   }
   .hero-eyebrow {
-    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em;
-    text-transform: uppercase; color: #60A5FA; margin-bottom: 16px;
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 8px;
   }
   .hero-headline {
-    font-size: 2.6rem; font-weight: 900; color: #FFFFFF;
+    font-size: 2.1rem; font-weight: 900; color: #FFFFFF;
     letter-spacing: -0.04em; line-height: 1.1; margin: 0 0 8px;
   }
-  .hero-headline span { color: #34D399; }
+  .hero-headline span { color: #FFFFFF; }
   .hero-subline {
-    font-size: 1rem; color: #93C5FD; font-weight: 400; margin: 0 0 32px;
+    font-size: 0.85rem; color: rgba(255,255,255,0.75); font-weight: 400; margin: 0;
   }
+  .hero-agentic {
+    font-size: 0.73rem; font-weight: 500; color: rgba(255,255,255,0.85);
+    line-height: 1.6; max-width: 540px;
+  }
+  .hero-agentic strong { color: #FFFFFF; font-weight: 800; }
+  .hero-meta-row { text-align: right; }
   .hero-meta {
-    font-size: 0.72rem; color: #475569; margin-top: 12px; line-height: 1.8;
+    font-size: 0.67rem; color: rgba(255,255,255,0.65); line-height: 1.7; white-space: nowrap;
+  }
+  .hero-disclaimer {
+    font-size: 0.62rem; color: rgba(255,255,255,0.5); line-height: 1.65;
+    white-space: nowrap; text-align: right; margin-top: 4px;
+  }
+  /* ── Tab bar — segmented button style ── */
+  [data-testid="stTabs"] [data-baseweb="tab-list"] {
+    gap: 0 !important;
+    background: #E2E8F0 !important;
+    border-radius: 10px !important;
+    padding: 5px !important;
+    border-bottom: none !important;
+    margin-top: 16px !important;
+  }
+  [data-testid="stTabs"] button[role="tab"] {
+    flex: 1 !important;
+    padding: 14px 0 !important;
+    justify-content: center !important;
+    border-radius: 7px !important;
+    color: #64748B !important;
+    background: transparent !important;
+    border: none !important;
+    transition: all 0.18s ease !important;
+  }
+  [data-testid="stTabs"] button[role="tab"] p,
+  [data-testid="stTabs"] button[role="tab"] span,
+  [data-testid="stTabs"] button[role="tab"] div {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.01em !important;
+  }
+  [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    box-shadow: 0 1px 6px rgba(15,23,42,0.12) !important;
+  }
+  [data-testid="stTabs"] button[role="tab"][aria-selected="true"] p,
+  [data-testid="stTabs"] button[role="tab"][aria-selected="true"] span,
+  [data-testid="stTabs"] button[role="tab"][aria-selected="true"] div {
+    color: #0F172A !important;
+  }
+  [data-testid="stTabs"] [data-baseweb="tab-highlight"],
+  [data-testid="stTabs"] [data-baseweb="tab-border"] {
+    display: none !important;
   }
   /* Hero cost panels */
   .hpanel {
@@ -90,14 +145,18 @@ st.markdown("""
     font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
     margin-bottom: 12px;
   }
-  .badge-live { background:rgba(16,185,129,.2); border:1px solid rgba(16,185,129,.4); color:#34D399; }
+  .badge-live { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.5); color:#FFFFFF; }
   .badge-demo { background:rgba(99,102,241,.2); border:1px solid rgba(99,102,241,.4); color:#A5B4FC; }
 
   /* ── Section label ── */
   .section-label {
-    font-size: 0.62rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase;
-    color: #94A3B8; margin: 36px 0 18px; padding-bottom: 10px;
-    border-bottom: 1px solid #E2E8F0;
+    font-size: 0.88rem; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #0F172A;
+    margin: 48px 0 22px; padding: 14px 18px;
+    background: #F1F5F9;
+    border-left: 4px solid #0F172A;
+    border-radius: 0 8px 8px 0;
+    line-height: 1;
   }
 
   /* ── Stat card ── */
@@ -305,6 +364,110 @@ st.markdown("""
   .callout.green { background: #ECFDF5; border-left-color: #059669; color: #064E3B; }
   .callout.amber { background: #FFFBEB; border-left-color: #D97706; color: #78350F; }
   .callout.teal  { background: #F0FDFA; border-left-color: #0D9488; color: #134E4A; }
+  .data-disclaimer {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px;
+    padding: 14px 18px; margin: 18px 0 6px; font-size: 0.84rem;
+    color: #78350F; line-height: 1.65;
+  }
+  .data-disclaimer-icon {
+    font-size: 1.1rem; flex-shrink: 0; margin-top: 1px;
+  }
+  .data-disclaimer strong { color: #92400E; }
+  .data-disclaimer code   { background: #FEF3C7; padding: 1px 5px; border-radius: 4px;
+                             font-size: 0.82rem; color: #78350F; }
+  .data-footnote {
+    font-size: 0.74rem; color: #94A3B8; font-style: italic;
+    margin-top: 10px; padding-top: 8px; border-top: 1px solid #F1F5F9;
+    line-height: 1.55;
+  }
+  .data-footnote strong { color: #64748B; font-style: normal; }
+
+  /* ── Cost Intelligence Deep Dive (cts-* / pah-*) ─────────── */
+  .cts-legend { display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    margin-bottom:20px; padding-bottom:18px; border-bottom:1px solid #E2E8F0; }
+  .cts-legend-item { display:flex; align-items:center; gap:6px; }
+  .cts-swatch { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+  .cts-swatch-label { font-size:11px; color:#475569; font-weight:500; }
+  .cts-eyebrow { font-size:10px; font-weight:700; letter-spacing:0.13em;
+    text-transform:uppercase; color:#94A3B8; margin-bottom:12px; }
+  .cts-hero-wrap { background:#fff; border-radius:12px; border:1px solid #E2E8F0;
+    box-shadow:0 1px 4px rgba(15,23,42,.05); padding:22px 26px; margin-bottom:16px; }
+  .cts-hero-row { display:flex; align-items:center; }
+  .cts-hero-label { width:100px; flex-shrink:0; }
+  .cts-hero-name { font-size:13.5px; font-weight:800; color:#0F172A; }
+  .cts-hero-n { font-size:10px; color:#94A3B8; font-weight:500; margin-top:2px; }
+  .cts-hero-bar-col { flex:1; }
+  .cts-bar { height:72px; display:flex; border-radius:6px; overflow:hidden;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.06); }
+  .cts-seg { height:100%; display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:rgba(255,255,255,.95); white-space:nowrap; overflow:hidden;
+    min-width:0; flex-direction:column; gap:1px; }
+  .cts-seg .sp { font-size:11px; font-weight:800; }
+  .cts-seg .sn { font-size:8px; font-weight:600; opacity:.85; }
+  .cts-hero-meta { width:115px; flex-shrink:0; padding-left:18px; text-align:right; }
+  .cts-hero-s { font-size:18px; font-weight:900; color:#0F172A; }
+  .cts-hero-c { font-size:11px; color:#64748B; font-weight:500; margin-top:3px; }
+  .cts-hero-m { font-size:10px; color:#94A3B8; font-weight:600; margin-top:2px; }
+  .cts-callout { display:flex; gap:14px; align-items:flex-start; background:#FFFBEB;
+    border:1px solid #FDE68A; border-radius:10px; padding:16px 20px; margin-bottom:28px; }
+  .cts-callout-icon { width:32px; height:32px; border-radius:8px; background:#FEF3C7;
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; margin-top:1px; }
+  .cts-callout-head { font-size:12.5px; font-weight:800; color:#78350F; margin-bottom:4px; }
+  .cts-callout-text { font-size:11.5px; color:#92400E; line-height:1.65; }
+  .cts-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .cts-card { background:#fff; border-radius:12px; border:1px solid #E2E8F0;
+    box-shadow:0 1px 4px rgba(15,23,42,.05); overflow:hidden; }
+  .cts-accent { height:4px; }
+  .cts-body { padding:18px 18px 16px; }
+  .cts-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+  .cts-card-title { font-size:13px; font-weight:800; color:#0F172A; }
+  .cts-card-n { font-size:9.5px; color:#94A3B8; font-weight:500; margin-top:2px; }
+  .cts-card-cpp { font-size:16px; font-weight:900; }
+  .cts-card-mo { font-size:9px; color:#94A3B8; font-weight:600; margin-top:2px; }
+  .cts-mini { height:28px; display:flex; border-radius:4px; overflow:hidden;
+    margin-bottom:14px; box-shadow:inset 0 1px 2px rgba(0,0,0,.06); }
+  .cts-mseg { height:100%; display:flex; align-items:center; justify-content:center;
+    font-size:8.5px; font-weight:700; color:rgba(255,255,255,.92);
+    white-space:nowrap; overflow:hidden; min-width:0; padding:0 2px; }
+  .cts-phase-row { display:flex; align-items:center; padding:3px 0;
+    border-top:1px solid #F8FAFC; gap:5px; }
+  .cts-phase-name { font-size:9.5px; color:#0F172A; font-weight:700; white-space:nowrap;
+    display:flex; align-items:center; gap:4px; width:68px; flex-shrink:0; }
+  .cts-phase-dot { width:6px; height:6px; border-radius:2px; flex-shrink:0; }
+  .cts-micro-track { flex:1; height:4px; background:#F1F5F9; border-radius:2px; overflow:hidden; }
+  .cts-micro-fill { height:100%; border-radius:2px; }
+  .cts-phase-pct { width:26px; text-align:right; font-size:9.5px; font-weight:700; color:#334155; }
+  .cts-phase-cost { width:34px; text-align:right; font-size:9px; font-weight:600; color:#64748B; }
+  .cts-badge-row { margin-top:10px; display:flex; gap:4px; flex-wrap:wrap; }
+  .cts-badge { font-size:8.5px; font-weight:700; padding:2px 7px; border-radius:20px; }
+  /* P/A/H resolution cards */
+  .pah-row { display:flex; gap:16px; margin-bottom:24px; }
+  .pah-card { background:#fff; border-radius:14px; border:1px solid #E2E8F0;
+    box-shadow:0 1px 6px rgba(15,23,42,.06); overflow:hidden; flex:1; }
+  .pah-accent { height:5px; }
+  .pah-body { padding:22px 20px 18px; }
+  .pah-eyebrow { font-size:9px; font-weight:800; letter-spacing:0.14em;
+    text-transform:uppercase; margin-bottom:5px; }
+  .pah-pct { font-size:34px; font-weight:900; line-height:1.05; margin-bottom:3px; }
+  .pah-label { font-size:12.5px; font-weight:700; color:#0F172A; margin-bottom:2px; }
+  .pah-sub { font-size:10.5px; color:#64748B; line-height:1.55; margin-bottom:14px; }
+  .pah-cost-row { display:flex; justify-content:space-between; align-items:baseline;
+    padding:6px 0; border-top:1px solid #F1F5F9; }
+  .pah-cost-label { font-size:10.5px; color:#64748B; font-weight:500; }
+  .pah-cost-value { font-size:13px; font-weight:800; }
+  .pah-action { background:#F8FAFC; border-radius:8px; padding:10px 12px; margin-top:12px; }
+  .pah-action-eyebrow { font-size:8.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.1em; color:#94A3B8; margin-bottom:3px; }
+  .pah-action-text { font-size:10.5px; color:#334155; font-weight:600; line-height:1.5; }
+  .pah-split-bar { height:34px; display:flex; border-radius:6px; overflow:hidden;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.06); margin:0 0 6px; }
+  .pah-split-seg { height:100%; display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; font-weight:700; color:#fff; flex-direction:column; gap:0; }
+  .pah-split-seg .psn { font-size:8.5px; opacity:.85; }
+  .pah-split-legend { display:flex; gap:16px; flex-wrap:wrap; margin-top:6px; }
+  .pah-split-legend-item { display:flex; align-items:center; gap:5px;
+    font-size:10px; color:#475569; font-weight:500; }
 
   .footer {
     font-size: 0.68rem; color: #94A3B8;
@@ -1001,6 +1164,7 @@ def main():
     disc_secs  = phases.get("Discovery", 0)
     diag_secs  = phases.get("Diagnosis", 0)
     aht_min  = kpis.get("avg_handle_time_minutes", round(total_secs / 60, 1))
+    aht_secs = round(kpis.get("avg_handle_time_seconds", total_secs))
 
     # Issue category data
     ic = dist.get("issue_category", {})
@@ -1036,52 +1200,66 @@ def main():
     # Hero — headline only
     hero_html = (
         '<div class="hero">'
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">'
-        '<div>'
+        # ── top: centred title block ──
+        '<div class="hero-top">'
         '<div class="hero-eyebrow">Care Call Cost Analysis</div>'
-        '<div class="hero-headline">Telecom <span>Cost Intelligence</span><br>for Care Calls</div>'
-        '<div class="hero-subline">Identifying cost levers across the customer journey in care calls — '
+        '<div class="hero-headline">Cost Intelligence for Care Calls</div>'
+        '<div class="hero-subline">Identifying cost levers across the customer journey — '
         'surfacing cost-to-serve drivers and proactive issue-resolution opportunities, '
-        '<strong style="color:#E2E8F0;">from real call transcripts.</strong></div>'
+        'from real call transcripts.</div>'
         '</div>'
-        '<div style="text-align:right;">'
-        f'<span class="hero-badge {badge_cls}">{badge}</span>'
-        f'<div class="hero-meta">{n_calls:,} calls &nbsp;·&nbsp; {run_date}<br>{provider} &nbsp;·&nbsp; {model}</div>'
+        # ── bottom: agentic left · meta+disclaimer right ──
+        '<div class="hero-bottom">'
+        '<div class="hero-agentic">'
+        '<strong>Agentic AI · Built with Claude Haiku 4.5 + LangGraph</strong><br>'
+        '6 specialised agents process real transcripts end-to-end — extracting 70+ cost signals, '
+        'scoring quality inline, and synthesising recommendations automatically.'
         '</div>'
+        f'<div class="hero-meta-row">'
+        f'<div class="hero-meta">{n_calls:,} calls &nbsp;·&nbsp; {run_date} &nbsp;·&nbsp; {provider} &nbsp;·&nbsp; {model}</div>'
+        f'<div class="hero-disclaimer">'
+        f'HuggingFace talkmap/telecom-conversation-corpus &nbsp;·&nbsp; avg {aht_secs}s (2.5 min) &nbsp;·&nbsp; '
+        f'Enterprise calls 600–1,100s — 4–7× longer &nbsp;·&nbsp; $ figures scale with your AHT'
+        f'</div>'
+        f'</div>'
         '</div>'
         '</div>'
     )
     st.markdown(hero_html, unsafe_allow_html=True)
 
-    # Cost panels — outside hero, white background, side by side
-    panels_html = (
-        '<div style="display:flex;gap:20px;margin-top:20px;">'
-
-        '<div style="flex:1;background:#FFFFFF;border-radius:14px;padding:24px 26px;box-shadow:0 1px 4px rgba(15,23,42,.08);">'
+    # ── PANELS: split left→Tab 1, right→Tab 2 ────────────────────
+    _left_panel = (
+        '<div style="background:#FFFFFF;border-radius:14px;padding:24px 26px;'
+        'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-top:20px;">'
         f'<div style="font-size:0.95rem;font-weight:800;color:#DC2626;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Insights from {n_calls:,} Calls Analysed</div>'
         f'<div style="font-size:0.75rem;color:#64748B;font-style:italic;margin-bottom:14px;">Cost allocated by where call handle time goes · forecast at {vol:,} calls/month · ${cpp:.2f}/call unit cost · from {n_calls}-call sample</div>'
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
+        '<div style="display:grid;grid-template-columns:1fr 120px 100px;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Cost to Serve <span style="color:#94A3B8;font-weight:500;">(P1–P4)</span></span>'
-        f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;">{serve_time_pct:.0f}% of AHT</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${serve_cost/1000:.0f}K/mo</span>'
+        f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">{serve_time_pct:.0f}% of AHT</span>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${serve_cost/1000:.0f}K/mo</span>'
         '</div>'
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
+        '<div style="display:grid;grid-template-columns:1fr 120px 100px;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Cost to Sell <span style="color:#94A3B8;font-weight:500;">(P5)</span></span>'
-        f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;">{sell_time_pct:.0f}% of AHT</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${sell_cost/1000:.0f}K/mo</span>'
+        f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">{sell_time_pct:.0f}% of AHT</span>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${sell_cost/1000:.0f}K/mo</span>'
         '</div>'
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
+        '<div style="display:grid;grid-template-columns:1fr 120px 100px;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Cost to Retain <span style="color:#94A3B8;font-weight:500;">(cross-cutting)</span></span>'
-        f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;">{retain_time_pct:.0f}% of AHT</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${retain_cost/1000:.0f}K/mo</span>'
+        f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">{retain_time_pct:.0f}% of AHT</span>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${retain_cost/1000:.0f}K/mo</span>'
         '</div>'
         '<div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;margin-top:4px;border-top:2px solid #0F172A;">'
         '<span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748B;">Total Monthly Cost</span>'
         f'<span style="font-size:1.6rem;font-weight:800;color:#DC2626;">${base/1000:.0f}K</span>'
         '</div>'
+        f'<div class="data-footnote">* Dataset avg AHT = {aht_secs}s. '
+        f'Enterprise calls typically 600–1,100s — multiply $ figures by your AHT ÷ {aht_secs} '
+        f'for a live deployment estimate.</div>'
         '</div>'
-
-        '<div style="flex:1;background:#FFFFFF;border-radius:14px;padding:24px 26px;box-shadow:0 1px 4px rgba(15,23,42,.08);">'
+    )
+    _right_panel = (
+        '<div style="background:#FFFFFF;border-radius:14px;padding:24px 26px;'
+        'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-top:20px;">'
         '<div style="font-size:0.95rem;font-weight:800;color:#DC2626;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">AI Recovery Opportunity</div>'
         f'<div style="font-size:0.75rem;color:#64748B;font-style:italic;margin-bottom:14px;">Savings vs ${base/1000:.0f}K/month baseline · forecast at {vol:,} calls/month · from {n_calls}-call analysis</div>'
         '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
@@ -1096,388 +1274,619 @@ def main():
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Annual cost recovery</span>'
         f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${annual/1e6:.1f}M / year</span>'
         '</div>'
-        '</div>'
-
+        f'<div class="data-footnote">* Savings % are based on call classification from the dataset. '
+        f'Absolute $ scale with your actual AHT and call volume — see dataset note above.</div>'
         '</div>'
     )
-    st.markdown(panels_html, unsafe_allow_html=True)
 
     if is_demo:
         st.markdown("""<div class="callout" style="margin-top:14px;">
           <strong>Demo mode.</strong> Run <code>python run_pipeline.py</code> to replace with live results.
         </div>""", unsafe_allow_html=True)
 
-    # ═══════════════════════════════════════════════════════════════
-    # 1 — THE EVIDENCE: WHY CUSTOMERS CALL AND WHERE TIME GOES
-    # ═══════════════════════════════════════════════════════════════
-    _sec("1 — The Evidence: What the Transcripts Reveal")
+    # ── TOP-LEVEL NARRATIVE TABS ────────────────────────────────────
+    tab1, tab2 = st.tabs(["Cost to Serve", "Automation Strategy"])
 
-    col_issue, col_phase = st.columns([4, 6])
+    # ════════════════════════════════════════════════════════════════
+    # TAB 1 — COST TO SERVE
+    # ════════════════════════════════════════════════════════════════
+    with tab1:
+        st.markdown(_left_panel, unsafe_allow_html=True)
 
-    with col_issue:
-        st.markdown(
-            "<div style='font-size:0.8rem;font-weight:700;color:#334155;margin-bottom:10px;'>"
-            "What customers are calling about</div>",
-            unsafe_allow_html=True,
-        )
-        # Tier legend
-        seen, chips = set(), ""
-        for cat in ic_clean:
-            tier, color = ISSUE_TIER.get(cat, ("Other", SLATE))
-            if tier not in seen:
-                seen.add(tier)
-                chips += (
-                    f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
-                    f'font-size:0.68rem;font-weight:700;background:{color}22;color:{color};'
-                    f'border:1px solid {color}44;margin-right:5px;margin-bottom:4px;">'
-                    f'{tier}</span>'
-                )
-        st.markdown(f"<div style='margin-bottom:8px;'>{chips}</div>", unsafe_allow_html=True)
-        if ic_clean:
-            st.plotly_chart(chart_issue_mix(ic_clean, n_calls), use_container_width=True)
+        # ── 1 — THE EVIDENCE ──────────────────────────────────────
+        _sec("1 — The Evidence: What the Transcripts Reveal")
 
-    with col_phase:
-        st.markdown(
-            "<div style='font-size:0.8rem;font-weight:700;color:#334155;margin-bottom:10px;'>"
-            "Where agent time goes inside every call</div>",
-            unsafe_allow_html=True,
-        )
-        # Phase legend
-        seen, chips = set(), ""
-        for phase in phases:
-            color, ptype = PHASE_META.get(phase, ("#94A3B8", "Overhead"))
-            if ptype not in seen:
-                seen.add(ptype)
-                chips += (
-                    f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
-                    f'font-size:0.68rem;font-weight:700;background:{color}22;color:{color};'
-                    f'border:1px solid {color}44;margin-right:5px;margin-bottom:4px;">'
-                    f'{ptype}</span>'
-                )
-        st.markdown(f"<div style='margin-bottom:8px;'>{chips}</div>", unsafe_allow_html=True)
-        if phases:
-            st.plotly_chart(chart_phases(phases), use_container_width=True)
+        col_issue, col_phase = st.columns([4, 6])
 
-    # Evidence callout
-    disc_pct_str = f"{disc_secs/total_secs*100:.0f}%"
-    diag_pct_str = f"{diag_secs/total_secs*100:.0f}%"
-    st.markdown(f"""
-    <div class="callout amber">
-      <strong>Discovery and Diagnosis account for {(disc_secs+diag_secs)/total_secs*100:.0f}%
-      of every call</strong>
-      ({disc_pct_str} customers explaining their issue + {diag_pct_str} agents investigating it)
-      on a {aht_min:.1f}-minute average call.
-      AI agents pre-empt Discovery with proactive outreach; grounded knowledge bases
-      cut Diagnosis time. Together they compress the majority of call handle time.
-    </div>
-    """, unsafe_allow_html=True)
+        with col_issue:
+            st.markdown(
+                "<div style='font-size:0.8rem;font-weight:700;color:#334155;margin-bottom:10px;'>"
+                "What customers are calling about</div>",
+                unsafe_allow_html=True,
+            )
+            seen, chips = set(), ""
+            for cat in ic_clean:
+                tier, color = ISSUE_TIER.get(cat, ("Other", SLATE))
+                if tier not in seen:
+                    seen.add(tier)
+                    chips += (
+                        f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
+                        f'font-size:0.68rem;font-weight:700;background:{color}22;color:{color};'
+                        f'border:1px solid {color}44;margin-right:5px;margin-bottom:4px;">'
+                        f'{tier}</span>'
+                    )
+            st.markdown(f"<div style='margin-bottom:8px;'>{chips}</div>", unsafe_allow_html=True)
+            if ic_clean:
+                st.plotly_chart(chart_issue_mix(ic_clean, n_calls), use_container_width=True, key="issue_mix")
 
-    # Phase imbalance signal
-    disp     = dist.get("agent_disproportionate_phase", {})
-    diag_ovr = float(disp.get("diagnosis", 0))
-    disc_ovr = float(disp.get("discovery", 0))
-    if diag_ovr + disc_ovr > 15:
+        with col_phase:
+            st.markdown(
+                "<div style='font-size:0.8rem;font-weight:700;color:#334155;margin-bottom:10px;'>"
+                "Where agent time goes inside every call</div>",
+                unsafe_allow_html=True,
+            )
+            seen, chips = set(), ""
+            for phase in phases:
+                color, ptype = PHASE_META.get(phase, ("#94A3B8", "Overhead"))
+                if ptype not in seen:
+                    seen.add(ptype)
+                    chips += (
+                        f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
+                        f'font-size:0.68rem;font-weight:700;background:{color}22;color:{color};'
+                        f'border:1px solid {color}44;margin-right:5px;margin-bottom:4px;">'
+                        f'{ptype}</span>'
+                    )
+            st.markdown(f"<div style='margin-bottom:8px;'>{chips}</div>", unsafe_allow_html=True)
+            if phases:
+                st.plotly_chart(chart_phases(phases), use_container_width=True, key="phase_time")
+
+        disc_pct_str = f"{disc_secs/total_secs*100:.0f}%"
+        diag_pct_str = f"{diag_secs/total_secs*100:.0f}%"
         st.markdown(f"""
-        <div class="callout" style="margin-top:10px;">
-          <strong>Phase overrun detected:</strong> &nbsp;
-          {diag_ovr:.0f}% of calls had agents over-spending in Diagnosis and
-          {disc_ovr:.0f}% in Discovery — knowledge gaps and tool friction are inflating AHT.
-          These are the highest-ROI targets for AI-assisted agent tooling.
+        <div class="callout amber">
+          <strong>Discovery and Diagnosis account for {(disc_secs+diag_secs)/total_secs*100:.0f}%
+          of every call</strong>
+          ({disc_pct_str} customers explaining their issue + {diag_pct_str} agents investigating it)
+          on a {aht_min:.1f}-minute average call.
+          AI agents pre-empt Discovery with proactive outreach; grounded knowledge bases
+          cut Diagnosis time. Together they compress the majority of call handle time.
         </div>
         """, unsafe_allow_html=True)
 
-    # ═══════════════════════════════════════════════════════════════
-    # 2 — PHASE DRILL-DOWN: WHAT'S DRIVING TIME INSIDE EACH PHASE
-    # ═══════════════════════════════════════════════════════════════
-    _sec("2 — Phase Drill-Down: What's Driving Time Inside Each Phase")
-
-    st.markdown(
-        "<div style='font-size:0.93rem;color:#334155;line-height:1.7;margin-bottom:14px;'>"
-        "Section 1 shows <em>where</em> handle time goes. This breaks each cost-bearing phase "
-        "down by <strong>which customer intent drives it</strong> — and how often agents got "
-        "stuck there (<em>stall rate</em> = share of calls where this was the agent's most "
-        "disproportionate phase).</div>",
-        unsafe_allow_html=True,
-    )
-
-    drilldown  = data.get("phase_drilldown", {})
-    dd_phases  = [p for p in ["Discovery", "Diagnosis", "Resolution", "Upsell"] if drilldown.get(p)]
-
-    if dd_phases:
-        tabs = st.tabs(dd_phases)
-        for tab, phase in zip(tabs, dd_phases):
-            with tab:
-                rows = drilldown[phase]
-                color, _ptype = PHASE_META.get(phase, ("#94A3B8", ""))
-                top = rows[0]
-                top_intent = top["intent"].replace("_", " ").title()
-                stall_note = (
-                    f", {top['stall_pct']:.0f}% flagged as agent stall"
-                    if top["stall_pct"] > 0 else ""
-                )
-                st.markdown(
-                    f"<div style='font-size:0.85rem;color:#475569;margin-bottom:8px;'>"
-                    f"<strong style='color:{color};'>{top_intent}</strong> calls take longest in "
-                    f"{phase} — averaging {top['avg_seconds']:.0f}s ({top['calls']} calls{stall_note}).</div>",
-                    unsafe_allow_html=True,
-                )
-                st.plotly_chart(chart_drilldown_intents(rows, color), use_container_width=True)
-    else:
-        st.markdown("""<div class="callout" style="margin-top:4px;">
-          Phase drill-down requires <code>phase_drilldown</code> in <code>summary.json</code> —
-          run <code>python merge_outputs.py</code> to regenerate.
-        </div>""", unsafe_allow_html=True)
-
-    # ═══════════════════════════════════════════════════════════════
-    # 3 — RESOLUTION OPPORTUNITY: WHAT THE DATA SAYS
-    # ═══════════════════════════════════════════════════════════════
-    _sec("3 — Resolution Opportunity: Insights from the Calls")
-
-    st.markdown(
-        f"<div style='font-size:0.93rem;color:#334155;line-height:1.7;margin-bottom:20px;'>"
-        f"From <strong>{n_calls:,} calls analysed</strong>, every contact was classified by "
-        f"whether a human agent was genuinely required — or whether autonomous AI could have "
-        f"resolved it. <strong>{total_auto:.0f}%</strong> did not require a human.</div>",
-        unsafe_allow_html=True,
-    )
-
-    # Build segment list — only show PREVENT if > 0
-    segments_display = []
-    if prevent_pct > 0:
-        segments_display.append(("prevent", prevent_pct))
-    segments_display.append(("automate", automate_pct))
-    segments_display.append(("human",    human_pct))
-
-    ncols = len(segments_display)
-    cols  = st.columns(ncols)
-
-    seg_configs = {
-        "prevent": (
-            "PREVENT",        "#CCFBF1", "#0F766E", TEAL,
-            f"${cl['proactive_care_savings_usd']/1000:.0f}K / month",
-            "Customer shouldn't have needed to call. Detect the trigger event first — "
-            "outage, bill spike, data exhaustion — and push a proactive alert. "
-            "Eliminates the contact before it starts.",
-        ),
-        "automate": (
-            "AUTOMATE",       "#EDE9FE", "#6D28D9", PURPLE,
-            f"${(cl['self_serve_savings_usd']+cl['agentic_ai_savings_usd'])/1000:.0f}K / month",
-            f"Deterministic issue — AI agent resolves end-to-end: bill explanation, "
-            f"plan enquiry, order status, payments, balance check. "
-            f"({selfserve_pct:.0f}% self-serve · {agentic_pct:.0f}% full AI agent)",
-        ),
-        "human": (
-            "HUMAN REQUIRED", "#DBEAFE", "#1D4ED8", BLUE,
-            f"${(base - opp)/1000:.0f}K / month — irreducible",
-            "Complex faults, billing disputes, complaints, retention — "
-            "judgment-intensive situations that need an empathetic skilled agent. "
-            "Concentrate your human investment here.",
-        ),
-    }
-
-    for col, (key, pct) in zip(cols, segments_display):
-        badge, bbg, bfg, money_clr, money, desc = seg_configs[key]
-        n_seg = round(n_calls * pct / 100)
-        with col:
-            st.markdown(
-                _seg(badge, bbg, bfg, pct,
-                     f"{n_seg} of {n_calls} calls analysed",
-                     money, money_clr, desc),
-                unsafe_allow_html=True,
-            )
-
-    # Proactive potential note when proactive = 0
-    if prevent_pct == 0 and ic_clean:
-        tech_pct = ic_clean.get("technical", 0) / sum(ic_clean.values()) * 100
-        if tech_pct > 0:
+        disp     = dist.get("agent_disproportionate_phase", {})
+        diag_ovr = float(disp.get("diagnosis", 0))
+        disc_ovr = float(disp.get("discovery", 0))
+        if diag_ovr + disc_ovr > 15:
             st.markdown(f"""
-            <div class="callout teal" style="margin-top:14px;">
-              <strong>Proactive Care opportunity not yet activated.</strong> &nbsp;
-              {tech_pct:.0f}% of analysed contacts are technical issues —
-              network faults, outages, and service degradation that could be detected
-              and communicated proactively before the customer calls.
-              Implementing event-driven alerts could move an estimated 15–25% of contacts
-              out of the care queue entirely.
+            <div class="callout" style="margin-top:10px;">
+              <strong>Phase overrun detected:</strong> &nbsp;
+              {diag_ovr:.0f}% of calls had agents over-spending in Diagnosis and
+              {disc_ovr:.0f}% in Discovery — knowledge gaps and tool friction are inflating AHT.
+              These are the highest-ROI targets for AI-assisted agent tooling.
             </div>
             """, unsafe_allow_html=True)
 
-    # Stacked bar
-    seg_bar_data = []
-    if prevent_pct > 0:
-        seg_bar_data.append(("Proactive Care", prevent_pct, TEAL))
-    seg_bar_data.append(("Agentic AI / Self-Serve", automate_pct, PURPLE))
-    seg_bar_data.append(("Human Agent Required", human_pct, BLUE))
+        # ── PHASE COST INTELLIGENCE ────────────────────────────────
+        _sec("Phase Cost Intelligence — Call Anatomy by Type")
+        _dd_pct  = 27 + 19
+        _dd_cost = round(cpp * _dd_pct / 100, 2)
 
-    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-    st.plotly_chart(chart_segment_bar(seg_bar_data), use_container_width=True)
+        phase_html = (
+            f'<div style="padding:4px 0 20px;">'
+            f'<div class="cts-legend">'
+            f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#CBD5E1"></div><span class="cts-swatch-label">Welcome &amp; Closing — Overhead</span></div>'
+            f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#F59E0B"></div><span class="cts-swatch-label">Discovery — Customer explains</span></div>'
+            f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#F97316"></div><span class="cts-swatch-label">Diagnosis — Agent investigates</span></div>'
+            f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#10B981"></div><span class="cts-swatch-label">Resolution — Value delivery</span></div>'
+            f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#EF4444"></div><span class="cts-swatch-label">Hold — Dead time</span></div>'
+            f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#3B82F6"></div><span class="cts-swatch-label">Upsell — Revenue</span></div>'
+            f'</div>'
+            f'<div class="cts-eyebrow">All Calls — Average across {n_calls:,} transcripts</div>'
+            f'<div class="cts-hero-wrap"><div class="cts-hero-row">'
+            f'<div class="cts-hero-label"><div class="cts-hero-name">All Calls</div><div class="cts-hero-n">n = {n_calls} · avg</div></div>'
+            f'<div class="cts-hero-bar-col"><div class="cts-bar">'
+            f'<div class="cts-seg" style="background:#CBD5E1;width:17.6%"><span class="sp">18%</span><span class="sn">Welcome</span></div>'
+            f'<div class="cts-seg" style="background:#F59E0B;width:27.1%"><span class="sp">27%</span><span class="sn">Discovery</span></div>'
+            f'<div class="cts-seg" style="background:#F97316;width:19.4%"><span class="sp">19%</span><span class="sn">Diagnosis</span></div>'
+            f'<div class="cts-seg" style="background:#10B981;width:22.9%"><span class="sp">23%</span><span class="sn">Resolution</span></div>'
+            f'<div class="cts-seg" style="background:#EF4444;width:0.9%" title="Hold 1%"></div>'
+            f'<div class="cts-seg" style="background:#3B82F6;width:9.7%"><span class="sp">10%</span><span class="sn">Upsell</span></div>'
+            f'<div class="cts-seg" style="background:#CBD5E1;opacity:0.55;width:14%"><span class="sp">14%</span><span class="sn">Closing</span></div>'
+            f'</div></div>'
+            f'<div class="cts-hero-meta"><div class="cts-hero-s">{aht_secs}s</div>'
+            f'<div class="cts-hero-c">${cpp:.2f} / call</div>'
+            f'<div class="cts-hero-m">${base/1000:.0f}K / month</div></div>'
+            f'</div></div>'
+            f'<div class="cts-callout"><div class="cts-callout-icon">⚡</div><div>'
+            f'<div class="cts-callout-head">Discovery + Diagnosis = {_dd_pct}% of every call — ${_dd_cost:.2f} of the ${cpp:.2f} unit cost</div>'
+            f'<div class="cts-callout-text">This is the highest-leverage cost reduction target in the portfolio. '
+            f'<b>Proactive outreach eliminates Discovery entirely</b> for preventable contacts — the customer never calls because the issue is resolved before it forms. '
+            f'<b>Agentic AI compresses Diagnosis to near-zero</b> for deterministic issues — the agent already knows the answer before the customer finishes explaining. '
+            f'Together these two interventions address the majority of care cost.</div>'
+            f'</div></div>'
+            f'<div class="cts-eyebrow" style="margin-bottom:16px;">Breakdown by Call Type</div>'
+            f'<div class="cts-grid">'
 
-    st.markdown(f"""
-    <div class="callout green" style="margin-top:6px;">
-      <strong>Business case from {n_calls:,} calls:</strong> &nbsp;
-      {total_auto:.0f}% of your contact volume — {round(vol * total_auto / 100):,} calls/month
-      at scale — is addressable through autonomous AI.
-      At ${cpp:.2f} per call that is
-      <strong>${opp/1000:.0f}K/month · ${annual/1e6:.1f}M/year</strong>
-      in recoverable cost, before any improvement in customer experience is counted.
-    </div>
-    """, unsafe_allow_html=True)
+            # TECHNICAL
+            f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#F97316,#F59E0B)"></div><div class="cts-body">'
+            f'<div class="cts-card-head"><div><div class="cts-card-title">Technical</div><div class="cts-card-n">n=29 · 37% of calls · 37,180/mo</div></div>'
+            f'<div style="text-align:right"><div class="cts-card-cpp" style="color:#0F172A">$5.97</div><div class="cts-card-mo">$222K / month</div></div></div>'
+            f'<div class="cts-mini"><div class="cts-mseg" style="background:#CBD5E1;width:17%">17%</div><div class="cts-mseg" style="background:#F59E0B;width:28%">Disc 28%</div><div class="cts-mseg" style="background:#F97316;width:24%">Diag 24%</div><div class="cts-mseg" style="background:#10B981;width:18%">18%</div><div class="cts-mseg" style="background:#EF4444;width:1%"></div><div class="cts-mseg" style="background:#3B82F6;width:2%"></div><div class="cts-mseg" style="background:#CBD5E1;opacity:.55;width:14%">14%</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1"></div>Welcome</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:17%"></div></div><div class="cts-phase-pct">17%</div><div class="cts-phase-cost">$1.03</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F59E0B"></div>Discovery</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F59E0B;width:28%"></div></div><div class="cts-phase-pct">28%</div><div class="cts-phase-cost">$1.66</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F97316"></div>Diagnosis</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F97316;width:24%"></div></div><div class="cts-phase-pct" style="color:#DC2626">24%</div><div class="cts-phase-cost" style="color:#DC2626">$1.44</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#10B981"></div>Resolution</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#10B981;width:18%"></div></div><div class="cts-phase-pct">18%</div><div class="cts-phase-cost">$1.06</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:2%"></div></div><div class="cts-phase-pct">2%</div><div class="cts-phase-cost">$0.10</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:14%"></div></div><div class="cts-phase-pct">14%</div><div class="cts-phase-cost">$0.86</div></div>'
+            f'<div class="cts-badge-row"><span class="cts-badge" style="background:#FEF3C7;color:#92400E">Diagnosis overrun</span><span class="cts-badge" style="background:#F5F3FF;color:#5B21B6">28% Preventable</span></div>'
+            f'</div></div>'
 
-    # ═══════════════════════════════════════════════════════════════
-    # 4 — WHICH AGENTS TO BUILD
-    # ═══════════════════════════════════════════════════════════════
-    _sec("4 — Which AI Agents to Build — Ranked by Monthly Saving")
+            # DEVICE
+            f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#F97316,#EF4444)"></div><div class="cts-body">'
+            f'<div class="cts-card-head"><div><div class="cts-card-title">Device</div><div class="cts-card-n">n=19 · 24% of calls · 24,360/mo</div></div>'
+            f'<div style="text-align:right"><div class="cts-card-cpp" style="color:#DC2626">$6.31</div><div class="cts-card-mo" style="color:#DC2626">$154K / month ↑ highest</div></div></div>'
+            f'<div class="cts-mini"><div class="cts-mseg" style="background:#CBD5E1;width:15%">15%</div><div class="cts-mseg" style="background:#F59E0B;width:27%">Disc 27%</div><div class="cts-mseg" style="background:#F97316;width:27%">Diag 27%</div><div class="cts-mseg" style="background:#10B981;width:20%">20%</div><div class="cts-mseg" style="background:#3B82F6;width:4%"></div><div class="cts-mseg" style="background:#CBD5E1;opacity:.55;width:13%">13%</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1"></div>Welcome</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:15%"></div></div><div class="cts-phase-pct">15%</div><div class="cts-phase-cost">$0.94</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F59E0B"></div>Discovery</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F59E0B;width:27%"></div></div><div class="cts-phase-pct">27%</div><div class="cts-phase-cost">$1.61</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F97316"></div>Diagnosis</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F97316;width:27%"></div></div><div class="cts-phase-pct" style="color:#DC2626">27%</div><div class="cts-phase-cost" style="color:#DC2626">$1.64</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#10B981"></div>Resolution</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#10B981;width:20%"></div></div><div class="cts-phase-pct">20%</div><div class="cts-phase-cost">$1.22</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:4%"></div></div><div class="cts-phase-pct">4%</div><div class="cts-phase-cost">$0.23</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:13%"></div></div><div class="cts-phase-pct">13%</div><div class="cts-phase-cost">$0.78</div></div>'
+            f'<div class="cts-badge-row"><span class="cts-badge" style="background:#FEF2F2;color:#991B1B">Highest cost per call</span><span class="cts-badge" style="background:#F5F3FF;color:#5B21B6">63% automatable</span></div>'
+            f'</div></div>'
 
-    rows = _build_roadmap(ic_clean, cpp, vol)
-    total_rm_saving = sum(r["monthly_saving"] for r in rows) if rows else 0
+            # INFORMATION
+            f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#10B981,#3B82F6)"></div><div class="cts-body">'
+            f'<div class="cts-card-head"><div><div class="cts-card-title">Information</div><div class="cts-card-n">n=14 · 18% of calls · 17,950/mo</div></div>'
+            f'<div style="text-align:right"><div class="cts-card-cpp" style="color:#059669">$5.60</div><div class="cts-card-mo">$101K / month</div></div></div>'
+            f'<div class="cts-mini"><div class="cts-mseg" style="background:#CBD5E1;width:16%">16%</div><div class="cts-mseg" style="background:#F59E0B;width:30%">Disc 30%</div><div class="cts-mseg" style="background:#F97316;width:10%">10%</div><div class="cts-mseg" style="background:#10B981;width:36%">Res 36%</div><div class="cts-mseg" style="background:#3B82F6;width:27%">Ups 27%</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1"></div>Welcome</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:16%"></div></div><div class="cts-phase-pct">16%</div><div class="cts-phase-cost">$0.98</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F59E0B"></div>Discovery</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F59E0B;width:30%"></div></div><div class="cts-phase-pct">30%</div><div class="cts-phase-cost">$1.77</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F97316"></div>Diagnosis</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F97316;width:10%"></div></div><div class="cts-phase-pct" style="color:#059669">10%</div><div class="cts-phase-cost" style="color:#059669">$0.58</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#10B981"></div>Resolution</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#10B981;width:36%"></div></div><div class="cts-phase-pct" style="color:#059669">36%</div><div class="cts-phase-cost">$2.14</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:27%"></div></div><div class="cts-phase-pct" style="color:#2563EB">27%</div><div class="cts-phase-cost" style="color:#2563EB">$1.64</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:11%"></div></div><div class="cts-phase-pct">11%</div><div class="cts-phase-cost">$0.65</div></div>'
+            f'<div class="cts-badge-row"><span class="cts-badge" style="background:#ECFDF5;color:#065F46">Low diagnosis · fast resolution</span><span class="cts-badge" style="background:#EFF6FF;color:#1E40AF">Strong upsell yield</span></div>'
+            f'</div></div>'
 
-    if rows:
-        road_html = ""
-        for r in rows:
-            _, bg, fg = _TIER_COLOR.get(r["tier"], (SLATE, "#F1F5F9", "#334155"))
-            tier_badge = (
-                f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
-                f'font-size:0.7rem;font-weight:700;background:{bg};color:{fg};">'
-                f'{r["tier"]}</span>'
-            )
-            effort_clr = "#059669" if r["effort"] == "Low" else "#D97706"
-            road_html += (
-                f"<tr>"
-                f"<td style='font-weight:600;color:#0F172A;'>{html.escape(r['intent'])}</td>"
-                f"<td style='text-align:right;color:#64748B;'>{r['monthly_calls']:,}</td>"
-                f"<td>{tier_badge}</td>"
-                f"<td style='text-align:right;font-weight:700;color:#059669;'>"
-                f"${r['monthly_saving']/1000:.0f}K</td>"
-                f"<td style='text-align:center;font-weight:600;color:{effort_clr};'>{r['effort']}</td>"
-                f"</tr>"
-            )
-        st.markdown(f"""
-        <table class="road-table">
-          <thead><tr>
-            <th>Call Intent</th>
-            <th style='text-align:right;'>Calls / Month</th>
-            <th>Resolution Type</th>
-            <th style='text-align:right;'>Saving / Month</th>
-            <th style='text-align:center;'>Build Effort</th>
-          </tr></thead>
-          <tbody>{road_html}</tbody>
-        </table>
-        """, unsafe_allow_html=True)
+            # BILLING
+            f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#10B981,#7C3AED)"></div><div class="cts-body">'
+            f'<div class="cts-card-head"><div><div class="cts-card-title">Billing</div><div class="cts-card-n">n=5 · 6% of calls · 6,410/mo</div></div>'
+            f'<div style="text-align:right"><div class="cts-card-cpp" style="color:#0F172A">$5.92</div><div class="cts-card-mo">$38K / month</div></div></div>'
+            f'<div class="cts-mini"><div class="cts-mseg" style="background:#CBD5E1;width:14%">14%</div><div class="cts-mseg" style="background:#F59E0B;width:24%">24%</div><div class="cts-mseg" style="background:#F97316;width:15%">15%</div><div class="cts-mseg" style="background:#10B981;width:29%">Res 29%</div><div class="cts-mseg" style="background:#EF4444;width:2%"></div><div class="cts-mseg" style="background:#CBD5E1;opacity:.55;width:20%">20%</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1"></div>Welcome</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:14%"></div></div><div class="cts-phase-pct">14%</div><div class="cts-phase-cost">$0.83</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F59E0B"></div>Discovery</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F59E0B;width:24%"></div></div><div class="cts-phase-pct">24%</div><div class="cts-phase-cost">$1.44</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F97316"></div>Diagnosis</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F97316;width:15%"></div></div><div class="cts-phase-pct">15%</div><div class="cts-phase-cost">$0.91</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#10B981"></div>Resolution</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#10B981;width:29%"></div></div><div class="cts-phase-pct" style="color:#059669">29%</div><div class="cts-phase-cost">$1.72</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:20%"></div></div><div class="cts-phase-pct">20%</div><div class="cts-phase-cost">$1.21</div></div>'
+            f'<div class="cts-badge-row"><span class="cts-badge" style="background:#ECFDF5;color:#065F46">Below-avg diagnosis</span><span class="cts-badge" style="background:#F5F3FF;color:#5B21B6">Agentic AI candidate</span></div>'
+            f'</div></div>'
+
+            # PLAN
+            f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#3B82F6,#7C3AED)"></div><div class="cts-body">'
+            f'<div class="cts-card-head"><div><div class="cts-card-title">Plan</div><div class="cts-card-n">n=5 · 6% of calls · 6,410/mo</div></div>'
+            f'<div style="text-align:right"><div class="cts-card-cpp" style="color:#DC2626">$7.26</div><div class="cts-card-mo" style="color:#DC2626">$47K / month ↑ longest</div></div></div>'
+            f'<div class="cts-mini"><div class="cts-mseg" style="background:#CBD5E1;width:23%">23%</div><div class="cts-mseg" style="background:#F59E0B;width:17%">17%</div><div class="cts-mseg" style="background:#F97316;width:10%">10%</div><div class="cts-mseg" style="background:#10B981;width:36%">Res 36%</div><div class="cts-mseg" style="background:#3B82F6;width:29%">Ups 29%</div><div class="cts-mseg" style="background:#CBD5E1;opacity:.55;width:19%">19%</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1"></div>Welcome</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:23%"></div></div><div class="cts-phase-pct">23%</div><div class="cts-phase-cost">$1.36</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F59E0B"></div>Discovery</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F59E0B;width:17%"></div></div><div class="cts-phase-pct">17%</div><div class="cts-phase-cost">$1.05</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F97316"></div>Diagnosis</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F97316;width:10%"></div></div><div class="cts-phase-pct" style="color:#059669">10%</div><div class="cts-phase-cost" style="color:#059669">$0.60</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#10B981"></div>Resolution</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#10B981;width:36%"></div></div><div class="cts-phase-pct" style="color:#059669">36%</div><div class="cts-phase-cost">$2.16</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:29%"></div></div><div class="cts-phase-pct" style="color:#2563EB">29%</div><div class="cts-phase-cost" style="color:#2563EB">$1.74</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:19%"></div></div><div class="cts-phase-pct">19%</div><div class="cts-phase-cost">$1.12</div></div>'
+            f'<div class="cts-badge-row"><span class="cts-badge" style="background:#EFF6FF;color:#1E40AF">High upsell revenue phase</span><span class="cts-badge" style="background:#FEF3C7;color:#92400E">Complex resolution drives cost</span></div>'
+            f'</div></div>'
+
+            # ACCOUNT
+            f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#94A3B8,#64748B)"></div><div class="cts-body">'
+            f'<div class="cts-card-head"><div><div class="cts-card-title">Account</div><div class="cts-card-n">n=4 · 5% of calls · 5,130/mo</div></div>'
+            f'<div style="text-align:right"><div class="cts-card-cpp" style="color:#059669">$4.83</div><div class="cts-card-mo" style="color:#059669">$25K / month ↓ lowest</div></div></div>'
+            f'<div class="cts-mini"><div class="cts-mseg" style="background:#CBD5E1;width:40%">Welcome 40%</div><div class="cts-mseg" style="background:#F59E0B;width:24%">24%</div><div class="cts-mseg" style="background:#F97316;width:3%"></div><div class="cts-mseg" style="background:#10B981;width:11%">11%</div><div class="cts-mseg" style="background:#EF4444;width:4%"></div><div class="cts-mseg" style="background:#CBD5E1;opacity:.55;width:11%">11%</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1"></div>Welcome</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:40%"></div></div><div class="cts-phase-pct" style="color:#D97706">40%</div><div class="cts-phase-cost" style="color:#D97706">$2.40</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F59E0B"></div>Discovery</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F59E0B;width:24%"></div></div><div class="cts-phase-pct">24%</div><div class="cts-phase-cost">$1.43</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#F97316"></div>Diagnosis</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#F97316;width:3%"></div></div><div class="cts-phase-pct" style="color:#059669">3%</div><div class="cts-phase-cost" style="color:#059669">$0.21</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#10B981"></div>Resolution</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#10B981;width:11%"></div></div><div class="cts-phase-pct">11%</div><div class="cts-phase-cost">$0.66</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#EF4444"></div>Hold</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#EF4444;width:4%"></div></div><div class="cts-phase-pct">4%</div><div class="cts-phase-cost">$0.22</div></div>'
+            f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:11%"></div></div><div class="cts-phase-pct">11%</div><div class="cts-phase-cost">$0.66</div></div>'
+            f'<div class="cts-badge-row"><span class="cts-badge" style="background:#ECFDF5;color:#065F46">Lowest cost per call</span><span class="cts-badge" style="background:#F8FAFC;color:#475569">Self-serve candidate</span></div>'
+            f'</div></div>'
+
+            f'</div>'  # /cts-grid
+            f'<div class="data-footnote" style="margin-top:16px;">* Phase % are averages from {n_calls}-transcript dataset. '
+            f'Call-type figures are directional given small sub-sample sizes (n=4–29). '
+            f'AHT = {aht_secs}s dataset avg — see dataset note above for enterprise scale factors.</div>'
+            f'</div>'
+        )
+        st.markdown(phase_html, unsafe_allow_html=True)
+
+        # ── 2 — PHASE DRILL-DOWN ──────────────────────────────────────
+        _sec("2 — Phase Drill-Down: What's Driving Time Inside Each Phase")
+
         st.markdown(
-            f"<p style='font-size:0.7rem;color:#94A3B8;margin-top:8px;'>"
-            f"Volumes estimated from {n_calls}-call sample extrapolated to {vol:,}/month. "
-            f"Total addressable: <strong>${total_rm_saving/1000:.0f}K/month</strong>. "
-            f"Validate against your live IVR taxonomy before build.</p>",
+            "<div style='font-size:0.93rem;color:#334155;line-height:1.7;margin-bottom:14px;'>"
+            "Section 1 shows <em>where</em> handle time goes. This breaks each cost-bearing phase "
+            "down by <strong>which customer intent drives it</strong> — and how often agents got "
+            "stuck there (<em>stall rate</em> = share of calls where this was the agent's most "
+            "disproportionate phase).</div>",
             unsafe_allow_html=True,
         )
-    else:
-        st.markdown('<div class="callout">Run the pipeline to populate the agent roadmap.</div>',
-                    unsafe_allow_html=True)
 
-    # ═══════════════════════════════════════════════════════════════
-    # 5 — ACTUAL PERFORMANCE
-    # ═══════════════════════════════════════════════════════════════
-    _sec("5 — Actual Performance")
+        drilldown  = data.get("phase_drilldown", {})
+        dd_phases  = [p for p in ["Discovery", "Diagnosis", "Resolution", "Upsell"] if drilldown.get(p)]
 
-    perf_metrics = [
-        ("First Call Resolution",  f"{kpis.get('fcr_rate_pct', 0):.0f}%",       GREEN,  "Calls resolved without a repeat contact"),
-        ("Avg Handle Time",        f"{kpis.get('avg_handle_time_minutes', 0):.1f} min", AMBER, "Average duration per call"),
-        ("Escalation Rate",        f"{kpis.get('escalation_rate_pct', 0):.0f}%", RED,    "Calls requiring senior / specialist escalation"),
-        ("Issues Resolved",        f"{kpis.get('all_issues_resolved_pct', 0):.0f}%", GREEN, "Calls where all customer issues were resolved"),
-        ("Sentiment Improved",     f"{kpis.get('sentiment_improved_pct', 0):.0f}%", GREEN, "Calls where customer sentiment improved"),
-        ("Avoidable Call Rate",    f"{kpis.get('avoidable_call_rate_pct', 0):.0f}%", PURPLE,"Contacts that didn't need to reach care"),
-    ]
+        if dd_phases:
+            _dd_tabs = st.tabs(dd_phases)
+            for _dd_tab, _dd_phase in zip(_dd_tabs, dd_phases):
+                with _dd_tab:
+                    rows = drilldown[_dd_phase]
+                    color, _ptype = PHASE_META.get(_dd_phase, ("#94A3B8", ""))
+                    top = rows[0]
+                    top_intent = top["intent"].replace("_", " ").title()
+                    stall_note = (
+                        f", {top['stall_pct']:.0f}% flagged as agent stall"
+                        if top["stall_pct"] > 0 else ""
+                    )
+                    st.markdown(
+                        f"<div style='font-size:0.85rem;color:#475569;margin-bottom:8px;'>"
+                        f"<strong style='color:{color};'>{top_intent}</strong> calls take longest in "
+                        f"<strong style='color:{color};'>{_dd_phase}</strong> — averaging {top['avg_seconds']:.0f}s ({top['calls']} calls{stall_note}).</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.plotly_chart(chart_drilldown_intents(rows, color), use_container_width=True, key=f"dd_{_dd_phase}")
+        else:
+            st.markdown('''<div class="callout" style="margin-top:4px;">
+              Phase drill-down requires <code>phase_drilldown</code> in <code>summary.json</code> —
+              run <code>python merge_outputs.py</code> to regenerate.
+            </div>''', unsafe_allow_html=True)
 
-    cols = st.columns(len(perf_metrics))
-    for col, (label, val, color, note) in zip(cols, perf_metrics):
-        with col:
+
+    with tab2:
+        st.markdown(_right_panel, unsafe_allow_html=True)
+
+        # ── P/A/H RESOLUTION STRATEGY ─────────────────────────────
+        _sec("Resolution Strategy — Proactive · Agentic · Human")
+        _prev_cost = round(prevent_pct / 100 * base)
+        _auto_cost = round(automate_pct / 100 * base)
+        _hum_cost  = round(human_pct / 100 * base)
+        _prev_save = cl.get("proactive_care_savings_usd", 0)
+        _ss_save   = cl.get("self_serve_savings_usd", 0)
+        _ag_save   = cl.get("agentic_ai_savings_usd", 0)
+        _auto_save = _ss_save + _ag_save
+
+        pah_html = (
+            f'<div style="padding:4px 0 20px;">'
+            f'<div style="font-size:0.87rem;color:#334155;line-height:1.7;margin-bottom:20px;">'
+            f'Every care call falls into one of three resolution strategies. '
+            f'Targeting the right strategy determines whether cost is <strong>eliminated</strong>, '
+            f'<strong>automated</strong>, or <strong>optimised</strong>.'
+            f'</div>'
+            f'<div class="pah-row">'
+
+            # PREVENT
+            f'<div class="pah-card"><div class="pah-accent" style="background:linear-gradient(90deg,#10B981,#059669)"></div>'
+            f'<div class="pah-body">'
+            f'<div class="pah-eyebrow" style="color:#059669">Prevent</div>'
+            f'<div class="pah-pct" style="color:#059669">{prevent_pct:.0f}%</div>'
+            f'<div class="pah-label">Proactive Resolution</div>'
+            f'<div class="pah-sub">Customer calls because we didn\'t reach them first. Eliminate the contact entirely before it forms.</div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Addressable cost / mo</span><span class="pah-cost-value" style="color:#0F172A">${_prev_cost/1000:.0f}K</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Net saving opportunity</span><span class="pah-cost-value" style="color:#059669">${_prev_save/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-action"><div class="pah-action-eyebrow">Recommended Action</div>'
+            f'<div class="pah-action-text">Proactive outreach — push notifications, pre-emptive SMS, bill alerts — before the customer needs to call</div></div>'
+            f'</div></div>'
+
+            # AUTOMATE
+            f'<div class="pah-card"><div class="pah-accent" style="background:linear-gradient(90deg,#3B82F6,#7C3AED)"></div>'
+            f'<div class="pah-body">'
+            f'<div class="pah-eyebrow" style="color:#2563EB">Automate</div>'
+            f'<div class="pah-pct" style="color:#2563EB">{automate_pct:.0f}%</div>'
+            f'<div class="pah-label">AI Agent Resolution</div>'
+            f'<div class="pah-sub">Customer calls with a deterministic issue. Deploy AI to resolve without a live human agent.</div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Self-serve ({selfserve_pct:.0f}%) addressable</span><span class="pah-cost-value" style="color:#0F172A">${round(selfserve_pct/100*base)/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Agentic AI ({agentic_pct:.1f}%) addressable</span><span class="pah-cost-value" style="color:#0F172A">${round(agentic_pct/100*base)/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Net saving opportunity</span><span class="pah-cost-value" style="color:#2563EB">${_auto_save/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-action"><div class="pah-action-eyebrow">Recommended Action</div>'
+            f'<div class="pah-action-text">Upgrade IVR to intent-aware AI, self-serve chatbot for top issue types, agentic routing for complex deterministic flows</div></div>'
+            f'</div></div>'
+
+            # HUMAN
+            f'<div class="pah-card"><div class="pah-accent" style="background:linear-gradient(90deg,#94A3B8,#64748B)"></div>'
+            f'<div class="pah-body">'
+            f'<div class="pah-eyebrow" style="color:#64748B">Human Required</div>'
+            f'<div class="pah-pct" style="color:#475569">{human_pct:.0f}%</div>'
+            f'<div class="pah-label">Optimise for Efficiency</div>'
+            f'<div class="pah-sub">Complex, empathy-critical, or compliance-governed calls. Human is the right channel.</div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Irreducible baseline cost</span><span class="pah-cost-value" style="color:#0F172A">${_hum_cost/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Focus lever</span><span class="pah-cost-value" style="color:#475569">AHT reduction</span></div>'
+            f'<div class="pah-action"><div class="pah-action-eyebrow">Recommended Action</div>'
+            f'<div class="pah-action-text">Skills-based routing, real-time agent assist, Diagnosis-phase tooling, FCR improvement programmes</div></div>'
+            f'</div></div>'
+
+            f'</div>'  # /pah-row
+
+            # Split bar
+            f'<div class="cts-eyebrow">Portfolio split — {n_calls:,} calls analysed</div>'
+            f'<div class="pah-split-bar">'
+            f'<div class="pah-split-seg" style="background:#10B981;width:{prevent_pct:.1f}%"><span>{prevent_pct:.0f}%</span><span class="psn">Prevent</span></div>'
+            f'<div class="pah-split-seg" style="background:#3B82F6;width:{selfserve_pct:.1f}%"><span>{selfserve_pct:.0f}%</span><span class="psn">Self-serve</span></div>'
+            f'<div class="pah-split-seg" style="background:#7C3AED;width:{agentic_pct:.1f}%" title="Agentic {agentic_pct:.1f}%"></div>'
+            f'<div class="pah-split-seg" style="background:#94A3B8;width:{human_pct:.1f}%"><span>{human_pct:.0f}%</span><span class="psn">Human</span></div>'
+            f'</div>'
+            f'<div class="pah-split-legend">'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#10B981"></div>Prevent {prevent_pct:.0f}% — ${_prev_save/1000:.0f}K/mo saveable</div>'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#3B82F6"></div>Self-serve {selfserve_pct:.0f}% — ${_ss_save/1000:.0f}K/mo saveable</div>'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#7C3AED"></div>Agentic {agentic_pct:.1f}% — ${_ag_save/1000:.0f}K/mo saveable</div>'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#94A3B8"></div>Human required {human_pct:.0f}% — ${_hum_cost/1000:.0f}K/mo baseline</div>'
+            f'</div>'
+            f'<div class="data-footnote" style="margin-top:16px;">* Segment classifications derived from call-level extraction across {n_calls} transcripts. '
+            f'Dollar figures based on dataset avg AHT of {aht_secs}s — scale proportionally for enterprise deployments. '
+            f'See dataset note above.</div>'
+            f'</div>'
+        )
+        st.markdown(pah_html, unsafe_allow_html=True)
+
+        # ═══════════════════════════════════════════════════════════════
+        # 3 — RESOLUTION OPPORTUNITY: WHAT THE DATA SAYS
+        # ═══════════════════════════════════════════════════════════════
+        _sec("3 — Resolution Opportunity: Insights from the Calls")
+
+        st.markdown(
+            f"<div style='font-size:0.93rem;color:#334155;line-height:1.7;margin-bottom:20px;'>"
+            f"From <strong>{n_calls:,} calls analysed</strong>, every contact was classified by "
+            f"whether a human agent was genuinely required — or whether autonomous AI could have "
+            f"resolved it. <strong>{total_auto:.0f}%</strong> did not require a human.</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Build segment list — only show PREVENT if > 0
+        segments_display = []
+        if prevent_pct > 0:
+            segments_display.append(("prevent", prevent_pct))
+        segments_display.append(("automate", automate_pct))
+        segments_display.append(("human",    human_pct))
+
+        ncols = len(segments_display)
+        cols  = st.columns(ncols)
+
+        seg_configs = {
+            "prevent": (
+                "PREVENT",        "#CCFBF1", "#0F766E", TEAL,
+                f"${cl['proactive_care_savings_usd']/1000:.0f}K / month",
+                "Customer shouldn't have needed to call. Detect the trigger event first — "
+                "outage, bill spike, data exhaustion — and push a proactive alert. "
+                "Eliminates the contact before it starts.",
+            ),
+            "automate": (
+                "AUTOMATE",       "#EDE9FE", "#6D28D9", PURPLE,
+                f"${(cl['self_serve_savings_usd']+cl['agentic_ai_savings_usd'])/1000:.0f}K / month",
+                f"Deterministic issue — AI agent resolves end-to-end: bill explanation, "
+                f"plan enquiry, order status, payments, balance check. "
+                f"({selfserve_pct:.0f}% self-serve · {agentic_pct:.0f}% full AI agent)",
+            ),
+            "human": (
+                "HUMAN REQUIRED", "#DBEAFE", "#1D4ED8", BLUE,
+                f"${(base - opp)/1000:.0f}K / month — irreducible",
+                "Complex faults, billing disputes, complaints, retention — "
+                "judgment-intensive situations that need an empathetic skilled agent. "
+                "Concentrate your human investment here.",
+            ),
+        }
+
+        for col, (key, pct) in zip(cols, segments_display):
+            badge, bbg, bfg, money_clr, money, desc = seg_configs[key]
+            n_seg = round(n_calls * pct / 100)
+            with col:
+                st.markdown(
+                    _seg(badge, bbg, bfg, pct,
+                         f"{n_seg} of {n_calls} calls analysed",
+                         money, money_clr, desc),
+                    unsafe_allow_html=True,
+                )
+
+        # Proactive potential note when proactive = 0
+        if prevent_pct == 0 and ic_clean:
+            tech_pct = ic_clean.get("technical", 0) / sum(ic_clean.values()) * 100
+            if tech_pct > 0:
+                st.markdown(f"""
+                <div class="callout teal" style="margin-top:14px;">
+                  <strong>Proactive Care opportunity not yet activated.</strong> &nbsp;
+                  {tech_pct:.0f}% of analysed contacts are technical issues —
+                  network faults, outages, and service degradation that could be detected
+                  and communicated proactively before the customer calls.
+                  Implementing event-driven alerts could move an estimated 15–25% of contacts
+                  out of the care queue entirely.
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Stacked bar
+        seg_bar_data = []
+        if prevent_pct > 0:
+            seg_bar_data.append(("Proactive Care", prevent_pct, TEAL))
+        seg_bar_data.append(("Agentic AI / Self-Serve", automate_pct, PURPLE))
+        seg_bar_data.append(("Human Agent Required", human_pct, BLUE))
+
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+        st.plotly_chart(chart_segment_bar(seg_bar_data), use_container_width=True, key="segment_bar")
+
+        st.markdown(f"""
+        <div class="callout green" style="margin-top:6px;">
+          <strong>Business case from {n_calls:,} calls:</strong> &nbsp;
+          {total_auto:.0f}% of your contact volume — {round(vol * total_auto / 100):,} calls/month
+          at scale — is addressable through autonomous AI.
+          At ${cpp:.2f} per call that is
+          <strong>${opp/1000:.0f}K/month · ${annual/1e6:.1f}M/year</strong>
+          in recoverable cost, before any improvement in customer experience is counted.
+        </div>
+        <div class="data-footnote" style="margin-top:8px;">
+          * Dollar figures derived from dataset avg AHT of {aht_secs}s ({aht_secs/60:.1f} min).
+          Enterprise care calls typically run 600–1,100s — cost opportunity scales proportionally
+          with your actual handle time. Phase classifications (Prevent / Automate / Human) are
+          independent of AHT and remain valid at any call length.
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ═══════════════════════════════════════════════════════════════
+        # 4 — WHICH AGENTS TO BUILD
+        # ═══════════════════════════════════════════════════════════════
+        _sec("4 — Which AI Agents to Build — Ranked by Monthly Saving")
+
+        rows = _build_roadmap(ic_clean, cpp, vol)
+        total_rm_saving = sum(r["monthly_saving"] for r in rows) if rows else 0
+
+        if rows:
+            road_html = ""
+            for r in rows:
+                _, bg, fg = _TIER_COLOR.get(r["tier"], (SLATE, "#F1F5F9", "#334155"))
+                tier_badge = (
+                    f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
+                    f'font-size:0.7rem;font-weight:700;background:{bg};color:{fg};">'
+                    f'{r["tier"]}</span>'
+                )
+                effort_clr = "#059669" if r["effort"] == "Low" else "#D97706"
+                road_html += (
+                    f"<tr>"
+                    f"<td style='font-weight:600;color:#0F172A;'>{html.escape(r['intent'])}</td>"
+                    f"<td style='text-align:right;color:#64748B;'>{r['monthly_calls']:,}</td>"
+                    f"<td>{tier_badge}</td>"
+                    f"<td style='text-align:right;font-weight:700;color:#059669;'>"
+                    f"${r['monthly_saving']/1000:.0f}K</td>"
+                    f"<td style='text-align:center;font-weight:600;color:{effort_clr};'>{r['effort']}</td>"
+                    f"</tr>"
+                )
+            st.markdown(f"""
+            <table class="road-table">
+              <thead><tr>
+                <th>Call Intent</th>
+                <th style='text-align:right;'>Calls / Month</th>
+                <th>Resolution Type</th>
+                <th style='text-align:right;'>Saving / Month</th>
+                <th style='text-align:center;'>Build Effort</th>
+              </tr></thead>
+              <tbody>{road_html}</tbody>
+            </table>
+            """, unsafe_allow_html=True)
             st.markdown(
-                f'<div class="scard" style="border-top:3px solid {color};">'
-                f'<div class="scard-label">{label}</div>'
-                f'<div class="scard-val" style="color:{color};">{val}</div>'
-                f'<div class="scard-note">{note}</div>'
-                f'</div>',
+                f"<p style='font-size:0.7rem;color:#94A3B8;margin-top:8px;'>"
+                f"Volumes estimated from {n_calls}-call sample extrapolated to {vol:,}/month. "
+                f"Total addressable: <strong>${total_rm_saving/1000:.0f}K/month</strong>. "
+                f"Validate against your live IVR taxonomy before build. "
+                f"* Saving figures based on dataset avg AHT of {aht_secs}s — "
+                f"scale by your actual AHT ÷ {aht_secs} for a live deployment estimate.</p>",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown('<div class="callout">Run the pipeline to populate the agent roadmap.</div>',
+                        unsafe_allow_html=True)
+
+        # ═══════════════════════════════════════════════════════════════
+        # 6 — ISSUE TREE: CALL TYPE → AGENT ACTIVITY → BUILD SEGMENT
+        # ═══════════════════════════════════════════════════════════════
+        _sec("6 — Issue Tree: Call Type, Agent Activity & Build Order")
+
+        ib          = data.get("issue_breakdown", {"categories": [], "build_queue": []})
+        categories  = ib.get("categories", [])
+        queue_items = ib.get("build_queue", [])
+
+        if not categories:
+            st.markdown(
+                '<div class="callout">Issue-tree breakdown requires <code>issue_breakdown</code> in '
+                '<code>summary.json</code> — run <code>python merge_outputs.py</code> to regenerate.</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                "<div style='font-size:0.93rem;color:#334155;line-height:1.7;margin-bottom:18px;'>"
+                "For each call type, every call is grouped by what the agent <strong>actually did</strong> "
+                "(<code>issue_1_resolution_method</code>) and which build segment it falls into — "
+                "<strong>Prevent</strong> (proactive outreach removes the call), "
+                "<strong>Automate</strong> (deterministic, repeatable — self-serve or agentic AI), or "
+                "<strong>Human</strong> (genuinely needs judgment).</div>",
                 unsafe_allow_html=True,
             )
 
-    # ═══════════════════════════════════════════════════════════════
-    # 6 — ISSUE TREE: CALL TYPE → AGENT ACTIVITY → BUILD SEGMENT
-    # ═══════════════════════════════════════════════════════════════
-    _sec("6 — Issue Tree: Call Type, Agent Activity & Build Order")
+            # ── Recommended Build Order ────────────────────────────────────
+            if queue_items:
+                total_dollars = sum(item["dollars"] for item in queue_items)
+                total_pct = round(total_dollars / base * 100) if base else 0
+                queue_rows_html = "".join(
+                    _build_queue_row_html(item, i + 1) for i, item in enumerate(queue_items)
+                )
+                st.markdown(
+                    f'<div class="it-queue">'
+                    f'<div class="it-queue-title">Recommended Build Order</div>'
+                    f'<div class="it-queue-sub">Top {len(queue_items)} Prevent / Automate opportunities '
+                    f'across all call types, ranked by monthly $ impact at {vol:,} calls/month</div>'
+                    f'{queue_rows_html}'
+                    f'<div class="it-queue-total">'
+                    f'<div class="it-queue-total-label">Top {len(queue_items)} combined</div>'
+                    f'<div class="it-queue-total-value">${total_dollars/1000:.0f}K/mo'
+                    f'<small>{total_pct}% of baseline</small></div>'
+                    f'</div>'
+                    f'<div class="data-footnote" style="margin-top:10px;">'
+                    f'* Monthly $ impact based on dataset avg AHT of {aht_secs}s. '
+                    f'At enterprise AHT of 600–1,100s these figures scale 4–7×. '
+                    f'Segment classifications (Prevent / Automate / Human) are AHT-independent.'
+                    f'</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
-    ib          = data.get("issue_breakdown", {"categories": [], "build_queue": []})
-    categories  = ib.get("categories", [])
-    queue_items = ib.get("build_queue", [])
-
-    if not categories:
-        st.markdown(
-            '<div class="callout">Issue-tree breakdown requires <code>issue_breakdown</code> in '
-            '<code>summary.json</code> — run <code>python merge_outputs.py</code> to regenerate.</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            "<div style='font-size:0.93rem;color:#334155;line-height:1.7;margin-bottom:18px;'>"
-            "For each call type, every call is grouped by what the agent <strong>actually did</strong> "
-            "(<code>issue_1_resolution_method</code>) and which build segment it falls into — "
-            "<strong>Prevent</strong> (proactive outreach removes the call), "
-            "<strong>Automate</strong> (deterministic, repeatable — self-serve or agentic AI), or "
-            "<strong>Human</strong> (genuinely needs judgment).</div>",
-            unsafe_allow_html=True,
-        )
-
-        # ── Recommended Build Order ────────────────────────────────────
-        if queue_items:
-            total_dollars = sum(item["dollars"] for item in queue_items)
-            total_pct = round(total_dollars / base * 100) if base else 0
-            queue_rows_html = "".join(
-                _build_queue_row_html(item, i + 1) for i, item in enumerate(queue_items)
-            )
+            # ── Full picture ────────────────────────────────────────────────
             st.markdown(
-                f'<div class="it-queue">'
-                f'<div class="it-queue-title">Recommended Build Order</div>'
-                f'<div class="it-queue-sub">Top {len(queue_items)} Prevent / Automate opportunities '
-                f'across all call types, ranked by monthly $ impact at {vol:,} calls/month</div>'
-                f'{queue_rows_html}'
-                f'<div class="it-queue-total">'
-                f'<div class="it-queue-total-label">Top {len(queue_items)} combined</div>'
-                f'<div class="it-queue-total-value">${total_dollars/1000:.0f}K/mo'
-                f'<small>{total_pct}% of baseline</small></div>'
+                f'<div class="it-overview">'
+                f'<div class="it-overview-title">Full Picture &mdash; All {n_calls:,} Calls</div>'
+                f'<div class="it-overview-sub">How the ${base/1000:.0f}K/mo baseline splits across '
+                f'Prevent / Automate / Human</div>'
+                f'{_overview_bar_html(prevent_pct, automate_pct, human_pct, selfserve_pct, agentic_pct, base)}'
+                f'<div class="it-legend">'
+                f'<span><span class="it-dot it-dot-simple"></span>Simple / deterministic '
+                f'(agent action, self-serve guidance)</span>'
+                f'<span><span class="it-dot it-dot-complex"></span>Complex / judgment '
+                f'(escalated, workaround, unresolved)</span>'
                 f'</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
 
-        # ── Full picture ────────────────────────────────────────────────
-        st.markdown(
-            f'<div class="it-overview">'
-            f'<div class="it-overview-title">Full Picture &mdash; All {n_calls:,} Calls</div>'
-            f'<div class="it-overview-sub">How the ${base/1000:.0f}K/mo baseline splits across '
-            f'Prevent / Automate / Human</div>'
-            f'{_overview_bar_html(prevent_pct, automate_pct, human_pct, selfserve_pct, agentic_pct, base)}'
-            f'<div class="it-legend">'
-            f'<span><span class="it-dot it-dot-simple"></span>Simple / deterministic '
-            f'(agent action, self-serve guidance)</span>'
-            f'<span><span class="it-dot it-dot-complex"></span>Complex / judgment '
-            f'(escalated, workaround, unresolved)</span>'
-            f'</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+            # ── Featured call types (top 2 by volume) + compact rows for the rest ──
+            featured, remaining = categories[:2], categories[2:]
+            for cat in featured:
+                st.markdown(_category_card_html(cat), unsafe_allow_html=True)
 
-        # ── Featured call types (top 2 by volume) + compact rows for the rest ──
-        featured, remaining = categories[:2], categories[2:]
-        for cat in featured:
-            st.markdown(_category_card_html(cat), unsafe_allow_html=True)
+            if remaining:
+                compact_rows_html = "".join(_compact_row_html(c) for c in remaining)
+                st.markdown(
+                    f'<div class="it-compact-card">'
+                    f'<div class="it-compact-title">Other Call Types</div>'
+                    f'{compact_rows_html}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
-        if remaining:
-            compact_rows_html = "".join(_compact_row_html(c) for c in remaining)
-            st.markdown(
-                f'<div class="it-compact-card">'
-                f'<div class="it-compact-title">Other Call Types</div>'
-                f'{compact_rows_html}'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+        # ═══════════════════════════════════════════════════════════════
+        # 5 — ACTUAL PERFORMANCE
+        # ═══════════════════════════════════════════════════════════════
+        _sec("5 — Actual Performance")
+
+        perf_metrics = [
+            ("First Call Resolution",  f"{kpis.get('fcr_rate_pct', 0):.0f}%",       GREEN,  "Calls resolved without a repeat contact"),
+            ("Avg Handle Time",        f"{kpis.get('avg_handle_time_minutes', 0):.1f} min", AMBER, "Average duration per call"),
+            ("Escalation Rate",        f"{kpis.get('escalation_rate_pct', 0):.0f}%", RED,    "Calls requiring senior / specialist escalation"),
+            ("Issues Resolved",        f"{kpis.get('all_issues_resolved_pct', 0):.0f}%", GREEN, "Calls where all customer issues were resolved"),
+            ("Sentiment Improved",     f"{kpis.get('sentiment_improved_pct', 0):.0f}%", GREEN, "Calls where customer sentiment improved"),
+            ("Avoidable Call Rate",    f"{kpis.get('avoidable_call_rate_pct', 0):.0f}%", PURPLE,"Contacts that didn't need to reach care"),
+        ]
+
+        cols = st.columns(len(perf_metrics))
+        for col, (label, val, color, note) in zip(cols, perf_metrics):
+            with col:
+                st.markdown(
+                    f'<div class="scard" style="border-top:3px solid {color};">'
+                    f'<div class="scard-label">{label}</div>'
+                    f'<div class="scard-val" style="color:{color};">{val}</div>'
+                    f'<div class="scard-note">{note}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
     # ── Footer ────────────────────────────────────────────────────────
     st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
