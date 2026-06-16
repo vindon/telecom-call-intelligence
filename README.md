@@ -2,6 +2,7 @@
 
 > A production-grade **autonomous multi-agent AI pipeline** built on Claude's Agentic AI framework — turning raw telecom call transcripts into board-ready intelligence. Every call analysed. Every decision traceable. Every stage secured and governed.
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-CD040B?logo=streamlit&logoColor=white)](https://telecom-call-intelligence.streamlit.app/)
 [![CI](https://github.com/vindon/telecom-call-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/vindon/telecom-call-intelligence/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph-4A90D9)
