@@ -897,19 +897,19 @@ def _output_html(phase: str, data) -> str:
 
     if phase == "aggregation":
         body = (
-            f'<div style="color:#94A3B8;font-size:0.75rem;margin-bottom:14px;">Computing KPIs across the call...</div>'
-            f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
-            f'<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">FCR</div>'
-            f'<div style="color:#34D399;font-size:1.3rem;font-weight:900;">✓ Yes</div></div>'
-            f'<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">Segment</div>'
-            f'<div style="color:#A78BFA;font-size:0.85rem;font-weight:800;">Automate<br>Agentic</div></div>'
-            f'<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">AHT</div>'
-            f'<div style="color:#34D399;font-size:1.3rem;font-weight:900;">147s</div></div>'
-            f'</div>'
-            f'<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1E293B;">'
-            f'<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;KPIs written to pipeline state</div>'
-            f'<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;Resolution segment: automate_agentic</div>'
-            f'</div>'
+            '<div style="color:#94A3B8;font-size:0.75rem;margin-bottom:14px;">Computing KPIs across the call...</div>'
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+            '<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">FCR</div>'
+            '<div style="color:#34D399;font-size:1.3rem;font-weight:900;">✓ Yes</div></div>'
+            '<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">Segment</div>'
+            '<div style="color:#A78BFA;font-size:0.85rem;font-weight:800;">Automate<br>Agentic</div></div>'
+            '<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">AHT</div>'
+            '<div style="color:#34D399;font-size:1.3rem;font-weight:900;">147s</div></div>'
+            '</div>'
+            '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1E293B;">'
+            '<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;KPIs written to pipeline state</div>'
+            '<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;Resolution segment: automate_agentic</div>'
+            '</div>'
         )
         return _panel("Agent 4 — Aggregation · KPI computation", body)
 
@@ -924,27 +924,27 @@ def _output_html(phase: str, data) -> str:
 
     if phase == "approval":
         body = (
-            f'<div style="color:#34D399;font-size:0.85rem;margin-bottom:10px;">✓ &nbsp;Auto-approved — REQUIRE_HUMAN_APPROVAL=False</div>'
-            f'<div style="color:#64748B;font-size:0.75rem;line-height:1.8;">'
-            f'Decision logged &nbsp;·&nbsp; confidence: 0.94<br>'
-            f'Routing to Export agent</div>'
+            '<div style="color:#34D399;font-size:0.85rem;margin-bottom:10px;">✓ &nbsp;Auto-approved — REQUIRE_HUMAN_APPROVAL=False</div>'
+            '<div style="color:#64748B;font-size:0.75rem;line-height:1.8;">'
+            'Decision logged &nbsp;·&nbsp; confidence: 0.94<br>'
+            'Routing to Export agent</div>'
         )
         return _panel("Agent 6 — Approval Gate · Human-in-the-loop", body)
 
     if phase in ("export", "complete"):
         body = (
-            f'<div style="color:#34D399;font-size:0.78rem;line-height:2;">'
-            f'✓ &nbsp;outputs/results_20260616.csv &nbsp;·&nbsp; 1 row appended<br>'
-            f'✓ &nbsp;outputs/decisions_20260616.json &nbsp;·&nbsp; 7 decisions logged<br>'
-            f'✓ &nbsp;outputs/audit_20260616.json &nbsp;·&nbsp; full trace written<br>'
-            f'✓ &nbsp;outputs/agent_memory.json &nbsp;·&nbsp; cross-run memory updated'
-            f'</div>'
+            '<div style="color:#34D399;font-size:0.78rem;line-height:2;">'
+            '✓ &nbsp;outputs/results_20260616.csv &nbsp;·&nbsp; 1 row appended<br>'
+            '✓ &nbsp;outputs/decisions_20260616.json &nbsp;·&nbsp; 7 decisions logged<br>'
+            '✓ &nbsp;outputs/audit_20260616.json &nbsp;·&nbsp; full trace written<br>'
+            '✓ &nbsp;outputs/agent_memory.json &nbsp;·&nbsp; cross-run memory updated'
+            '</div>'
         )
         if phase == "complete":
             body += (
-                f'<div style="margin-top:14px;padding:12px 14px;background:#064E3B;border-radius:8px;">'
-                f'<div style="color:#34D399;font-size:0.82rem;font-weight:700;">Pipeline complete &nbsp;·&nbsp; 1 call &nbsp;·&nbsp; 7 agents &nbsp;·&nbsp; ~10s &nbsp;·&nbsp; ~$0.013</div>'
-                f'</div>'
+                '<div style="margin-top:14px;padding:12px 14px;background:#064E3B;border-radius:8px;">'
+                '<div style="color:#34D399;font-size:0.82rem;font-weight:700;">Pipeline complete &nbsp;·&nbsp; 1 call &nbsp;·&nbsp; 7 agents &nbsp;·&nbsp; ~10s &nbsp;·&nbsp; ~$0.013</div>'
+                '</div>'
             )
         return _panel("Agent 7 — Export · CSV · JSON · audit trail", body)
 
@@ -1437,7 +1437,7 @@ def main():
 
     # Hero numbers
     badge     = "DEMO DATA" if is_demo else "LIVE DATA"
-    badge_cls = "badge-demo" if is_demo else "badge-live"
+
 
     # Phase-time-based P&L — Serve (P1-P4) / Sell (P5) / Retain (cross-cutting)
     # computed in pipeline/aggregator.py (_phase_pnl), stored in cost_levers.
@@ -2452,7 +2452,8 @@ def main():
             pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
             out_ph.markdown(_output_html("ingestion", None), unsafe_allow_html=True)
             time.sleep(0.7)
-            statuses[0] = "done"; timings[0] = "0.3s"
+            statuses[0] = "done"
+            timings[0] = "0.3s"
 
             # ── Agent 2: Extraction ────────────────────────────────
             statuses[1] = "running"
@@ -2462,7 +2463,8 @@ def main():
                 pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
                 out_ph.markdown(_output_html("extraction", extracted), unsafe_allow_html=True)
                 time.sleep(0.19)
-            statuses[1] = "done"; timings[1] = "2.9s"
+            statuses[1] = "done"
+            timings[1] = "2.9s"
 
             # ── Agent 3: QA Scoring ────────────────────────────────
             statuses[2] = "running"
@@ -2470,14 +2472,16 @@ def main():
                 pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
                 out_ph.markdown(_output_html("qa", score), unsafe_allow_html=True)
                 time.sleep(0.2)
-            statuses[2] = "done"; timings[2] = "1.6s"
+            statuses[2] = "done"
+            timings[2] = "1.6s"
 
             # ── Agent 4: Aggregation ───────────────────────────────
             statuses[3] = "running"
             pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
             out_ph.markdown(_output_html("aggregation", None), unsafe_allow_html=True)
             time.sleep(0.7)
-            statuses[3] = "done"; timings[3] = "0.4s"
+            statuses[3] = "done"
+            timings[3] = "0.4s"
 
             # ── Agent 5: Insights ──────────────────────────────────
             statuses[4] = "running"
@@ -2487,21 +2491,24 @@ def main():
                 pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
                 out_ph.markdown(_output_html("insights", streamed), unsafe_allow_html=True)
                 time.sleep(0.072)
-            statuses[4] = "done"; timings[4] = "3.1s"
+            statuses[4] = "done"
+            timings[4] = "3.1s"
 
             # ── Agent 6: Approval Gate ─────────────────────────────
             statuses[5] = "running"
             pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
             out_ph.markdown(_output_html("approval", None), unsafe_allow_html=True)
             time.sleep(0.45)
-            statuses[5] = "done"; timings[5] = "0.1s"
+            statuses[5] = "done"
+            timings[5] = "0.1s"
 
             # ── Agent 7: Export ────────────────────────────────────
             statuses[6] = "running"
             pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
             out_ph.markdown(_output_html("export", None), unsafe_allow_html=True)
             time.sleep(0.45)
-            statuses[6] = "done"; timings[6] = "0.2s"
+            statuses[6] = "done"
+            timings[6] = "0.2s"
 
             # ── Complete ───────────────────────────────────────────
             pipe_ph.markdown(_pipeline_html(statuses, timings), unsafe_allow_html=True)
