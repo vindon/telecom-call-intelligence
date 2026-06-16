@@ -2429,20 +2429,21 @@ def main():
             unsafe_allow_html=True,
         )
 
-        # Pipeline diagram placeholder
+        # Button sits above the output — clicking it runs the animation below
+        run_clicked = st.button("▶  Run Live Demo", type="primary", key="live_demo_btn")
+
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+
+        # Pipeline diagram and terminal output are BELOW the button so the
+        # user sees the animation without needing to scroll up.
         pipe_ph = st.empty()
-        pipe_ph.markdown(
-            _pipeline_html(["pending"] * 7, [None] * 7),
-            unsafe_allow_html=True,
-        )
+        out_ph  = st.empty()
 
-        # Output terminal placeholder
-        out_ph = st.empty()
-        out_ph.markdown(_output_html("idle", None), unsafe_allow_html=True)
+        if not run_clicked:
+            pipe_ph.markdown(_pipeline_html(["pending"] * 7, [None] * 7), unsafe_allow_html=True)
+            out_ph.markdown(_output_html("idle", None), unsafe_allow_html=True)
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-
-        if st.button("▶  Run Live Demo", type="primary", key="live_demo_btn"):
+        if run_clicked:
             statuses = ["pending"] * 7
             timings  = [None] * 7
 
