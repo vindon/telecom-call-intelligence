@@ -7,7 +7,7 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph-4A90D9)
 ![Claude](https://img.shields.io/badge/Claude-Haiku%204.5-CC785C?logo=anthropic&logoColor=white)
 ![NVIDIA](https://img.shields.io/badge/NVIDIA-NIM%20LLaMA--3.3--70B-76B900?logo=nvidia&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-342%20passing-22C55E)
+![Tests](https://img.shields.io/badge/Tests-364%20passing-22C55E)
 ![License](https://img.shields.io/badge/License-Proprietary-DC2626)
 
 ---
@@ -149,7 +149,7 @@ Every component exists because production autonomous systems need it.
 | Extraction cost (Gemini free tier) | ~$0.00 / 100 calls (free-tier eligible) |
 | Deliberation passes | 3 per insights run |
 | Decision records per run | 15–60 traceable decisions |
-| Test suite | 342 tests · < 7 seconds |
+| Test suite | 364 tests · < 7 seconds |
 | Checkpoint overhead | Zero — resume is instantaneous |
 
 ---
@@ -240,7 +240,7 @@ make clean         # remove __pycache__, .pyc, pytest cache
 
 ## Dashboard
 
-The executive dashboard (`dashboard/app.py`) is a professional light-theme Streamlit application with 8 sections, reading live from `outputs/summary.json`. Falls back to built-in demo data when no pipeline output is present.
+The executive dashboard (`dashboard/app.py`) is a professional light-theme Streamlit application with 6 sections, reading live from `outputs/summary.json`. Falls back to built-in demo data when no pipeline output is present.
 
 ```bash
 streamlit run dashboard/app.py   # http://localhost:8501
@@ -248,14 +248,14 @@ streamlit run dashboard/app.py   # http://localhost:8501
 
 | Section | Content |
 |---------|---------|
-| **Hero** | "X out of every 100 contacts don't need a human agent" — from live analysis |
-| **Cost Panels** | *Insights from N Calls Analysed* (Cost to Serve/Sell/Retain forecast) · *AI Recovery Opportunity* (monthly saving vs baseline) |
-| **Evidence** | Issue category bar chart · phase-time waterfall |
-| **Resolution Opportunity** | PREVENT · AUTOMATE · HUMAN REQUIRED — with cost impact per segment |
-| **AI Agents to Build** | Ranked roadmap: intent · calls/month · saving/month · build effort |
-| **Actual Performance** | FCR · AHT · escalation rate · sentiment improved · avoidable rate |
-| **Prioritised Action Plan** | Traffic-signal table: CRITICAL / HIGH / QUICK WIN with initiative, scope, impact, next step |
-| **Performance Trends** | FCR/AHT/QA trend charts (visible after 2+ pipeline runs) |
+| **Hero** | "Telecom Cost Intelligence for Care Calls" — eyebrow, headline, and subline sourced from live analysis |
+| **Cost Panels** | *Insights from N Calls Analysed* (Cost to Serve P1–P4 / Cost to Sell P5 / Cost to Retain — allocated by phase-time share of AHT) · *AI Recovery Opportunity* (monthly saving vs baseline) |
+| **1 — The Evidence** | Issue category bar chart · phase-time waterfall |
+| **2 — Phase Drill-Down** | Per-phase tabs (Discovery/Diagnosis/Resolution/Upsell) — top-5 intents by avg phase duration, with agent stall rate |
+| **3 — Resolution Opportunity** | PREVENT · AUTOMATE · HUMAN REQUIRED — with cost impact per segment |
+| **4 — AI Agents to Build** | Ranked roadmap: intent · calls/month · saving/month · build effort |
+| **5 — Actual Performance** | FCR · AHT · escalation rate · sentiment improved · avoidable rate |
+| **6 — Issue Tree** | Per-call-type breakdown: what the agent did (`issue_1_resolution_method`) → Prevent / Automate / Human segment attribution → ranked build queue (top-4 opportunities by monthly $ impact) + full-picture overview bar |
 
 ---
 
@@ -300,7 +300,7 @@ telecom-call-intelligence/
 │   ├── test_graph.py
 │   └── test_security.py        ← 51 security tests
 │
-├── dashboard/app.py            ← Streamlit executive dashboard (8 sections)
+├── dashboard/app.py            ← Streamlit executive dashboard (6 sections)
 ├── api/main.py                 ← FastAPI wrapper (/health, /summary, /analyze)
 ├── prompts/system_prompt.txt   ← 70-field extraction schema + CoT instructions
 │

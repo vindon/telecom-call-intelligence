@@ -1,7 +1,7 @@
 {
   "meta": {
     "total_calls_analyzed": 78,
-    "analysis_timestamp": "2026-06-11T08:42:29.218925",
+    "analysis_timestamp": "2026-06-16T09:33:19.921278",
     "dataset": "talkmap/telecom-conversation-corpus",
     "model": "claude-haiku-4-5-20251001",
     "inference_provider": "Anthropic (Claude)",
@@ -26,7 +26,12 @@
     "avg_issues_per_call": 1.1,
     "avg_hold_time_seconds": 1.3,
     "avg_hold_count": 0.1,
-    "avg_empathy_statements": 1.8
+    "avg_empathy_statements": 1.8,
+    "prevent_pct": 26.9,
+    "automate_pct": 43.6,
+    "human_required_pct": 29.5,
+    "automate_self_serve_pct": 42.3,
+    "automate_agentic_pct": 1.3
   },
   "phase_avg_seconds": {
     "Welcome & Auth": 26.8,
@@ -36,6 +41,136 @@
     "Hold": 1.3,
     "Upsell": 14.7,
     "Closing": 21.4
+  },
+  "phase_drilldown": {
+    "Discovery": [
+      {
+        "intent": "device",
+        "avg_seconds": 42.8,
+        "calls": 19,
+        "stall_pct": 5.3
+      },
+      {
+        "intent": "technical",
+        "avg_seconds": 42.0,
+        "calls": 29,
+        "stall_pct": 10.3
+      },
+      {
+        "intent": "information",
+        "avg_seconds": 42.0,
+        "calls": 14,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "billing",
+        "avg_seconds": 36.2,
+        "calls": 5,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "plan",
+        "avg_seconds": 32.2,
+        "calls": 5,
+        "stall_pct": 0.0
+      }
+    ],
+    "Diagnosis": [
+      {
+        "intent": "device",
+        "avg_seconds": 43.9,
+        "calls": 19,
+        "stall_pct": 15.8
+      },
+      {
+        "intent": "technical",
+        "avg_seconds": 36.4,
+        "calls": 29,
+        "stall_pct": 17.2
+      },
+      {
+        "intent": "billing",
+        "avg_seconds": 22.8,
+        "calls": 5,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "plan",
+        "avg_seconds": 18.6,
+        "calls": 5,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "information",
+        "avg_seconds": 13.7,
+        "calls": 14,
+        "stall_pct": 7.1
+      }
+    ],
+    "Resolution": [
+      {
+        "intent": "plan",
+        "avg_seconds": 66.6,
+        "calls": 5,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "information",
+        "avg_seconds": 50.7,
+        "calls": 14,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "billing",
+        "avg_seconds": 43.0,
+        "calls": 5,
+        "stall_pct": 20.0
+      },
+      {
+        "intent": "device",
+        "avg_seconds": 32.5,
+        "calls": 19,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "technical",
+        "avg_seconds": 26.9,
+        "calls": 29,
+        "stall_pct": 6.9
+      }
+    ],
+    "Upsell": [
+      {
+        "intent": "plan",
+        "avg_seconds": 53.6,
+        "calls": 5,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "information",
+        "avg_seconds": 38.9,
+        "calls": 14,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "device",
+        "avg_seconds": 6.2,
+        "calls": 19,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "billing",
+        "avg_seconds": 4.6,
+        "calls": 5,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "technical",
+        "avg_seconds": 2.6,
+        "calls": 29,
+        "stall_pct": 0.0
+      }
+    ]
   },
   "distributions": {
     "issue_category": {
@@ -125,11 +260,272 @@
     "cost_per_call_usd": 6.0,
     "monthly_volume_estimate": 100000,
     "baseline_monthly_cost_usd": 600000,
-    "self_serve_savings_usd": 287640,
-    "agentic_ai_savings_usd": 177660,
+    "self_serve_savings_usd": 215730,
+    "agentic_ai_savings_usd": 5460,
     "proactive_care_savings_usd": 96840,
-    "total_savings_opportunity_usd": 562140,
-    "savings_pct_of_baseline": 93.7
+    "total_savings_opportunity_usd": 318030,
+    "savings_pct_of_baseline": 53.0,
+    "serve_time_pct": 78.0,
+    "serve_cost_usd": 468000,
+    "sell_time_pct": 8.6,
+    "sell_cost_usd": 51600,
+    "retain_time_pct": 13.3,
+    "retain_cost_usd": 79800
+  },
+  "issue_breakdown": {
+    "categories": [
+      {
+        "category": "technical",
+        "count": 29,
+        "pct": 37.2,
+        "dollars": 223077,
+        "segments": {
+          "prevent": {
+            "count": 8,
+            "pct": 27.6,
+            "methods": {
+              "agent_action": 5,
+              "escalated": 2,
+              "workaround": 1
+            }
+          },
+          "automate_self_serve": {
+            "count": 8,
+            "pct": 27.6,
+            "methods": {
+              "self_serve_guidance": 4,
+              "agent_action": 3,
+              "workaround|escalated": 1
+            }
+          },
+          "automate_agentic": {
+            "count": 1,
+            "pct": 3.4,
+            "methods": {
+              "agent_action": 1
+            }
+          },
+          "human": {
+            "count": 12,
+            "pct": 41.4,
+            "methods": {
+              "escalated": 9,
+              "agent_action": 2,
+              "workaround": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "device",
+        "count": 19,
+        "pct": 24.4,
+        "dollars": 146154,
+        "segments": {
+          "prevent": {
+            "count": 1,
+            "pct": 5.3,
+            "methods": {
+              "agent_action": 1
+            }
+          },
+          "automate_self_serve": {
+            "count": 12,
+            "pct": 63.2,
+            "methods": {
+              "agent_action": 6,
+              "self_serve_guidance": 3,
+              "escalated": 2,
+              "workaround": 1
+            }
+          },
+          "human": {
+            "count": 6,
+            "pct": 31.6,
+            "methods": {
+              "agent_action": 3,
+              "escalated": 3
+            }
+          }
+        }
+      },
+      {
+        "category": "information",
+        "count": 14,
+        "pct": 17.9,
+        "dollars": 107692,
+        "segments": {
+          "prevent": {
+            "count": 5,
+            "pct": 35.7,
+            "methods": {
+              "agent_action": 3,
+              "self_serve_guidance": 2
+            }
+          },
+          "automate_self_serve": {
+            "count": 8,
+            "pct": 57.1,
+            "methods": {
+              "agent_action": 7,
+              "self_serve_guidance": 1
+            }
+          },
+          "human": {
+            "count": 1,
+            "pct": 7.1,
+            "methods": {
+              "agent_action": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "billing",
+        "count": 5,
+        "pct": 6.4,
+        "dollars": 38462,
+        "segments": {
+          "prevent": {
+            "count": 3,
+            "pct": 60.0,
+            "methods": {
+              "agent_action": 2,
+              "escalated": 1
+            }
+          },
+          "automate_self_serve": {
+            "count": 2,
+            "pct": 40.0,
+            "methods": {
+              "escalated": 1,
+              "self_serve_guidance": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "plan",
+        "count": 5,
+        "pct": 6.4,
+        "dollars": 38462,
+        "segments": {
+          "prevent": {
+            "count": 4,
+            "pct": 80.0,
+            "methods": {
+              "agent_action": 4
+            }
+          },
+          "automate_self_serve": {
+            "count": 1,
+            "pct": 20.0,
+            "methods": {
+              "agent_action": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "account",
+        "count": 4,
+        "pct": 5.1,
+        "dollars": 30769,
+        "segments": {
+          "automate_self_serve": {
+            "count": 2,
+            "pct": 50.0,
+            "methods": {
+              "escalated": 1,
+              "unresolved": 1
+            }
+          },
+          "human": {
+            "count": 2,
+            "pct": 50.0,
+            "methods": {
+              "unresolved": 1,
+              "agent_action": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "other",
+        "count": 1,
+        "pct": 1.3,
+        "dollars": 7692,
+        "segments": {
+          "human": {
+            "count": 1,
+            "pct": 100.0,
+            "methods": {
+              "escalated": 1
+            }
+          }
+        }
+      }
+    ],
+    "build_queue": [
+      {
+        "category": "device",
+        "segment": "automate",
+        "count": 12,
+        "pct": 63.2,
+        "dollars": 92308,
+        "category_count": 19,
+        "self_serve_count": 12,
+        "agentic_count": 0,
+        "methods": {
+          "agent_action": 6,
+          "self_serve_guidance": 3,
+          "escalated": 2,
+          "workaround": 1
+        }
+      },
+      {
+        "category": "technical",
+        "segment": "automate",
+        "count": 9,
+        "pct": 31.0,
+        "dollars": 69231,
+        "category_count": 29,
+        "self_serve_count": 8,
+        "agentic_count": 1,
+        "methods": {
+          "self_serve_guidance": 4,
+          "agent_action": 4,
+          "workaround|escalated": 1
+        }
+      },
+      {
+        "category": "technical",
+        "segment": "prevent",
+        "count": 8,
+        "pct": 27.6,
+        "dollars": 61538,
+        "category_count": 29,
+        "methods": {
+          "agent_action": 5,
+          "escalated": 2,
+          "workaround": 1
+        }
+      },
+      {
+        "category": "information",
+        "segment": "automate",
+        "count": 8,
+        "pct": 57.1,
+        "dollars": 61538,
+        "category_count": 14,
+        "self_serve_count": 8,
+        "agentic_count": 0,
+        "methods": {
+          "agent_action": 7,
+          "self_serve_guidance": 1
+        }
+      }
+    ]
   },
   "token_usage": {
     "model": "claude-haiku-4-5-20251001",

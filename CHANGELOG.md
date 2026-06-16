@@ -6,6 +6,43 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.3.0] — 2026-06-16
+
+### Added — Issue Tree (Section 6) and `issue_breakdown` aggregator field
+
+- `pipeline/aggregator.py`: `_segment_masks(df)` — returns 4 mutually-exclusive, priority-ordered `pd.Series` masks (prevent, automate_self_serve, automate_agentic, human); shared by both `_resolution_segments` (unchanged output) and the new breakdown function
+- `pipeline/aggregator.py`: `_category_resolution_breakdown(df, n, baseline)` — cross-tab of `issue_1_category` × resolution segment × `issue_1_resolution_method`; returns `{"categories": [...], "build_queue": [...]}` sorted by dollar impact, written to `aggregate_metrics()["issue_breakdown"]`
+- Dashboard Section 6 completely redesigned: replaces the static priority table with a data-driven **Issue Tree** showing what the agent actually did on each call type, how each call maps to Prevent / Automate / Human, and a ranked build queue (top-4 opportunities by monthly $ impact across all categories)
+- 22 new tests: `TestSegmentMasks` (1) + `TestCategoryResolutionBreakdown` (8) + update to `TestTopLevelStructure` (new `issue_breakdown` key); suite is now **364 tests**
+
+### Changed — dashboard hero copy
+
+- Headline changed to **"Telecom Cost Intelligence for Care Calls"** with a subtitle identifying cost-to-serve drivers and proactive issue-resolution opportunities from real call transcripts
+- Eyebrow changed from "Telecom Call Intelligence" to "Care Call Cost Analysis"
+
+---
+
+## [4.2.0] — 2026-06-15
+
+### Added — Phase Drill-Down and phase-time P&L
+
+- `pipeline/aggregator.py`: `_phase_pnl()` allocates the monthly cost baseline across **Serve (P1–P4 Welcome→Resolution) / Sell (P5 Upsell) / Retain (Hold+Closing)** in proportion to average phase duration — a time-based P&L, written to `cost_levers.{serve,sell,retain}_{time_pct,cost_usd}`
+- `pipeline/aggregator.py`: `_phase_drilldown()` ranks `issue_1_category` by average duration within Discovery/Diagnosis/Resolution/Upsell (top 5 per phase), with per-intent **agent stall rate** (`agent_disproportionate_time_phase` match rate) — written to `phase_drilldown`
+- Dashboard: new **Section 2 — Phase Drill-Down**, a tabbed view (one tab per phase) showing the top-5 intents driving that phase's handle time and where agents stall
+- Dashboard: hero cost panel ("Insights from N Calls Analysed") now shows **Cost to Serve / Sell / Retain** allocated by phase-time share of AHT (replaces the prior issue-category-based heuristic split)
+- 9 new aggregator tests (29 total) covering `_phase_pnl` and `_phase_drilldown`; suite is now 354 tests
+
+### Fixed — dashboard segmentation and action-plan consistency
+
+- Replaced the bogus 100%/0% Prevent/Automate/Human split with the correct mutually-exclusive, priority-ordered segmentation (`_resolution_segments`); hero headline generalised to "Call Data Segmentation: Prevent, Automate — or Escalate"
+- Section 6 (Prioritised Action Plan) reordered so CRITICAL items lead by dollar impact; "Build Agentic AI Agents" rescoped to reference the Section 4 roadmap instead of a flat estimate
+
+### Removed
+
+- Dashboard "Performance Trends Across Runs" section (`load_run_history()`, `chart_trend()`) — multi-run trend charts did not produce a coherent narrative; removed along with the issue-category-based `_cost_buckets()` heuristic it shared inputs with
+
+---
+
 ## [4.1.1] — 2026-06-11
 
 ### Added — full unit-test coverage for the agent layer

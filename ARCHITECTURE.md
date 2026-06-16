@@ -70,7 +70,7 @@ Local CSV (telecom_200k.csv — primary)  ·  HuggingFace stream (fallback, 3.7M
 | **QA Scoring** | Custom 100-pt model | Completeness(30) + Enum validity(25) + Consistency(25) + Plausibility(20) |
 | **Vector memory** | numpy cosine similarity | Zero extra dependencies; interface-compatible with ChromaDB/Pinecone swap |
 | **Tracing** | LangSmith (optional) | `LANGCHAIN_TRACING_V2=true` activates full node-level span capture |
-| **Dashboard** | Streamlit + Plotly | Professional light theme; 8 sections; reads `summary.json`; built-in demo data fallback |
+| **Dashboard** | Streamlit + Plotly | Professional light theme; 6 sections; reads `summary.json`; built-in demo data fallback |
 
 ---
 
@@ -528,7 +528,7 @@ telecom-call-intelligence/
 │   ├── memory.py              ← AgentMemory — flat JSON cross-run store
 │   ├── tools.py               ← ToolRegistry — JSON-schema tool definitions
 │   ├── analyzer.py            ← Claude/Gemini client (CoT, ReAct, checkpoint, backoff)
-│   ├── aggregator.py          ← KPI computation + cost-lever estimates
+│   ├── aggregator.py          ← KPI computation + cost-lever estimates + issue_breakdown (category × segment × resolution-method cross-tab)
 │   ├── hf_loader.py           ← CSV loader + HuggingFace streaming + offset batching
 │   ├── token_tracker.py       ← Model-aware token cost accounting
 │   └── logger.py              ← Structured logging (INFO→stdout, DEBUG→file)
@@ -543,7 +543,7 @@ telecom-call-intelligence/
 │   ├── test_tools.py
 │   ├── test_graph.py
 │   └── test_security.py       ← 51 security tests
-├── dashboard/app.py           ← Streamlit executive dashboard (8 sections, light theme)
+├── dashboard/app.py           ← Streamlit executive dashboard (6 sections, light theme)
 ├── run_pipeline.py            ← Single-batch entry point (model-aware key validation)
 ├── run_batches.py             ← Multi-batch orchestrator (delegates to Orchestrator)
 ├── merge_outputs.py           ← Merge batch JSONs → combined dataset
