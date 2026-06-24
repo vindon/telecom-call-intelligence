@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Call Intelligence · Live Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',sans-serif;background:#F1F5F9;color:#0F172A;min-height:100vh}
+button{cursor:pointer;font-family:inherit}
+textarea{font-family:inherit}
+
+/* ── Utility ── */
+.hidden{display:none!important}
+
+/* ── Hero bar ── */
+.hero{
+  background:#CD040B;
+  padding:20px 32px 18px;
+  display:flex;align-items:center;gap:24px;
+}
+.hero-logo{
+  width:36px;height:36px;border-radius:8px;
+  background:rgba(255,255,255,0.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;color:#fff;flex-shrink:0;
+}
+.hero-text{}
+.hero-eyebrow{
+  font-size:0.58rem;font-weight:700;letter-spacing:0.2em;
+  text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:3px;
+}
+.hero-title{
+  font-size:1.35rem;font-weight:900;color:#fff;letter-spacing:-0.03em;line-height:1.1;
+}
+.hero-sub{
+  font-size:0.72rem;color:rgba(255,255,255,0.7);margin-top:3px;
+}
+.hero-sub span{color:rgba(255,255,255,0.45);margin:0 6px}
+
+/* ── Screen wrapper ── */
+.screen{max-width:860px;margin:0 auto;padding:28px 20px 48px;}
+
+/* ──────────────────────────────── SCREEN A: INPUT ──────── */
+.input-card{
+  background:#fff;border-radius:16px;
+  box-shadow:0 1px 4px rgba(15,23,42,.08),0 4px 24px rgba(15,23,42,.06);
+  padding:28px 28px 24px;
+}
+.input-label{
+  font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  color:#64748B;margin-bottom:10px;
+}
+.transcript-area{
+  width:100%;height:340px;border:2px solid #E2E8F0;border-radius:10px;
+  padding:14px 16px;font-size:0.85rem;line-height:1.6;color:#1E293B;
+  resize:vertical;outline:none;transition:border-color .15s;
+  background:#FAFBFC;
+}
+.transcript-area:focus{border-color:#CD040B;}
+.transcript-area::placeholder{color:#94A3B8;}
+
+.action-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:16px;gap:12px;flex-wrap:wrap;
+}
+.sample-wrap{position:relative;}
+.btn-sample{
+  background:#F1F5F9;border:1px solid #E2E8F0;border-radius:8px;
+  padding:10px 16px;font-size:0.82rem;font-weight:600;color:#475569;
+  transition:background .15s;
+}
+.btn-sample:hover{background:#E2E8F0;}
+.sample-menu{
+  position:absolute;top:calc(100% + 6px);left:0;
+  background:#fff;border:1px solid #E2E8F0;border-radius:10px;
+  box-shadow:0 8px 32px rgba(15,23,42,.12);
+  overflow:hidden;z-index:100;min-width:180px;
+}
+.sample-menu button{
+  display:block;width:100%;text-align:left;
+  padding:11px 16px;font-size:0.83rem;font-weight:500;color:#0F172A;
+  background:transparent;border:none;border-bottom:1px solid #F1F5F9;
+  transition:background .12s;
+}
+.sample-menu button:last-child{border-bottom:none;}
+.sample-menu button:hover{background:#F8FAFC;}
+
+.btn-analyze{
+  background:#CD040B;color:#fff;border:none;border-radius:10px;
+  padding:12px 28px;font-size:0.95rem;font-weight:800;letter-spacing:-0.01em;
+  box-shadow:0 2px 8px rgba(205,4,11,.28);transition:all .15s;
+}
+.btn-analyze:hover{background:#b0030a;box-shadow:0 4px 14px rgba(205,4,11,.35);}
+.btn-analyze:active{transform:scale(.98);}
+.btn-analyze:disabled{background:#94A3B8;box-shadow:none;cursor:not-allowed;}
+
+.error-box{
+  margin-top:14px;padding:12px 16px;background:#FEF2F2;border:1px solid #FECACA;
+  border-radius:8px;font-size:0.83rem;color:#991B1B;
+}
+
+/* ──────────────────────────────── SCREEN B: PIPELINE ──── */
+.pipeline-card{
+  background:#fff;border-radius:16px;
+  box-shadow:0 1px 4px rgba(15,23,42,.08),0 4px 24px rgba(15,23,42,.06);
+  padding:32px 28px;
+}
+.pipeline-heading{
+  font-size:1.05rem;font-weight:800;color:#0F172A;letter-spacing:-0.02em;
+  margin-bottom:6px;
+}
+.pipeline-subheading{
+  font-size:0.78rem;color:#64748B;margin-bottom:28px;
+}
+
+.agent-row{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 0;border-bottom:1px solid #F1F5F9;
+}
+.agent-row:last-child{border-bottom:none;}
+.agent-icon{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;font-weight:800;flex-shrink:0;
+  transition:all .3s ease;
+}
+.agent-icon.waiting{background:#F1F5F9;color:#94A3B8;}
+.agent-icon.running{background:#EFF6FF;color:#2563EB;animation:spin-pulse 1.2s infinite;}
+.agent-icon.done{background:#F0FDF4;color:#16A34A;}
+
+@keyframes spin-pulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.12);}
+}
+
+.agent-info{flex:1;}
+.agent-name{font-size:0.88rem;font-weight:700;color:#0F172A;}
+.agent-status{font-size:0.75rem;color:#94A3B8;margin-top:2px;transition:color .3s;}
+.agent-row.running .agent-status{color:#2563EB;}
+.agent-row.done .agent-status{color:#16A34A;}
+
+.agent-time{
+  font-size:0.72rem;font-weight:600;color:#94A3B8;
+  opacity:0;transition:opacity .3s;white-space:nowrap;
+}
+.agent-row.done .agent-time{opacity:1;color:#16A34A;}
+
+.pipeline-progress-wrap{
+  margin-top:24px;background:#F1F5F9;border-radius:8px;overflow:hidden;height:6px;
+}
+.pipeline-progress-bar{
+  height:100%;background:linear-gradient(90deg,#CD040B,#EF4444);
+  border-radius:8px;transition:width .4s ease;width:0%;
+}
+.pipeline-progress-label{
+  margin-top:8px;font-size:0.72rem;color:#94A3B8;text-align:right;
+}
+
+/* ──────────────────────────────── SCREEN C: RESULTS ──── */
+.results-hero-card{
+  background:#fff;border-radius:16px;
+  box-shadow:0 1px 4px rgba(15,23,42,.08),0 4px 24px rgba(15,23,42,.06);
+  padding:20px 24px;margin-bottom:16px;
+}
+.results-summary-text{
+  font-size:0.9rem;color:#334155;line-height:1.6;margin-bottom:14px;
+}
+.meta-chips{display:flex;gap:10px;flex-wrap:wrap;}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:999px;font-size:0.74rem;font-weight:700;
+  letter-spacing:0.03em;
+}
+.chip-red{background:#FEF2F2;color:#991B1B;}
+.chip-green{background:#F0FDF4;color:#166534;}
+.chip-blue{background:#EFF6FF;color:#1D4ED8;}
+.chip-amber{background:#FFFBEB;color:#92400E;}
+.chip-purple{background:#FAF5FF;color:#6D28D9;}
+.chip-slate{background:#F8FAFC;color:#475569;border:1px solid #E2E8F0;}
+.chip-dark{background:#0F172A;color:#fff;}
+
+/* Tab bar */
+.tab-bar{
+  display:flex;background:#E2E8F0;border-radius:10px;padding:5px;
+  margin-bottom:16px;gap:0;
+}
+.tab-btn{
+  flex:1;padding:11px 0;border:none;border-radius:7px;background:transparent;
+  font-size:0.88rem;font-weight:700;color:#64748B;transition:all .18s;
+}
+.tab-btn.active{background:#fff;color:#0F172A;box-shadow:0 1px 6px rgba(15,23,42,.1);}
+
+/* Result cards */
+.result-card{
+  background:#fff;border-radius:14px;
+  box-shadow:0 1px 4px rgba(15,23,42,.06),0 2px 12px rgba(15,23,42,.05);
+  padding:20px 22px;margin-bottom:14px;
+}
+.card-label{
+  font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  color:#94A3B8;margin-bottom:10px;
+}
+
+/* Phase timeline */
+.phase-timeline{
+  display:flex;width:100%;height:42px;border-radius:8px;overflow:hidden;
+  border:1px solid #E2E8F0;margin:4px 0 10px;
+}
+.phase-seg{
+  height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.9);
+  overflow:hidden;white-space:nowrap;letter-spacing:0.04em;text-transform:uppercase;
+  min-width:0;transition:width .4s ease;
+}
+.phase-labels{display:flex;width:100%;margin-top:6px;}
+.phase-label{
+  font-size:0.62rem;color:#64748B;font-weight:600;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis;
+}
+
+/* Stats row */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+.stat-box{
+  flex:1;min-width:110px;background:#F8FAFC;border:1px solid #E2E8F0;
+  border-radius:10px;padding:12px 14px;
+}
+.stat-val{font-size:1.3rem;font-weight:900;color:#0F172A;line-height:1;}
+.stat-key{font-size:0.65rem;font-weight:600;color:#94A3B8;margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;}
+
+/* Issues */
+.issue-card{
+  border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;margin-bottom:8px;
+  display:flex;align-items:flex-start;gap:10px;
+}
+.issue-num{
+  width:22px;height:22px;border-radius:50%;background:#F1F5F9;
+  font-size:0.7rem;font-weight:800;color:#64748B;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.issue-desc{font-size:0.83rem;color:#334155;line-height:1.5;flex:1;}
+.issue-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+
+/* Sentiment arc */
+.sentiment-row{
+  display:flex;align-items:center;gap:12px;padding:14px 0 0;
+}
+.sentiment-badge{
+  padding:6px 14px;border-radius:999px;font-size:0.78rem;font-weight:700;
+}
+.sentiment-arrow{font-size:1.1rem;color:#94A3B8;}
+.sentiment-frustrated{background:#FEF2F2;color:#991B1B;}
+.sentiment-negative{background:#FEF3C7;color:#92400E;}
+.sentiment-neutral{background:#F1F5F9;color:#475569;}
+.sentiment-positive{background:#F0FDF4;color:#166534;}
+.sentiment-distressed{background:#FEE2E2;color:#7F1D1D;}
+
+/* Automation decision grid */
+.decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+@media(max-width:560px){.decision-grid{grid-template-columns:1fr;}}
+.decision-card{
+  background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;
+}
+.decision-card-title{
+  font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+  color:#94A3B8;margin-bottom:8px;
+}
+.decision-verdict{
+  font-size:1.4rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:6px;
+}
+.verdict-yes{color:#CD040B;}
+.verdict-no{color:#16A34A;}
+.verdict-na{color:#94A3B8;}
+.decision-detail{font-size:0.78rem;color:#475569;line-height:1.5;}
+
+/* Risk row */
+.risk-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.risk-pill{
+  padding:7px 16px;border-radius:999px;font-size:0.78rem;font-weight:700;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.risk-high{background:#FEF2F2;color:#991B1B;border:1.5px solid #FECACA;}
+.risk-medium{background:#FFFBEB;color:#92400E;border:1.5px solid #FDE68A;}
+.risk-low{background:#F0FDF4;color:#166534;border:1.5px solid #BBF7D0;}
+.risk-unknown{background:#F8FAFC;color:#64748B;border:1.5px solid #E2E8F0;}
+.cost-pill{background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE;}
+.skill-pill-proficient{background:#F0FDF4;color:#166534;border:1.5px solid #BBF7D0;}
+.skill-pill-adequate{background:#FFFBEB;color:#92400E;border:1.5px solid #FDE68A;}
+.skill-pill-needs{background:#FEF2F2;color:#991B1B;border:1.5px solid #FECACA;}
+
+/* Recommendations */
+.recs-label{
+  font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  color:#94A3B8;margin-bottom:10px;
+}
+.rec-card{
+  display:flex;align-items:flex-start;gap:12px;
+  background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;
+  padding:12px 14px;margin-bottom:8px;
+}
+.rec-icon{
+  width:28px;height:28px;border-radius:6px;background:#CD040B;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.8rem;flex-shrink:0;margin-top:1px;
+}
+.rec-text{font-size:0.83rem;color:#0F172A;line-height:1.55;font-weight:500;}
+.rec-tag{
+  display:inline-block;margin-top:4px;
+  padding:2px 8px;background:#EFF6FF;color:#1D4ED8;
+  border-radius:4px;font-size:0.65rem;font-weight:700;
+}
+
+/* Agent reasoning */
+.reasoning-details{
+  background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;
+  overflow:hidden;margin-top:0;
+}
+.reasoning-details summary{
+  padding:12px 16px;font-size:0.83rem;font-weight:700;color:#475569;
+  cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;
+}
+.reasoning-details summary::before{
+  content:'▶';font-size:0.6rem;color:#94A3B8;transition:transform .2s;
+}
+.reasoning-details[open] summary::before{transform:rotate(90deg);}
+.reasoning-body{
+  padding:0 16px 16px;border-top:1px solid #E2E8F0;
+  font-size:0.82rem;color:#475569;line-height:1.65;
+}
+.reasoning-body ul{list-style:none;padding:0;}
+.reasoning-body ul li{
+  padding:5px 0 5px 18px;border-bottom:1px solid #F1F5F9;
+  position:relative;
+}
+.reasoning-body ul li::before{
+  content:'·';position:absolute;left:6px;color:#94A3B8;font-size:1.1rem;
+}
+
+/* Reset button */
+.reset-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:20px;padding:11px 22px;background:#F1F5F9;
+  border:1px solid #E2E8F0;border-radius:8px;
+  font-size:0.84rem;font-weight:700;color:#475569;
+  transition:background .15s;
+}
+.reset-btn:hover{background:#E2E8F0;}
+
+.processing-note{
+  font-size:0.72rem;color:#94A3B8;margin-top:10px;text-align:center;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ SCREEN A: INPUT ════════════════ -->
+<div id="screen-input">
+  <div class="hero">
+    <div class="hero-logo">CI</div>
+    <div class="hero-text">
+      <div class="hero-eyebrow">Telecom Call Intelligence</div>
+      <div class="hero-title">Live Analysis Demo</div>
+      <div class="hero-sub">
+        Claude Haiku<span>·</span>6-Agent Pipeline<span>·</span>70+ Structured Fields
+      </div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="input-card">
+      <div class="input-label">Call Transcript</div>
+      <textarea
+        id="transcript-input"
+        class="transcript-area"
+        placeholder="Paste a timestamped call transcript here…&#10;&#10;Example format:&#10;[00:00:05] Agent: Thank you for calling…&#10;[00:00:12] Customer: Hi, I have an issue with…"
+      ></textarea>
+
+      <div class="action-row">
+        <div class="sample-wrap">
+          <button class="btn-sample" id="btn-sample-toggle" onclick="toggleSampleMenu()">
+            Load Sample ▾
+          </button>
+          <div class="sample-menu hidden" id="sample-menu">
+            <button onclick="loadSample('billing')">💳 Billing Dispute</button>
+            <button onclick="loadSample('technical')">📶 Technical Fault</button>
+            <button onclick="loadSample('plan')">📋 Plan Inquiry</button>
+          </div>
+        </div>
+
+        <button class="btn-analyze" id="btn-analyze" onclick="runAnalysis()">
+          ▶&nbsp;&nbsp;Run Analysis
+        </button>
+      </div>
+
+      <div id="input-error" class="error-box hidden"></div>
+    </div>
+    <p class="processing-note">Analysis typically takes 8–15 seconds · Powered by Claude Haiku 4.5</p>
+  </div>
+</div>
+
+<!-- ════════════════ SCREEN B: PIPELINE ════════════════ -->
+<div id="screen-pipeline" class="hidden">
+  <div class="hero">
+    <div class="hero-logo">CI</div>
+    <div class="hero-text">
+      <div class="hero-eyebrow">Telecom Call Intelligence</div>
+      <div class="hero-title">Analyzing…</div>
+      <div class="hero-sub">Running your transcript through the 6-agent pipeline</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="pipeline-card">
+      <div class="pipeline-heading">6 AI Agents · Running in sequence</div>
+      <div class="pipeline-subheading">Each agent adds a layer of intelligence to your call</div>
+
+      <div id="agent-rows">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="pipeline-progress-wrap" style="margin-top:22px;">
+        <div class="pipeline-progress-bar" id="pipeline-bar"></div>
+      </div>
+      <div class="pipeline-progress-label" id="pipeline-label">Starting…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ SCREEN C: RESULTS ════════════════ -->
+<div id="screen-results" class="hidden">
+  <div class="hero">
+    <div class="hero-logo">CI</div>
+    <div class="hero-text">
+      <div class="hero-eyebrow">Telecom Call Intelligence</div>
+      <div class="hero-title">Analysis Complete</div>
+      <div class="hero-sub" id="result-hero-sub">·</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <!-- Summary card -->
+    <div class="results-hero-card">
+      <div class="results-summary-text" id="result-summary"></div>
+      <div class="meta-chips" id="result-meta-chips"></div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-btn-phase" onclick="switchTab('phase')">
+        Phase Intelligence
+      </button>
+      <button class="tab-btn" id="tab-btn-automation" onclick="switchTab('automation')">
+        Automation Playbook
+      </button>
+    </div>
+
+    <!-- Tab: Phase Intelligence -->
+    <div id="tab-phase">
+      <div class="result-card">
+        <div class="card-label">Call Phase Timeline</div>
+        <div class="phase-timeline" id="phase-timeline"></div>
+        <div class="phase-labels" id="phase-labels"></div>
+      </div>
+
+      <div class="stats-row" id="stats-row"></div>
+
+      <div class="result-card">
+        <div class="card-label">Issues Detected</div>
+        <div id="issues-list"></div>
+      </div>
+
+      <div class="result-card">
+        <div class="card-label">Customer Sentiment</div>
+        <div class="sentiment-row" id="sentiment-row"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Automation Playbook -->
+    <div id="tab-automation" class="hidden">
+      <div class="result-card">
+        <div class="card-label">Automation Signals</div>
+        <div class="decision-grid" id="decision-grid"></div>
+        <div class="risk-row" id="risk-row"></div>
+      </div>
+
+      <div class="result-card">
+        <div class="recs-label">Strategic Recommendations</div>
+        <div id="recs-list"></div>
+      </div>
+
+      <details class="reasoning-details">
+        <summary>Agent Reasoning (Chain-of-Thought)</summary>
+        <div class="reasoning-body" id="reasoning-body"></div>
+      </details>
+    </div>
+
+    <button class="reset-btn" onclick="resetToInput()">← Analyze Another Call</button>
+  </div>
+</div>
+
+<script>
+// ── Sample transcripts ──────────────────────────────────────────────
+const SAMPLES = {
+  billing: `[00:00:05] Agent: Thank you for calling Telecom Support, my name is Sarah. Can I get your account number please?
+[00:00:12] Customer: Yes, it's 4872-9301. I'm really frustrated — my bill this month is completely wrong.
+[00:00:20] Agent: I'm sorry to hear that, let me pull up your account right away. What seems to be the issue?
+[00:00:26] Customer: My bill is $285 this month. My normal bill is never more than $65. I haven't done anything different.
+[00:00:34] Agent: I can understand how shocking that must be. Let me look into those charges for you now.
+[00:00:40] Customer: It's honestly ridiculous. I haven't been abroad, I haven't used anything extra.
+[00:00:47] Agent: Okay, I can see international roaming charges applied on the 14th and 15th. Were you travelling at all?
+[00:00:55] Customer: No! I was here the whole time. Wait — I was near the Canadian border for work meetings on the 14th.
+[00:01:05] Agent: That would explain it. If your phone connected to a Canadian tower, even briefly, it triggers international roaming rates. Let me put you on a brief hold while I review the exact charges.
+[00:01:14] Customer: Okay, fine.
+[00:02:48] Agent: Thank you for holding. I can see $220 in roaming charges across those two days. Since this was unexpected and you weren't aware of the risk, I'm applying a one-time courtesy credit of $150 to your account. The remaining $70 reflects actual roaming usage.
+[00:03:02] Customer: I appreciate the credit — I still think it's a lot but at least I understand what happened now.
+[00:03:08] Agent: Absolutely. I'm also adding a roaming alert to your account — you'll get an SMS the moment your phone connects to a foreign network. That should prevent any surprises in future.
+[00:03:18] Customer: Yes, please do that. Thank you Sarah.
+[00:03:23] Agent: Of course. Your new balance will reflect the credit within 24 hours. Is there anything else I can help you with?
+[00:03:30] Customer: No, that's everything. Thanks again.
+[00:03:34] Agent: Thank you for calling. Have a great day!
+[00:03:37] Customer: You too. Bye.`,
+
+  technical: `[00:00:08] Agent: Thank you for calling technical support, this is Marcus. How can I help you today?
+[00:00:15] Customer: Hi Marcus. My mobile data has been completely dead for three days now. I can't use any apps, nothing works on data.
+[00:00:25] Agent: I'm really sorry to hear that. Let me get your details so I can investigate. Can I have your mobile number?
+[00:00:31] Customer: It's 555-0147.
+[00:00:35] Agent: And to verify your identity — the last 4 digits of your account PIN?
+[00:00:40] Customer: 7823.
+[00:00:44] Agent: Perfect, I've got your account. So mobile data has been completely down for three days — have you tried restarting the device and toggling airplane mode?
+[00:00:53] Customer: About ten times. I've restarted, toggled airplane mode, even removed and reinserted the SIM. Nothing works.
+[00:01:04] Agent: Good troubleshooting steps. Let me check for network outages in your area first. What's your postcode?
+[00:01:10] Customer: SW1A 2AA.
+[00:01:15] Agent: Checking now... No active outages showing in that area. Let me pull up your account settings in detail.
+[00:01:38] Agent: I can see your mobile data service is actually showing as suspended on the account — flagged by our automated usage monitoring system on the 18th. Do you recall receiving a notification?
+[00:01:50] Customer: What? No, I received nothing. Why on earth would it be suspended?
+[00:01:56] Agent: The system flagged unusual data volume. Were you doing something data-intensive that day — heavy video calls, large downloads?
+[00:02:04] Customer: I was working from home with back-to-back video conferences. Is that seriously considered unusual?
+[00:02:12] Agent: It can exceed the thresholds if it's significantly above your typical pattern. I completely understand how frustrating this is — you were just doing your job. I'm removing the suspension flag now.
+[00:02:22] Customer: This is the second time this has happened in four months. It's affecting my ability to work.
+[00:02:28] Agent: That's completely unacceptable and I sincerely apologise. Data is restored — can you check if it's working now?
+[00:02:46] Customer: Yes, data is back. But this cannot keep happening.
+[00:02:51] Agent: You're absolutely right. I've escalated this to our network team with a priority flag to review the suspension thresholds on your account. You'll receive an email confirmation within 2 hours with a reference number.
+[00:03:02] Customer: Okay. Please make sure it doesn't happen again.
+[00:03:07] Agent: Noted and escalated. Is there anything else I can help with?
+[00:03:12] Customer: No. Thank you.
+[00:03:16] Agent: Thank you for your patience, and again I apologise for the disruption. Have a good rest of your day.`,
+
+  plan: `[00:00:06] Agent: Good morning, welcome to Telecom. I'm Jessica, how can I help you today?
+[00:00:13] Customer: Hi Jessica. I want to look at upgrading my data plan. I keep running out before the end of the month.
+[00:00:21] Agent: I can definitely help with that. Can I take your mobile number to bring up your account?
+[00:00:26] Customer: Sure, it's 555-0289.
+[00:00:30] Agent: And your date of birth for verification?
+[00:00:34] Customer: 12th March 1985.
+[00:00:38] Agent: Perfect. I can see you're on our Basic 10GB plan at $35 a month. Looking at your usage history, you've hit your data cap in three of the last four months — usually around the 25th.
+[00:00:51] Customer: Exactly, it's been a real problem. What options do I have?
+[00:00:56] Agent: We have three plans above yours. The Flex 20GB is $45 — double your current data. The Smart 30GB is $55 — three times the data and our most popular plan. Or there's our Unlimited plan at $75 which also includes international roaming.
+[00:01:12] Customer: The Smart 30GB sounds more realistic for the price. Would that be enough?
+[00:01:18] Agent: Based on your usage patterns — you've been hitting around 12-13GB per month — the Smart 30GB gives you solid headroom. I'd recommend it over the 20GB.
+[00:01:28] Customer: What do I actually get differently? Can I keep my number?
+[00:01:33] Agent: Your number stays exactly the same. You'd get three times the data, faster priority speeds during peak hours, and a free data rollover of up to 10GB unused each month. Your current plan has no rollover.
+[00:01:46] Customer: Oh that rollover feature is actually really useful.
+[00:01:52] Agent: And if you travel internationally for work, the Unlimited at $75 might actually work out cheaper when you factor in roaming add-ons you'd otherwise pay.
+[00:02:04] Customer: Good point. I think I'll go with the Smart 30GB. Can I switch today?
+[00:02:10] Agent: Absolutely. I can process that right now — the change takes effect from your next billing cycle which starts on the 1st.
+[00:02:18] Customer: Great. Go ahead and switch it.
+[00:02:22] Agent: Done — your plan has been upgraded to Smart 30GB. I'm sending a confirmation to your registered email now. Is there anything else?
+[00:02:30] Customer: No, that's everything. Thanks Jessica, very helpful.
+[00:02:36] Agent: My pleasure. Enjoy your extra data! Have a wonderful day.
+[00:02:40] Customer: You too. Bye!`
+};
+
+// ── Agent pipeline definition ──────────────────────────────────────
+const AGENTS = [
+  { name: 'DataIngestionAgent',  step1: 'Validating transcript structure…',   step2: 'Transcript validated',        stepMs: 900  },
+  { name: 'ExtractionAgent',     step1: 'Extracting 70+ fields with Claude Haiku…', step2: '70 fields extracted',    stepMs: 4200 },
+  { name: 'QualityAgent',        step1: 'Scoring extraction quality (100-pt rubric)…', step2: 'QA score computed',   stepMs: 1000 },
+  { name: 'AggregationAgent',    step1: 'Computing KPIs: FCR, AHT, avoidable rate…', step2: 'KPIs aggregated',     stepMs: 900  },
+  { name: 'InsightsAgent',       step1: 'Synthesising automation recommendations…', step2: 'Recommendations ready',  stepMs: 1000 },
+  { name: 'ExportAgent',         step1: 'Finalising audit trail & decision log…',   step2: 'Audit trail complete',  stepMs: 700  },
+];
+
+// ── State ──────────────────────────────────────────────────────────
+let _apiResult = null;
+let _animDone = false;
+let _apiFetching = false;
+
+// ── Helpers ────────────────────────────────────────────────────────
+function showScreen(id) {
+  ['screen-input','screen-pipeline','screen-results'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+function switchTab(name) {
+  document.getElementById('tab-phase').classList.toggle('hidden', name !== 'phase');
+  document.getElementById('tab-automation').classList.toggle('hidden', name !== 'automation');
+  document.getElementById('tab-btn-phase').classList.toggle('active', name === 'phase');
+  document.getElementById('tab-btn-automation').classList.toggle('active', name === 'automation');
+}
+
+function toggleSampleMenu() {
+  document.getElementById('sample-menu').classList.toggle('hidden');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sample-wrap')) {
+    document.getElementById('sample-menu').classList.add('hidden');
+  }
+});
+
+function loadSample(key) {
+  document.getElementById('transcript-input').value = SAMPLES[key];
+  document.getElementById('sample-menu').classList.add('hidden');
+  document.getElementById('input-error').classList.add('hidden');
+}
+
+function resetToInput() {
+  _apiResult = null; _animDone = false; _apiFetching = false;
+  document.getElementById('transcript-input').value = '';
+  document.getElementById('input-error').classList.add('hidden');
+  document.getElementById('btn-analyze').disabled = false;
+  showScreen('screen-input');
+}
+
+// ── Pipeline animation ─────────────────────────────────────────────
+function buildAgentRows() {
+  const container = document.getElementById('agent-rows');
+  container.innerHTML = AGENTS.map((a, i) => `
+    <div class="agent-row waiting" id="agent-row-${i}">
+      <div class="agent-icon waiting" id="agent-icon-${i}">○</div>
+      <div class="agent-info">
+        <div class="agent-name">${a.name}</div>
+        <div class="agent-status" id="agent-status-${i}">Waiting…</div>
+      </div>
+      <div class="agent-time" id="agent-time-${i}"></div>
+    </div>
+  `).join('');
+}
+
+function runPipelineAnimation() {
+  _animDone = false;
+  buildAgentRows();
+  let current = 0;
+  const bar = document.getElementById('pipeline-bar');
+  const label = document.getElementById('pipeline-label');
+
+  function activateAgent(i) {
+    if (i >= AGENTS.length) {
+      bar.style.width = '100%';
+      label.textContent = 'All agents complete';
+      _animDone = true;
+      maybeShowResults();
+      return;
+    }
+    const row = document.getElementById(`agent-row-${i}`);
+    const icon = document.getElementById(`agent-icon-${i}`);
+    const status = document.getElementById(`agent-status-${i}`);
+
+    row.className = 'agent-row running';
+    icon.className = 'agent-icon running';
+    icon.textContent = '⟳';
+    status.textContent = AGENTS[i].step1;
+    bar.style.width = `${Math.round((i / AGENTS.length) * 100)}%`;
+    label.textContent = `Agent ${i + 1} of ${AGENTS.length}`;
+
+    const t0 = Date.now();
+    setTimeout(() => {
+      const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+      row.className = 'agent-row done';
+      icon.className = 'agent-icon done';
+      icon.textContent = '✓';
+      status.textContent = AGENTS[i].step2;
+      document.getElementById(`agent-time-${i}`).textContent = `${elapsed}s`;
+      activateAgent(i + 1);
+    }, AGENTS[i].stepMs);
+  }
+
+  activateAgent(0);
+}
+
+// ── API call ───────────────────────────────────────────────────────
+async function fetchAnalysis(transcript) {
+  _apiResult = null;
+  try {
+    const resp = await fetch('/analyze', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({transcript, call_id: null})
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({detail: `HTTP ${resp.status}`}));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    _apiResult = await resp.json();
+  } catch (e) {
+    _apiResult = {error: e.message};
+  }
+  maybeShowResults();
+}
+
+// ── Show results when both animation + fetch are done ──────────────
+function maybeShowResults() {
+  if (!_animDone || _apiResult === null) return;
+  if (_apiResult.error) {
+    showScreen('screen-input');
+    const errEl = document.getElementById('input-error');
+    errEl.textContent = `Analysis failed: ${_apiResult.error}`;
+    errEl.classList.remove('hidden');
+    document.getElementById('btn-analyze').disabled = false;
+    return;
+  }
+  renderResults(_apiResult);
+  showScreen('screen-results');
+}
+
+// ── Entry point ────────────────────────────────────────────────────
+function runAnalysis() {
+  const tx = document.getElementById('transcript-input').value.trim();
+  if (!tx) {
+    const errEl = document.getElementById('input-error');
+    errEl.textContent = 'Please paste a call transcript before running analysis.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  document.getElementById('input-error').classList.add('hidden');
+  document.getElementById('btn-analyze').disabled = true;
+  showScreen('screen-pipeline');
+  runPipelineAnimation();
+  fetchAnalysis(tx);
+}
+
+// ── Render results ─────────────────────────────────────────────────
+function fmt(val, fallback='—') {
+  if (val === null || val === undefined || val === '') return fallback;
+  return String(val);
+}
+
+function fmtSeconds(s) {
+  if (!s) return '0s';
+  s = parseInt(s);
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s/60)}m ${s%60}s`;
+}
+
+function sentimentClass(s) {
+  const map = {
+    frustrated:'sentiment-frustrated',negative:'sentiment-negative',
+    neutral:'sentiment-neutral',positive:'sentiment-positive',
+    distressed:'sentiment-distressed'
+  };
+  return map[(s||'').toLowerCase()] || 'sentiment-neutral';
+}
+
+const PHASE_COLORS = {
+  welcome:'#3B82F6', discovery:'#8B5CF6', diagnosis:'#F59E0B',
+  resolution:'#10B981', hold:'#EF4444', closing:'#64748B'
+};
+
+function chipHtml(text, cls) {
+  return `<span class="chip ${cls}">${text}</span>`;
+}
+
+function renderResults(data) {
+  const e = data.extraction || {};
+  const qaScore = data.qa_score || 0;
+  const processingTime = data.processing_time_seconds || 0;
+
+  // Hero sub
+  document.getElementById('result-hero-sub').textContent =
+    `QA Score: ${qaScore}/100  ·  Processed in ${processingTime}s  ·  ${fmt(data.provider,'Claude Haiku')}`;
+
+  // Summary
+  document.getElementById('result-summary').textContent =
+    fmt(e.call_summary, 'No summary available.');
+
+  // Meta chips
+  const total = e.total_duration_seconds || 0;
+  const fcr = e.fcr_indicator;
+  const sentEnd = (e.customer_sentiment_end || 'unknown').toLowerCase();
+  const metaEl = document.getElementById('result-meta-chips');
+  let chips = '';
+  chips += chipHtml(`⏱ ${fmtSeconds(total)}`, 'chip-slate');
+  if (fcr === true)  chips += chipHtml('FCR ✓', 'chip-green');
+  if (fcr === false) chips += chipHtml('FCR ✗', 'chip-red');
+  chips += chipHtml(`QA ${qaScore}/100`, qaScore >= 80 ? 'chip-green' : qaScore >= 60 ? 'chip-amber' : 'chip-red');
+  if (e.escalation_required) chips += chipHtml('Escalated', 'chip-amber');
+  metaEl.innerHTML = chips;
+
+  // ── Phase timeline ──
+  const phases = [
+    { key:'welcome',    label:'Welcome',    field:'phase_welcome_duration_seconds' },
+    { key:'discovery',  label:'Discovery',  field:'phase_discovery_duration_seconds' },
+    { key:'diagnosis',  label:'Diagnosis',  field:'phase_diagnosis_duration_seconds' },
+    { key:'resolution', label:'Resolution', field:'phase_resolution_duration_seconds' },
+    { key:'closing',    label:'Closing',    field:'phase_closing_duration_seconds' },
+  ];
+
+  const phaseDurations = phases.map(p => parseInt(e[p.field] || 0));
+  const totalPhase = phaseDurations.reduce((a,b) => a+b, 0) || 1;
+  const holdTotal = parseInt(e.phase_hold_total_seconds || 0);
+
+  const timelineEl = document.getElementById('phase-timeline');
+  const labelsEl = document.getElementById('phase-labels');
+  let timelineHtml = '';
+  let labelsHtml = '';
+
+  phases.forEach((p, i) => {
+    const dur = phaseDurations[i];
+    if (dur <= 0) return;
+    const pct = ((dur / (totalPhase + holdTotal)) * 100).toFixed(1);
+    timelineHtml += `<div class="phase-seg" style="width:${pct}%;background:${PHASE_COLORS[p.key]}" title="${p.label}: ${fmtSeconds(dur)}">${pct > 8 ? p.label : ''}</div>`;
+    labelsHtml += `<div class="phase-label" style="width:${pct}%">${p.label}<br>${fmtSeconds(dur)}</div>`;
+  });
+  if (holdTotal > 0) {
+    const pct = ((holdTotal / (totalPhase + holdTotal)) * 100).toFixed(1);
+    timelineHtml += `<div class="phase-seg" style="width:${pct}%;background:${PHASE_COLORS.hold}" title="Hold: ${fmtSeconds(holdTotal)}">${pct > 6 ? 'Hold' : ''}</div>`;
+    labelsHtml += `<div class="phase-label" style="width:${pct}%">Hold<br>${fmtSeconds(holdTotal)}</div>`;
+  }
+
+  if (!timelineHtml) {
+    timelineHtml = `<div class="phase-seg" style="width:100%;background:#E2E8F0;color:#94A3B8">Timeline not available</div>`;
+  }
+  timelineEl.innerHTML = timelineHtml;
+  labelsEl.innerHTML = labelsHtml;
+
+  // Stats row
+  const issueCount = [1,2,3,4,5].filter(n => e[`issue_${n}_description`]).length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${fmtSeconds(total)}</div><div class="stat-key">Total Duration</div></div>
+    <div class="stat-box"><div class="stat-val">${fmtSeconds(holdTotal)}</div><div class="stat-key">Hold Time</div></div>
+    <div class="stat-box"><div class="stat-val">${e.hold_count || 0}</div><div class="stat-key">Hold Count</div></div>
+    <div class="stat-box"><div class="stat-val">${issueCount}</div><div class="stat-key">Issues Found</div></div>
+  `;
+
+  // Issues
+  let issuesHtml = '';
+  for (let n = 1; n <= 5; n++) {
+    const desc = e[`issue_${n}_description`];
+    if (!desc) continue;
+    const cat = e[`issue_${n}_category`] || 'other';
+    const resolved = e[`issue_${n}_resolved`];
+    const method = e[`issue_${n}_resolution_method`];
+    issuesHtml += `
+      <div class="issue-card">
+        <div class="issue-num">${n}</div>
+        <div>
+          <div class="issue-desc">${desc}</div>
+          <div class="issue-meta">
+            <span class="chip chip-blue">${cat}</span>
+            ${resolved ? '<span class="chip chip-green">Resolved</span>' : '<span class="chip chip-red">Unresolved</span>'}
+            ${method ? `<span class="chip chip-slate">${method.replace(/_/g,' ')}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }
+  document.getElementById('issues-list').innerHTML = issuesHtml || '<p style="color:#94A3B8;font-size:.83rem">No issues extracted.</p>';
+
+  // Sentiment
+  const sStart = fmt(e.customer_sentiment_start, 'unknown');
+  const sEnd = fmt(e.customer_sentiment_end, 'unknown');
+  const improved = e.customer_sentiment_improved;
+  document.getElementById('sentiment-row').innerHTML = `
+    <span class="sentiment-badge ${sentimentClass(sStart)}">${sStart}</span>
+    <span class="sentiment-arrow">${improved ? '→' : '→'}</span>
+    <span class="sentiment-badge ${sentimentClass(sEnd)}">${sEnd}</span>
+    ${improved ? '<span style="font-size:.75rem;color:#16A34A;font-weight:700;margin-left:6px">↑ Improved</span>'
+               : (sStart !== 'unknown' && sStart === sEnd ? '' : '<span style="font-size:.75rem;color:#EF4444;font-weight:700;margin-left:6px">No improvement</span>')}
+  `;
+
+  // ── Automation Playbook ──
+  const avoidable = e.avoidable_call;
+  const aiResolvable = e.agentic_ai_resolvable;
+  const selfServe = e.could_be_self_served;
+  const proactive = e.proactive_outreach_applicable;
+
+  document.getElementById('decision-grid').innerHTML = `
+    <div class="decision-card">
+      <div class="decision-card-title">Avoidable Call</div>
+      <div class="decision-verdict ${avoidable ? 'verdict-yes' : 'verdict-no'}">${avoidable ? 'YES' : 'NO'}</div>
+      <div class="decision-detail">${fmt(e.avoidable_call_reason, avoidable ? 'Call could have been prevented.' : 'This contact was necessary.')}</div>
+    </div>
+    <div class="decision-card">
+      <div class="decision-card-title">AI Resolvable</div>
+      <div class="decision-verdict ${aiResolvable ? 'verdict-yes' : 'verdict-no'}">${aiResolvable === null || aiResolvable === undefined ? 'N/A' : aiResolvable ? 'YES' : 'NO'}</div>
+      <div class="decision-detail">${fmt(e.agentic_ai_resolvable_rationale, 'No rationale available.')}</div>
+    </div>
+    <div class="decision-card">
+      <div class="decision-card-title">Self-Serve Deflection</div>
+      <div class="decision-verdict ${selfServe ? 'verdict-yes' : 'verdict-no'}">${selfServe ? (e.self_serve_channel_applicable || 'YES').toUpperCase() : 'NO'}</div>
+      <div class="decision-detail">${fmt(e.self_serve_deflection_rationale, selfServe ? 'Customer could self-serve.' : 'Agent handling required.')}</div>
+    </div>
+    <div class="decision-card">
+      <div class="decision-card-title">Proactive Outreach</div>
+      <div class="decision-verdict ${proactive ? 'verdict-yes' : 'verdict-no'}">${proactive ? 'YES' : 'NO'}</div>
+      <div class="decision-detail">${fmt(e.proactive_outreach_trigger, proactive ? 'Proactive trigger identified.' : 'No proactive trigger found.')}</div>
+    </div>
+  `;
+
+  // Risk row
+  const risk = (e.repeat_call_risk || 'unknown').toLowerCase();
+  const riskClass = {high:'risk-high',medium:'risk-medium',low:'risk-low'}[risk] || 'risk-unknown';
+  const skillRating = (e.agent_skill_rating || '').toLowerCase();
+  const skillClass = skillRating === 'proficient' ? 'skill-pill-proficient' : skillRating === 'adequate' ? 'skill-pill-adequate' : skillRating === 'needs_improvement' ? 'skill-pill-needs' : 'risk-unknown';
+  document.getElementById('risk-row').innerHTML = `
+    <span class="risk-pill ${riskClass}">Repeat Call Risk: ${risk.toUpperCase()}</span>
+    ${e.primary_cost_driver ? `<span class="risk-pill cost-pill">Cost Driver: ${e.primary_cost_driver.replace(/_/g,' ')}</span>` : ''}
+    ${skillRating ? `<span class="risk-pill ${skillClass}">Agent: ${skillRating.replace(/_/g,' ')}</span>` : ''}
+  `;
+
+  // Recommendations
+  const recs = buildRecommendations(e);
+  const recsIcons = ['🔄','🤖','📱','🔔','📊','🎯','⏱','📞','📈'];
+  document.getElementById('recs-list').innerHTML = recs.map((r, i) => `
+    <div class="rec-card">
+      <div class="rec-icon">${recsIcons[i % recsIcons.length]}</div>
+      <div>
+        <div class="rec-text">${r.text}</div>
+        <span class="rec-tag">${r.tag}</span>
+      </div>
+    </div>
+  `).join('') || '<p style="color:#94A3B8;font-size:.83rem">No recommendations generated.</p>';
+
+  // Agent reasoning
+  const cot = fmt(e._cot_reasoning, '');
+  const obs = fmt(e.key_observations, '');
+  let reasoningHtml = '';
+  if (cot) reasoningHtml += `<p style="margin-bottom:12px">${cot}</p>`;
+  if (obs) {
+    const bullets = obs.split('|').map(s => s.trim()).filter(Boolean);
+    reasoningHtml += `<ul>${bullets.map(b => `<li>${b}</li>`).join('')}</ul>`;
+  }
+  document.getElementById('reasoning-body').innerHTML = reasoningHtml || '<p style="color:#94A3B8">No reasoning captured.</p>';
+}
+
+// ── Recommendation rules ──────────────────────────────────────────
+function buildRecommendations(e) {
+  const recs = [];
+
+  if (e.avoidable_call && e.could_be_self_served && e.self_serve_channel_applicable) {
+    recs.push({
+      text: `Deflect to ${e.self_serve_channel_applicable.toUpperCase()} self-serve: ${fmt(e.self_serve_deflection_rationale,'Customer could resolve this without agent.')}`,
+      tag: 'Channel Deflection'
+    });
+  }
+
+  if (e.proactive_outreach_applicable && e.proactive_outreach_trigger) {
+    recs.push({
+      text: `Deploy proactive outreach: trigger "${e.proactive_outreach_trigger}" notification before customer contacts us.`,
+      tag: 'Proactive Care'
+    });
+  }
+
+  if (e.agentic_ai_resolvable) {
+    recs.push({
+      text: `Automate with AI agent: ${fmt(e.agentic_ai_resolvable_rationale,'This contact type is AI-resolvable.')}`,
+      tag: 'AI Automation'
+    });
+  }
+
+  if (e.repeat_call_risk === 'high') {
+    recs.push({
+      text: `Add a 48-hour follow-up workflow to prevent repeat contact. Risk reason: ${fmt(e.repeat_call_risk_reason,'High repeat call probability detected.')}`,
+      tag: 'Retention'
+    });
+  }
+
+  if (e.fcr_indicator === false) {
+    recs.push({
+      text: `FCR gap detected — review the resolution path for ${fmt(e.primary_cost_driver,'this call type').replace(/_/g,' ')} contacts to improve first-call resolution.`,
+      tag: 'FCR Improvement'
+    });
+  }
+
+  if (e.agent_skill_rating === 'needs_improvement') {
+    recs.push({
+      text: `Flag for agent coaching: ${fmt(e.agent_skill_rating_rationale,'Agent performance below standard.')}`,
+      tag: 'Quality & Coaching'
+    });
+  }
+
+  if (parseInt(e.phase_hold_total_seconds || 0) > 120) {
+    recs.push({
+      text: `Reduce hold time (${fmtSeconds(e.phase_hold_total_seconds)}): surface knowledge base and account tools inline during the ${fmt(e.agent_disproportionate_time_phase,'diagnosis')} phase.`,
+      tag: 'AHT Reduction'
+    });
+  }
+
+  if (e.upsell_attempted && e.upsell_outcome && e.upsell_outcome !== 'accepted') {
+    recs.push({
+      text: `Improve upsell relevance — offer "${fmt(e.upsell_offer_details,'upsell offer')}" was not accepted. Review targeting criteria for this customer segment.`,
+      tag: 'Revenue'
+    });
+  }
+
+  if (e.avoidable_call && !e.proactive_outreach_applicable) {
+    recs.push({
+      text: `Investigate root cause of avoidable contact: ${fmt(e.avoidable_call_reason,'Call was avoidable but no proactive trigger was identified.')}`,
+      tag: 'Root Cause'
+    });
+  }
+
+  return recs;
+}
+</script>
+</body>
+</html>

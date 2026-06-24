@@ -4,7 +4,7 @@
 # All targets assume the project virtualenv is activated (.venv/).
 
 .PHONY: help install install-dev test test-fast test-cov lint format \
-        type-check check run run-batches dashboard clean clean-outputs
+        type-check check run run-batches dashboard demo clean clean-outputs
 
 PYTHON   := .venv/bin/python
 PIP      := .venv/bin/pip
@@ -30,6 +30,7 @@ help:
 	@echo "  run             Run a 3-call smoke test"
 	@echo "  run-batches     Run 5×20 = 100 calls (full production run)"
 	@echo "  dashboard       Start the Streamlit analytics dashboard"
+	@echo "  demo            Start the live demo app (localhost:8001)"
 	@echo "  clean           Remove __pycache__, .pyc, pytest cache"
 	@echo ""
 
@@ -80,6 +81,10 @@ run-batches:
 
 dashboard:
 	.venv/bin/streamlit run dashboard/app.py
+
+demo:            ## Live demo app — open http://localhost:8001
+	@echo "  Open http://localhost:8001 in your browser"
+	.venv/bin/uvicorn demo.app:app --host 0.0.0.0 --port 8001 --reload
 
 # ── Cleanup ────────────────────────────────────────────────────────────
 
