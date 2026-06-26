@@ -6,6 +6,43 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.4.0] — 2026-06-24
+
+### Added — Standalone Live Demo App
+
+- **`demo/app.py`** — standalone FastAPI server exposing `/analyze` endpoint; primary path uses real Claude Haiku extraction via `pipeline.analyzer`; automatic fallback to pre-computed mock results when `ANTHROPIC_API_KEY` is absent or `DEMO_MOCK_ONLY=1` is set; full `InputSanitizer` / `OutputSanitizer` coverage at API boundary
+- **`demo/index.html`** — self-contained demo UI (no build step); accepts raw transcript text, streams the 6-agent pipeline execution with per-stage timing, and renders the structured extraction output inline
+- `make demo` target — launches `uvicorn demo.app:app --port 8001 --reload` from project root
+- `Makefile` help updated with demo target description
+
+### Added — BCG-Style Executive Deck
+
+- **`docs/executive_deck.html`** — 12-slide cost intelligence report in BCG narrative style: problem framing, pipeline architecture, KPI evidence, cost-driver segmentation, AI roadmap, ROI model, and call to action; self-contained HTML (no external dependencies)
+
+### Added — Dashboard: Live Pipeline Demo Tab
+
+- Second Streamlit tab **"Live Pipeline Demo"** — animated 7-node LangGraph pipeline walkthrough with per-stage progress indicators, timing simulation, and structured output preview; no API call required; demonstrates the full agent sequence visually
+
+### Added — Dashboard: Enhancements (Steps 1–4)
+
+- **Mobile CSS** — responsive breakpoints for tablet and phone viewports; tab navigation collapses gracefully
+- **ROI Calculator** — interactive sidebar widget; inputs: call volume, AHT, agent cost/hr; outputs: monthly cost-to-serve baseline, estimated avoidable-call saving, AI automation saving
+- **PDF Export** — print-stylesheet activated via `window.print()` button; hides Streamlit UI chrome; renders all 6 dashboard sections as a single-page document
+- **QA Tab** — new dashboard tab showing per-call QA scores, exclusion reasons, and score distribution histogram sourced from the active `qa_report_{ts}.json`
+
+### Fixed
+
+- Streamlit `theme.primaryColor` set to Verizon red `#CD040B` (`.streamlit/config.toml`) — was falling back to default teal
+- Hero background changed to flat `#CD040B` — the prior `135deg` gradient rendered unevenly across screen widths
+- Live Pipeline Demo animation appeared above the trigger button — moved below
+- `dashboard/app.py` ruff CI failures resolved — F401 unused imports removed, line-length violations fixed; `make lint` and `make check` both pass clean
+
+### Changed
+
+- README updated with Live Demo Streamlit badge and hero CTA button linking to `https://telecom-call-intelligence.streamlit.app/`
+
+---
+
 ## [4.3.0] — 2026-06-16
 
 ### Added — Issue Tree (Section 6) and `issue_breakdown` aggregator field
