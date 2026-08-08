@@ -3,33 +3,506 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Call Intelligence · Live Demo</title>
+<title>cci.ai — Interaction Cost Intelligence</title>
+<meta name="description" content="An additional intelligence layer that unearths the cost hiding inside every customer interaction — surfacing where it concentrates and where it can be recovered, for CX and contact center leaders.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23CD040B'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='24' font-weight='900' fill='white' text-anchor='middle'%3ECCI%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 /* ── Reset & base ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px;-webkit-font-smoothing:antialiased}
+html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
 body{font-family:'Inter',sans-serif;background:#F1F5F9;color:#0F172A;min-height:100vh}
 button{cursor:pointer;font-family:inherit}
 textarea{font-family:inherit}
+a{color:inherit}
 
 /* ── Utility ── */
 .hidden{display:none!important}
 
+/* ══════════════════════════ SITE NAV ══════════════════════════ */
+.site-nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid #E2E8F0;
+}
+.site-nav-inner{
+  max-width:1040px;margin:0 auto;padding:17px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.site-nav-brand{display:flex;align-items:center;gap:11px;text-decoration:none;}
+.site-nav-mark{
+  width:38px;height:38px;border-radius:9px;background:#CD040B;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:900;font-size:14px;letter-spacing:-0.03em;
+  box-shadow:0 2px 8px rgba(205,4,11,.28);
+}
+.site-nav-word{font-weight:900;font-size:1.28rem;color:#0F172A;letter-spacing:-0.03em;}
+.site-nav-links{display:flex;align-items:center;gap:26px;}
+.site-nav-links a{
+  font-size:0.9rem;font-weight:700;color:#334155;text-decoration:none;
+  transition:color .15s;
+}
+.site-nav-links a:hover{color:#0F172A;}
+.site-nav-cta{
+  background:#CD040B;color:#fff!important;padding:10px 20px;border-radius:9px;
+  font-weight:800!important;transition:all .15s;box-shadow:0 2px 8px rgba(205,4,11,.22);
+}
+.site-nav-cta:hover{background:#b0030a;transform:translateY(-1px);box-shadow:0 4px 12px rgba(205,4,11,.3);}
+@media(max-width:640px){ .site-nav-links a:not(.site-nav-cta){display:none;} }
+
+/* ══════════════════════════ LANDING HERO ══════════════════════════ */
+.landing-hero-inner{
+  max-width:760px;margin:0 auto;padding:72px 24px 48px;text-align:center;
+  position:relative;z-index:1;
+}
+.landing-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+  color:#CD040B;background:#FEF2F2;border:1px solid #FECACA;
+  padding:6px 14px;border-radius:999px;margin-bottom:22px;
+}
+.landing-h1{
+  font-size:2.6rem;font-weight:800;letter-spacing:-0.03em;line-height:1.12;
+  color:#0F172A;
+}
+.landing-h1 em{font-style:normal;color:#CD040B;}
+.landing-sub{
+  font-size:1.05rem;color:#475569;line-height:1.6;margin:22px auto 0;max-width:600px;
+}
+.landing-cta-row{
+  margin-top:32px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+}
+.btn-primary-cta{
+  background:#CD040B;color:#fff;border:none;border-radius:10px;
+  padding:14px 26px;font-size:0.95rem;font-weight:800;letter-spacing:-0.01em;
+  box-shadow:0 4px 16px rgba(205,4,11,.28);transition:all .15s;text-decoration:none;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary-cta:hover{background:#b0030a;transform:translateY(-1px);box-shadow:0 6px 20px rgba(205,4,11,.35);}
+.btn-secondary-cta{
+  background:#fff;color:#334155;border:1px solid #E2E8F0;border-radius:10px;
+  padding:14px 22px;font-size:0.95rem;font-weight:700;text-decoration:none;
+  transition:all .15s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-secondary-cta:hover{border-color:#CBD5E1;background:#F8FAFC;}
+.landing-microcopy{
+  margin-top:18px;font-size:0.78rem;color:#94A3B8;font-weight:500;
+}
+
+/* ══════════════════════════ EXECUTIVE BRIEF ══════════════════════════ */
+.brief-wrap{max-width:1040px;margin:0 auto;padding:0 24px 8px;}
+.brief-card{
+  background:#fff;border:1px solid #E2E8F0;border-left:3px solid #CD040B;
+  border-radius:4px 14px 14px 4px;padding:0;overflow:hidden;
+}
+.brief-copy{padding:28px 32px;}
+.brief-eyebrow{
+  font-size:0.68rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  color:#CD040B;margin-bottom:12px;
+}
+.brief-lead{
+  font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;line-height:1.28;
+  color:#0F172A;text-wrap:balance;
+}
+.brief-lead em{font-style:normal;color:#CD040B;}
+.brief-text{
+  font-size:0.96rem;color:#475569;line-height:1.75;margin-top:16px;
+}
+.brief-text b{color:#0F172A;font-weight:700;}
+.brief-facts{
+  display:flex;gap:28px;flex-wrap:wrap;margin-top:20px;padding-top:18px;
+  border-top:1px solid #F1F5F9;
+}
+.brief-fact-l{font-size:0.66rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;}
+.brief-fact-v{font-size:0.86rem;font-weight:700;color:#0F172A;margin-top:3px;}
+
+/* ══════════════════════════ CONTEXT BAND (brief + comparison) ══════════════════════════ */
+.context-band{position:relative;overflow:hidden;background:#FBFBFC;padding:8px 0 68px;}
+.context-band::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 12% 12%,rgba(205,4,11,.06),transparent 42%),
+    radial-gradient(circle at 90% 75%,rgba(205,4,11,.05),transparent 40%);
+}
+.context-band::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,#D7DEE7 1px,transparent 1px);
+  background-size:26px 26px;
+  -webkit-mask-image:radial-gradient(ellipse 65% 55% at 50% 15%,#000 30%,transparent 85%);
+  mask-image:radial-gradient(ellipse 65% 55% at 50% 15%,#000 30%,transparent 85%);
+  opacity:.6;
+}
+.context-band > *{position:relative;z-index:1;}
+
+/* ══════════════════════════ MEASUREMENT-GAP COMPARISON ══════════════════════════ */
+.compare-wrap{max-width:920px;margin:64px auto 0;padding:0 24px;}
+.compare-head{max-width:620px;margin:0 auto;text-align:center;}
+.compare-h2{
+  font-size:1.7rem;font-weight:800;letter-spacing:-0.022em;color:#0F172A;text-wrap:balance;
+}
+.compare-sub{font-size:0.92rem;color:#475569;line-height:1.7;margin-top:12px;}
+
+.compare-table{
+  margin-top:38px;background:#fff;border:1px solid #E2E8F0;border-radius:18px;
+  box-shadow:0 20px 48px -28px rgba(15,23,42,.18);overflow:hidden;
+}
+.compare-colheads{
+  display:grid;grid-template-columns:1fr 40px 1fr;
+  padding:18px 28px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;
+}
+.compare-colhead{
+  font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+}
+.compare-colhead-today{color:#94A3B8;}
+.compare-colhead-add{color:#CD040B;text-align:right;}
+.compare-row{
+  display:grid;grid-template-columns:1fr 40px 1fr;align-items:center;
+  padding:20px 28px;border-bottom:1px solid #F1F5F9;
+}
+.compare-row:last-child{border-bottom:none;}
+.compare-today{font-size:0.9rem;color:#475569;font-weight:600;}
+.compare-arrow{
+  display:flex;align-items:center;justify-content:center;color:#CBD5E1;
+}
+.compare-arrow svg{width:18px;height:18px;stroke:currentColor;}
+.compare-add{text-align:right;}
+.compare-add-title{font-size:0.92rem;font-weight:800;color:#0F172A;letter-spacing:-0.01em;}
+.compare-add-detail{font-size:0.8rem;color:#475569;line-height:1.55;margin-top:4px;}
+@media(max-width:640px){
+  .compare-colheads,.compare-row{grid-template-columns:1fr;gap:10px;padding:18px 20px;}
+  .compare-colhead-add,.compare-add{text-align:left;}
+  .compare-arrow{justify-content:flex-start;transform:rotate(90deg);width:18px;}
+}
+
+/* ══════════════════════════ HOW IT WORKS ══════════════════════════ */
+.section-wrap{max-width:1040px;margin:0 auto;padding:0 24px;}
+.how-it-works{padding:20px 0 56px;}
+.section-heading{
+  text-align:center;font-size:0.7rem;font-weight:700;letter-spacing:0.16em;
+  text-transform:uppercase;color:#94A3B8;margin-bottom:34px;
+}
+.hiw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+@media(max-width:760px){.hiw-grid{grid-template-columns:1fr;}}
+.hiw-card{
+  background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:24px 22px;
+  position:relative;
+}
+.hiw-icon-badge{
+  width:48px;height:48px;border-radius:13px;
+  background:linear-gradient(135deg,#FEF2F2,#FEE2E2);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),background .3s ease;
+  margin-bottom:16px;
+}
+.hiw-icon-badge svg{width:24px;height:24px;stroke:#CD040B;transition:stroke .3s ease;}
+.hiw-card:hover .hiw-icon-badge{transform:scale(1.08) rotate(-4deg);background:linear-gradient(135deg,#CD040B,#96040B);}
+.hiw-card:hover .hiw-icon-badge svg{stroke:#fff;}
+.hiw-step{
+  font-size:0.66rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;
+  font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-bottom:6px;
+}
+.hiw-title{font-size:0.98rem;font-weight:700;color:#0F172A;letter-spacing:-0.01em;margin-bottom:6px;}
+.hiw-desc{font-size:0.84rem;color:#475569;line-height:1.6;}
+
+/* ══════════════════════════ PROOF STRIP ══════════════════════════ */
+.proof-strip{background:#0F172A;padding:44px 0;}
+.proof-strip .section-heading{color:#64748B;}
+.proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1E293B;border-radius:12px;overflow:hidden;}
+@media(max-width:760px){.proof-grid{grid-template-columns:1fr;}}
+.proof-cell{background:#0F172A;padding:22px 24px;}
+.proof-val{font-size:1.7rem;font-weight:800;color:#fff;letter-spacing:-0.02em;}
+.proof-val.accent{color:#FF6B6B;}
+.proof-key{font-size:0.78rem;color:#94A3B8;margin-top:6px;line-height:1.5;}
+.proof-note{
+  text-align:center;font-size:0.76rem;color:#64748B;margin-top:20px;line-height:1.6;
+}
+.proof-intro{
+  text-align:center;font-size:0.95rem;color:#CBD5E1;line-height:1.7;
+  max-width:640px;margin:14px auto 34px;
+}
+.proof-intro b{color:#fff;}
+
+/* ══════════════════════════ COST LEVERS ══════════════════════════ */
+.levers-wrap{max-width:1040px;margin:0 auto;padding:64px 24px 8px;}
+.levers-head{max-width:640px;margin:0 auto;text-align:center;}
+.levers-h2{
+  font-size:1.9rem;font-weight:800;letter-spacing:-0.025em;color:#0F172A;text-wrap:balance;
+}
+.levers-sub{font-size:0.95rem;color:#475569;line-height:1.7;margin-top:14px;}
+
+.levers-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px;
+}
+@media(max-width:860px){.levers-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.levers-grid{grid-template-columns:1fr;}}
+
+.lever-card{
+  background:#fff;border:1px solid #E2E8F0;border-radius:18px;padding:28px 24px;
+  text-align:left;transition:transform .28s cubic-bezier(.16,1,.3,1),box-shadow .28s ease,border-color .28s ease;
+  position:relative;overflow:hidden;
+}
+.lever-card::before{
+  content:"";position:absolute;inset:0;opacity:0;transition:opacity .28s ease;
+  background:radial-gradient(circle at 20% -10%,rgba(205,4,11,.06),transparent 60%);
+  pointer-events:none;
+}
+.lever-card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 24px 48px -24px rgba(15,23,42,.22);border-color:#F1D4D4;
+}
+.lever-card:hover::before{opacity:1;}
+.lever-card:hover .lever-icon-badge{
+  transform:scale(1.08) rotate(-4deg);
+  background:linear-gradient(135deg,#CD040B,#96040B);
+}
+.lever-card:hover .lever-icon-badge svg{stroke:#fff;}
+
+.lever-icon-badge{
+  width:52px;height:52px;border-radius:14px;
+  background:linear-gradient(135deg,#FEF2F2,#FEE2E2);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),background .3s ease;
+  position:relative;z-index:1;
+}
+.lever-icon-badge svg{width:26px;height:26px;stroke:#CD040B;transition:stroke .3s ease;}
+
+.lever-title{
+  font-size:1.02rem;font-weight:800;color:#0F172A;letter-spacing:-0.015em;
+  margin-top:18px;position:relative;z-index:1;
+}
+.lever-desc{
+  font-size:0.84rem;color:#475569;line-height:1.65;margin-top:8px;position:relative;z-index:1;
+}
+.lever-field{
+  display:inline-block;margin-top:12px;font-size:0.68rem;font-weight:700;letter-spacing:0.04em;
+  color:#94A3B8;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;
+  padding:3px 8px;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;position:relative;z-index:1;
+}
+
+/* ══════════════════════════ AT SCALE ══════════════════════════ */
+.at-scale{padding:64px 0 56px;text-align:center;}
+.at-scale-h2{
+  font-size:1.9rem;font-weight:800;letter-spacing:-0.025em;color:#0F172A;
+  max-width:640px;margin:0 auto;text-wrap:balance;
+}
+.at-scale-sub{
+  font-size:0.96rem;color:#475569;line-height:1.75;max-width:680px;margin:16px auto 0;
+}
+.at-scale-sub b{color:#0F172A;font-weight:700;}
+.at-scale-subhead{
+  font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+  color:#94A3B8;margin-top:48px;margin-bottom:0;
+}
+.at-scale-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px;
+  max-width:980px;margin-left:auto;margin-right:auto;
+}
+@media(max-width:860px){.at-scale-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:520px){.at-scale-grid{grid-template-columns:1fr;}}
+.at-scale-cell{
+  background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:22px 18px;
+  transition:transform .25s ease,box-shadow .25s ease;text-align:left;
+}
+.at-scale-cell:hover{transform:translateY(-4px);box-shadow:0 16px 32px -16px rgba(15,23,42,.16);}
+.at-scale-cell.is-total{background:#0F172A;border-color:#0F172A;}
+.at-scale-cell.is-total .at-scale-val{color:#FF6B6B;}
+.at-scale-cell.is-total .at-scale-key{color:#94A3B8;}
+.at-scale-cell.is-total .at-scale-tag{color:#94A3B8;}
+.at-scale-tag{font-size:0.66rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#CD040B;margin-bottom:6px;display:block;}
+.at-scale-val{font-size:1.7rem;font-weight:800;color:#CD040B;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
+.at-scale-val span{font-size:0.95rem;color:#94A3B8;font-weight:700;}
+.at-scale-key{font-size:0.79rem;color:#475569;margin-top:6px;line-height:1.5;}
+.at-scale-unlock-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;
+  max-width:880px;margin-left:auto;margin-right:auto;text-align:left;
+}
+@media(max-width:760px){.at-scale-unlock-grid{grid-template-columns:1fr;}}
+.at-scale-unlock-card{
+  background:#fff;border:1px solid #E2E8F0;border-top:3px solid #CD040B;border-radius:14px;padding:22px 24px;
+}
+.at-scale-unlock-num{font-size:0.72rem;font-weight:700;color:#CD040B;letter-spacing:0.08em;text-transform:uppercase;}
+.at-scale-unlock-title{font-size:1.02rem;font-weight:800;color:#0F172A;letter-spacing:-0.015em;margin-top:8px;}
+.at-scale-unlock-desc{font-size:0.85rem;color:#475569;line-height:1.65;margin-top:8px;}
+.at-scale-unlock-desc b{color:#0F172A;font-weight:700;}
+.at-scale-link{
+  display:inline-block;margin-top:32px;font-size:0.86rem;font-weight:700;color:#CD040B;
+  text-decoration:none;border-bottom:1.5px solid transparent;transition:border-color .15s;
+}
+.at-scale-link:hover{border-color:#CD040B;}
+
+/* ══════════════════════════ TRY-IT LEAD-IN ══════════════════════════ */
+.try-it-lead{max-width:760px;margin:0 auto;padding:56px 24px 8px;text-align:center;}
+.try-it-lead .section-heading{margin-bottom:14px;}
+.try-it-h2{font-size:1.6rem;font-weight:800;color:#0F172A;letter-spacing:-0.02em;}
+.try-it-sub{font-size:0.92rem;color:#475569;margin-top:10px;}
+
+.demo-disclaimer{
+  display:flex;flex-direction:column;gap:10px;
+  background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;
+  padding:14px 16px;margin-bottom:18px;
+}
+.demo-disclaimer .dd-row{display:flex;gap:9px;align-items:flex-start;font-size:0.79rem;color:#475569;line-height:1.6;}
+.demo-disclaimer .dd-icon{flex-shrink:0;font-size:0.85rem;margin-top:1px;}
+.demo-disclaimer b{color:#0F172A;font-weight:700;}
+.demo-disclaimer code{background:#F1F5F9;padding:1px 6px;border-radius:4px;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:0.75rem;color:#475569;}
+.demo-disclaimer a{color:#CD040B;font-weight:700;text-decoration:none;border-bottom:1.5px solid transparent;}
+.demo-disclaimer a:hover{border-color:#CD040B;}
+
+/* ══════════════════════════ FOOTER ══════════════════════════ */
+.site-footer{
+  margin-top:40px;padding:32px 24px 40px;border-top:1px solid #E2E8F0;
+  text-align:center;
+}
+.site-footer-brand{font-weight:800;font-size:0.9rem;color:#0F172A;}
+.site-footer-tag{font-size:0.78rem;color:#94A3B8;margin-top:6px;}
+
+/* ══════════════════════════ MOTION SYSTEM ══════════════════════════ */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1);}
+.reveal.is-visible{opacity:1;transform:translateY(0);}
+@media (prefers-reduced-motion: reduce){
+  .reveal{transition:none;opacity:1;transform:none;}
+  .hero-blob,.agent-tab-progress,.landing-hero *{animation:none!important;}
+}
+
+.site-nav{transition:box-shadow .25s ease,background .25s ease;}
+.site-nav.scrolled{box-shadow:0 4px 24px rgba(15,23,42,.08);}
+
+/* ══════════════════════════ HERO AMBIENCE — centered, rich bloom ══════════════════════════ */
+.landing-hero{
+  position:relative;overflow:hidden;isolation:isolate;width:100%;
+  background:#F8F9FB;
+}
+.hero-bg-zone{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:min(1080px,90%);height:100%;z-index:-1;pointer-events:none;
+}
+.hero-blob{
+  position:absolute;border-radius:50%;filter:blur(64px);
+  animation:blob-drift 19s ease-in-out infinite;
+}
+.hero-blob-1{
+  width:520px;height:520px;background:radial-gradient(circle,rgba(205,4,11,.22),transparent 70%);
+  top:-180px;right:-40px;animation-delay:0s;
+}
+.hero-blob-2{
+  width:420px;height:420px;background:radial-gradient(circle,rgba(255,107,107,.20),transparent 70%);
+  top:60px;left:-60px;animation-delay:-6s;
+}
+.hero-blob-3{
+  width:380px;height:380px;background:radial-gradient(circle,rgba(15,23,42,.12),transparent 70%);
+  bottom:-140px;left:20%;animation-delay:-11s;
+}
+.hero-blob-4{
+  width:280px;height:280px;background:radial-gradient(circle,rgba(205,4,11,.14),transparent 70%);
+  bottom:-60px;right:12%;animation-delay:-3s;
+}
+.hero-blob-5{
+  width:220px;height:220px;background:radial-gradient(circle,rgba(255,107,107,.16),transparent 70%);
+  top:40%;left:38%;animation-delay:-8s;
+}
+@keyframes blob-drift{
+  0%,100%{transform:translate(0,0) scale(1);}
+  50%{transform:translate(26px,20px) scale(1.08);}
+}
+
+/* ══════════════════════════ HOVER LIFT ══════════════════════════ */
+.hiw-card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+.hiw-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px -16px rgba(15,23,42,.16);border-color:#E2E8F0;}
+.proof-cell{transition:background .25s ease;}
+.proof-cell:hover{background:#141F35;}
+
+/* ══════════════════════════ SIX-AGENT EXPLORER ══════════════════════════ */
+.agents-section{padding:64px 0 60px;}
+.agents-head{text-align:center;max-width:600px;margin:0 auto 40px;}
+.agents-h2{font-size:1.9rem;font-weight:800;letter-spacing:-0.025em;color:#0F172A;}
+.agents-sub{font-size:0.94rem;color:#475569;margin-top:12px;line-height:1.6;}
+
+.agents-explorer{
+  display:grid;grid-template-columns:230px 1fr;gap:0;
+  background:#fff;border:1px solid #E2E8F0;border-radius:18px;overflow:hidden;
+  box-shadow:0 1px 4px rgba(15,23,42,.06),0 24px 48px -32px rgba(15,23,42,.18);
+}
+@media(max-width:760px){ .agents-explorer{grid-template-columns:1fr;} }
+
+.agents-tabs{background:#F8FAFC;border-right:1px solid #E2E8F0;padding:10px;}
+@media(max-width:760px){
+  .agents-tabs{display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid #E2E8F0;gap:4px;}
+}
+.agent-tab{
+  position:relative;display:flex;align-items:center;gap:10px;width:100%;
+  padding:12px 12px;border:none;background:transparent;border-radius:10px;
+  text-align:left;transition:background .2s ease;overflow:hidden;flex-shrink:0;
+}
+@media(max-width:760px){ .agent-tab{width:auto;min-width:168px;} }
+.agent-tab:hover{background:#F1F5F9;}
+.agent-tab.active{background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.08);}
+.agent-tab-mark{
+  width:30px;height:30px;border-radius:8px;background:#0F172A;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;
+  flex-shrink:0;letter-spacing:-0.02em;transition:background .2s ease;
+}
+.agent-tab.active .agent-tab-mark{background:#CD040B;}
+.agent-tab-info{min-width:0;}
+.agent-tab-idx{font-size:0.62rem;font-weight:700;color:#94A3B8;letter-spacing:0.08em;text-transform:uppercase;}
+.agent-tab-name{font-size:0.83rem;font-weight:700;color:#0F172A;white-space:nowrap;}
+.agent-tab-progress{
+  position:absolute;left:0;bottom:0;height:2px;background:#CD040B;width:0%;
+}
+.agent-tab.active .agent-tab-progress.animating{animation:tab-progress 5.2s linear forwards;}
+@keyframes tab-progress{ from{width:0%;} to{width:100%;} }
+
+.agents-panel{padding:36px 40px;min-height:340px;}
+@media(max-width:760px){ .agents-panel{padding:28px 22px;} }
+.agent-panel-content{animation:panel-in .35s cubic-bezier(.16,1,.3,1);}
+@keyframes panel-in{ from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+
+.agent-panel-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.agent-panel-mark{
+  width:40px;height:40px;border-radius:10px;background:#CD040B;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;
+  letter-spacing:-0.02em;flex-shrink:0;
+}
+.agent-panel-step{font-size:0.68rem;font-weight:700;color:#94A3B8;letter-spacing:0.1em;text-transform:uppercase;}
+.agent-panel-name{font-size:1.3rem;font-weight:800;color:#0F172A;letter-spacing:-0.02em;}
+.agent-panel-role{font-size:0.98rem;color:#334155;font-weight:600;margin-bottom:14px;}
+.agent-panel-desc{font-size:0.9rem;color:#475569;line-height:1.7;max-width:520px;}
+
+.agent-example{
+  margin-top:22px;background:#0F172A;border-radius:12px;padding:18px 20px;
+  max-width:560px;
+}
+.agent-example-label{
+  font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+  color:#64748B;margin-bottom:10px;
+}
+.agent-example-line{
+  font-size:0.82rem;color:#E2E8F0;line-height:1.75;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+.agent-example-line b{color:#FF8080;font-weight:600;}
+.agent-example-line .ok{color:#6EE7B7;}
+
 /* ── Hero bar ── */
 .hero{
-  background:#CD040B;
-  padding:20px 32px 18px;
+  width:min(860px,calc(100% - 40px));margin:20px auto 0;
+  background:linear-gradient(135deg,#E8121C 0%,#C40008 55%,#96040B 100%);
+  padding:24px 30px;border-radius:18px;
   display:flex;align-items:center;gap:24px;
+  box-shadow:0 16px 40px -16px rgba(150,4,11,.45);
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(circle at 15% -20%,rgba(255,255,255,.22),transparent 55%);
 }
 .hero-logo{
   width:36px;height:36px;border-radius:8px;
   background:rgba(255,255,255,0.18);
   display:flex;align-items:center;justify-content:center;
-  font-size:18px;font-weight:900;color:#fff;flex-shrink:0;
+  font-size:13px;font-weight:900;color:#fff;flex-shrink:0;letter-spacing:-0.02em;
+  position:relative;z-index:1;
 }
-.hero-text{}
+.hero-text{position:relative;z-index:1;}
 .hero-eyebrow{
   font-size:0.58rem;font-weight:700;letter-spacing:0.2em;
   text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:3px;
@@ -53,7 +526,7 @@ textarea{font-family:inherit}
 }
 .input-label{
   font-size:0.78rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
-  color:#64748B;margin-bottom:10px;
+  color:#475569;margin-bottom:10px;
 }
 .transcript-area{
   width:100%;height:340px;border:2px solid #E2E8F0;border-radius:10px;
@@ -115,7 +588,7 @@ textarea{font-family:inherit}
   margin-bottom:6px;
 }
 .pipeline-subheading{
-  font-size:0.78rem;color:#64748B;margin-bottom:28px;
+  font-size:0.78rem;color:#475569;margin-bottom:28px;
 }
 
 .agent-row{
@@ -191,7 +664,7 @@ textarea{font-family:inherit}
 }
 .tab-btn{
   flex:1;padding:11px 0;border:none;border-radius:7px;background:transparent;
-  font-size:0.88rem;font-weight:700;color:#64748B;transition:all .18s;
+  font-size:0.88rem;font-weight:700;color:#475569;transition:all .18s;
 }
 .tab-btn.active{background:#fff;color:#0F172A;box-shadow:0 1px 6px rgba(15,23,42,.1);}
 
@@ -219,7 +692,7 @@ textarea{font-family:inherit}
 }
 .phase-labels{display:flex;width:100%;margin-top:6px;}
 .phase-label{
-  font-size:0.62rem;color:#64748B;font-weight:600;overflow:hidden;
+  font-size:0.62rem;color:#475569;font-weight:600;overflow:hidden;
   white-space:nowrap;text-overflow:ellipsis;
 }
 
@@ -239,7 +712,7 @@ textarea{font-family:inherit}
 }
 .issue-num{
   width:22px;height:22px;border-radius:50%;background:#F1F5F9;
-  font-size:0.7rem;font-weight:800;color:#64748B;
+  font-size:0.7rem;font-weight:800;color:#475569;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
 }
 .issue-desc{font-size:0.83rem;color:#334155;line-height:1.5;flex:1;}
@@ -286,7 +759,7 @@ textarea{font-family:inherit}
 .risk-high{background:#FEF2F2;color:#991B1B;border:1.5px solid #FECACA;}
 .risk-medium{background:#FFFBEB;color:#92400E;border:1.5px solid #FDE68A;}
 .risk-low{background:#F0FDF4;color:#166534;border:1.5px solid #BBF7D0;}
-.risk-unknown{background:#F8FAFC;color:#64748B;border:1.5px solid #E2E8F0;}
+.risk-unknown{background:#F8FAFC;color:#475569;border:1.5px solid #E2E8F0;}
 .cost-pill{background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE;}
 .skill-pill-proficient{background:#F0FDF4;color:#166534;border:1.5px solid #BBF7D0;}
 .skill-pill-adequate{background:#FFFBEB;color:#92400E;border:1.5px solid #FDE68A;}
@@ -340,6 +813,15 @@ textarea{font-family:inherit}
   content:'·';position:absolute;left:6px;color:#94A3B8;font-size:1.1rem;
 }
 
+/* Scale reminder */
+.scale-reminder{
+  margin-top:16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;
+  padding:14px 16px;font-size:0.82rem;color:#7F1D1D;line-height:1.6;
+}
+.scale-reminder b{color:#991B1B;}
+.scale-reminder a{color:#CD040B;font-weight:700;text-decoration:none;border-bottom:1.5px solid transparent;}
+.scale-reminder a:hover{border-color:#CD040B;}
+
 /* Reset button */
 .reset-btn{
   display:inline-flex;align-items:center;gap:8px;
@@ -357,26 +839,364 @@ textarea{font-family:inherit}
 </head>
 <body>
 
+<!-- ════════════════ SITE NAV ════════════════ -->
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <a href="/" class="site-nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+      <span class="site-nav-mark">CCI</span>
+      <span class="site-nav-word">cci.ai</span>
+    </a>
+    <div class="site-nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#agents">Agents</a>
+      <a href="/architecture">Architecture &amp; cost</a>
+      <a href="#try-it" class="site-nav-cta">Try it live</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════ LANDING HERO ════════════════ -->
+<header class="landing-hero">
+  <div class="hero-bg-zone">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-blob hero-blob-3"></div>
+    <div class="hero-blob hero-blob-4"></div>
+    <div class="hero-blob hero-blob-5"></div>
+  </div>
+  <div class="landing-hero-inner">
+    <div class="landing-eyebrow reveal">● Live interactive demo</div>
+    <h1 class="landing-h1 reveal" style="transition-delay:.06s">The cost‑intelligence layer for <em>AI‑run contact centers.</em></h1>
+    <p class="landing-sub reveal" style="transition-delay:.12s">An additional intelligence layer that unearths the cost hiding inside every customer interaction — where it concentrates, and where it can be recovered.</p>
+    <div class="landing-cta-row reveal" style="transition-delay:.18s">
+      <a href="#try-it" class="btn-primary-cta">▶ Try it now</a>
+      <a href="#agents" class="btn-secondary-cta">Meet the agents</a>
+    </div>
+    <p class="landing-microcopy reveal" style="transition-delay:.24s">70+ structured interaction attributes · 100‑point Quality Score · enterprise-grade conversational AI</p>
+  </div>
+</header>
+
+<!-- ════════════════ EXECUTIVE BRIEF ════════════════ -->
+<section class="context-band">
+  <div class="brief-wrap">
+    <div class="brief-card reveal">
+      <div class="brief-copy">
+        <div class="brief-eyebrow">Executive brief</div>
+        <p class="brief-lead">Every contact center measures the outcome. <em>Almost none measure the cost of getting there.</em></p>
+        <p class="brief-text">
+          <b>cci.ai</b> is an additional intelligence layer that unearths the cost hiding inside every customer interaction. It reads interactions your contact center has already handled and surfaces where cost concentrates and where it can be recovered — through <b>shorter handle times</b>, <b>better-targeted agent-assist coaching</b>, <b>digital deflection</b> for contacts that never needed an agent, <b>proactive outreach</b> that prevents the contact altogether, and the <b>system or process failures</b> driving avoidable volume in the first place. Six agents orchestrate the read — extraction, quality grading, cost aggregation, insight synthesis — across every interaction, not a sample.
+        </p>
+        <div class="brief-facts">
+          <div><div class="brief-fact-l">For</div><div class="brief-fact-v">CX &amp; contact-center leaders</div></div>
+          <div><div class="brief-fact-l">Category</div><div class="brief-fact-v">Interaction Cost Intelligence</div></div>
+          <div><div class="brief-fact-l">Deploys as</div><div class="brief-fact-v">An additional layer, not a replacement</div></div>
+          <div><div class="brief-fact-l">Full technical brief</div><div class="brief-fact-v"><a href="/architecture" style="color:#CD040B;">Architecture &amp; cost →</a></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ THE MEASUREMENT GAP ════════════════ -->
+  <div class="compare-wrap">
+    <div class="compare-head">
+      <div class="section-heading reveal">The measurement gap</div>
+      <h2 class="compare-h2 reveal">What's already tracked — and what's been invisible until now</h2>
+      <p class="compare-sub reveal">Same interactions. The metrics your team already reports, next to the layer that's been missing from them.</p>
+    </div>
+
+    <div class="compare-table reveal">
+      <div class="compare-colheads">
+        <div class="compare-colhead compare-colhead-today">Measured today</div>
+        <div></div>
+        <div class="compare-colhead compare-colhead-add">What cci.ai adds</div>
+      </div>
+
+      <div class="compare-row">
+        <div class="compare-today">Average Handle Time (AHT)</div>
+        <div class="compare-arrow"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="compare-add">
+          <div class="compare-add-title">Phase-level cost breakdown</div>
+          <div class="compare-add-detail">Which minute of the interaction cost you — not just how many there were.</div>
+        </div>
+      </div>
+
+      <div class="compare-row">
+        <div class="compare-today">First Contact Resolution (FCR)</div>
+        <div class="compare-arrow"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="compare-add">
+          <div class="compare-add-title">Avoidable-contact detection</div>
+          <div class="compare-add-detail">Whether the contact itself was avoidable — before resolution ever entered the picture.</div>
+        </div>
+      </div>
+
+      <div class="compare-row">
+        <div class="compare-today">CSAT / NPS</div>
+        <div class="compare-arrow"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="compare-add">
+          <div class="compare-add-title">The operational cause behind the score</div>
+          <div class="compare-add-detail">Agent skill rating and tool-struggle detection — not just that satisfaction dropped, but why.</div>
+        </div>
+      </div>
+
+      <div class="compare-row">
+        <div class="compare-today">QA scorecards <span style="color:#94A3B8;">(sampled, ~2–5%)</span></div>
+        <div class="compare-arrow"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="compare-add">
+          <div class="compare-add-title">A 100-point score on every interaction</div>
+          <div class="compare-add-detail">70+ structured fields graded on every call, not a sample of them.</div>
+        </div>
+      </div>
+
+      <div class="compare-row">
+        <div class="compare-today">Escalation rate</div>
+        <div class="compare-arrow"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="compare-add">
+          <div class="compare-add-title">Primary cost-driver tagging</div>
+          <div class="compare-add-detail">Process failure vs. one-off — so the fix targets the root cause, not the symptom.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ COST LEVERS ════════════════ -->
+<section class="levers-wrap">
+  <div class="levers-head">
+    <div class="section-heading reveal">Where cost hides</div>
+    <h2 class="levers-h2 reveal">Five places it concentrates — and can be recovered</h2>
+    <p class="levers-sub reveal">Each interaction is checked against all five. The tag under each card is the real field the pipeline extracts.</p>
+  </div>
+
+  <div class="levers-grid">
+    <div class="lever-card reveal">
+      <div class="lever-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="17" r="10" stroke-width="2"/>
+          <path d="M16 11v6l4 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11 4h10M16 4v3" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="lever-title">Handle time</div>
+      <div class="lever-desc">Phase-level timing — welcome, discovery, diagnosis, resolution, hold — shows exactly where minutes, and cost, concentrate.</div>
+      <div class="lever-field">phase_*_duration_seconds</div>
+    </div>
+
+    <div class="lever-card reveal" style="transition-delay:.05s">
+      <div class="lever-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M8 17v-2a8 8 0 0116 0v2" stroke-width="2" stroke-linecap="round"/>
+          <rect x="6" y="17" width="5" height="7" rx="2.5" stroke-width="2"/>
+          <rect x="21" y="17" width="5" height="7" rx="2.5" stroke-width="2"/>
+          <path d="M26 20v2a4 4 0 01-4 4h-3" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="lever-title">Agent assist</div>
+      <div class="lever-desc">Skill ratings and tool-struggle detection flag exactly which interactions needed better coaching, or better tooling, in the moment.</div>
+      <div class="lever-field">agent_skill_rating</div>
+    </div>
+
+    <div class="lever-card reveal" style="transition-delay:.1s">
+      <div class="lever-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x="4" y="5" width="11" height="22" rx="2.4" stroke-width="2"/>
+          <path d="M8.5 23h2" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M17 10a9 9 0 0111 9c0 5-3.5 8-8 8h-3l-2.5 2.5V25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="lever-title">Digital deflection</div>
+      <div class="lever-desc">Every interaction is checked against whether it could have been self-served — and through exactly which channel.</div>
+      <div class="lever-field">self_serve_channel_applicable</div>
+    </div>
+
+    <div class="lever-card reveal" style="transition-delay:.15s">
+      <div class="lever-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 6v4" stroke-width="2" stroke-linecap="round"/>
+          <path d="M10.5 10.5a8 8 0 0111 0" stroke-width="2" stroke-linecap="round"/>
+          <path d="M6.5 13.5a12.5 12.5 0 0119 0" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="16" cy="23" r="4" stroke-width="2"/>
+          <path d="M16 21v2l1.4 1.4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="lever-title">Proactive outreach</div>
+      <div class="lever-desc">Avoidable-contact triggers get surfaced before the fact, not diagnosed after the tenth repeat call.</div>
+      <div class="lever-field">proactive_outreach_trigger</div>
+    </div>
+
+    <div class="lever-card reveal" style="transition-delay:.2s">
+      <div class="lever-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 5.5L28 26H4L16 5.5z" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M16 14v6" stroke-width="2" stroke-linecap="round"/>
+          <path d="M16 23.4h.01" stroke-width="2.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="lever-title">System &amp; process failures</div>
+      <div class="lever-desc">Cost-driver tagging separates a broken process from a one-off, so the fix targets the actual root cause.</div>
+      <div class="lever-field">primary_cost_driver</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ HOW IT WORKS ════════════════ -->
+<section class="how-it-works section-wrap" id="how-it-works">
+  <div class="section-heading reveal">How it works</div>
+  <div class="hiw-grid">
+    <div class="hiw-card reveal">
+      <div class="hiw-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x="8" y="7" width="16" height="21" rx="2.4" stroke-width="2"/>
+          <rect x="12" y="4" width="8" height="5" rx="1.6" stroke-width="2"/>
+          <path d="M12 15h8M12 19h8M12 23h5" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="hiw-step">Step 01</div>
+      <div class="hiw-title">Paste an interaction</div>
+      <div class="hiw-desc">Yours, or a pre-loaded example — nothing leaves this page until you hit run.</div>
+    </div>
+    <div class="hiw-card reveal" style="transition-delay:.08s">
+      <div class="hiw-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 5l11 6-11 6-11-6 11-6z" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M5 17l11 6 11-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 23l11 6 11-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="hiw-step">Step 02</div>
+      <div class="hiw-title">Six agents, one pipeline</div>
+      <div class="hiw-desc">Ingestion → Extraction → Quality → Aggregation → Insights → Export — end to end in roughly 10 seconds.</div>
+    </div>
+    <div class="hiw-card reveal" style="transition-delay:.16s">
+      <div class="hiw-icon-badge">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 4l9 4v7c0 7-4.5 11.5-9 13-4.5-1.5-9-6-9-13V8l9-4z" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M12 16.5l3 3 6-6.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="hiw-step">Step 03</div>
+      <div class="hiw-title">Get a cost &amp; quality verdict</div>
+      <div class="hiw-desc">Was it avoidable? Could AI have resolved it? What's the Quality Score, and what should you fix first?</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ SIX-AGENT EXPLORER ════════════════ -->
+<section class="agents-section section-wrap" id="agents">
+  <div class="agents-head">
+    <div class="section-heading reveal">The pipeline, agent by agent</div>
+    <h2 class="agents-h2 reveal">Six agents. One call. About ten seconds.</h2>
+    <p class="agents-sub reveal">Each agent has one job and hands off a structured result to the next. Click through to see what each one actually does — with a real example.</p>
+  </div>
+
+  <div class="agents-explorer reveal">
+    <div class="agents-tabs" id="agents-tabs"></div>
+    <div class="agents-panel">
+      <div class="agent-panel-content" id="agents-panel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ PROOF STRIP ════════════════ -->
+<section class="proof-strip">
+  <div class="section-wrap">
+    <div class="section-heading reveal">The metric behind the metric</div>
+    <p class="proof-intro reveal">Every contact center can report a resolution rate. Almost none can report <b>what a resolved interaction actually cost</b> — this is where that number comes from.</p>
+    <div class="proof-grid">
+      <div class="proof-cell reveal">
+        <div class="proof-val accent" data-count="76" data-suffix="%">0%</div>
+        <div class="proof-key">Typical AI resolution rate leading vendors report — the number everyone already tracks.</div>
+      </div>
+      <div class="proof-cell reveal" style="transition-delay:.08s">
+        <div class="proof-val" data-count="13.50" data-prefix="$" data-decimals="2">$0.00</div>
+        <div class="proof-key">Median cost per assisted contact, per Gartner. Almost nobody puts this next to their resolution number.</div>
+      </div>
+      <div class="proof-cell reveal" style="transition-delay:.16s">
+        <div class="proof-val accent" data-count="0">0</div>
+        <div class="proof-key">Major AI CX vendors that publish a per‑intent cost‑to‑serve figure. This fills that gap.</div>
+      </div>
+    </div>
+    <p class="proof-note">Sources: fin.ai, Zendesk Relate 2026, Gartner cost‑to‑serve benchmarks. See what this looks like at scale below.</p>
+  </div>
+</section>
+
+<!-- ════════════════ AT SCALE ════════════════ -->
+<section class="section-wrap at-scale reveal" id="at-scale">
+  <div class="section-heading">Proven at production batch scale</div>
+  <h2 class="at-scale-h2">We ran 100 transcripts through this pipeline. Here's exactly what it found.</h2>
+  <p class="at-scale-sub">The interaction below is <b>one call</b>, walked through live so you can watch every agent work. What follows is the aggregate — cost-to-serve, cost-to-sell, and cost-to-retain, broken out from a real 100-transcript production batch. Point this at your enterprise call volume, and the same roll-up scales with it.</p>
+
+  <div class="at-scale-subhead">The cost breakdown — 100-transcript test batch</div>
+  <div class="at-scale-grid">
+    <div class="at-scale-cell">
+      <span class="at-scale-tag">P1–P4</span>
+      <div class="at-scale-val">$468K<span>/mo</span></div>
+      <div class="at-scale-key">Cost to Serve — 78% of handle time spent resolving issues after they've already happened</div>
+    </div>
+    <div class="at-scale-cell">
+      <span class="at-scale-tag">P5</span>
+      <div class="at-scale-val">$52K<span>/mo</span></div>
+      <div class="at-scale-key">Cost to Sell — 9% of handle time, plan changes and upsell conversations</div>
+    </div>
+    <div class="at-scale-cell">
+      <span class="at-scale-tag">Cross-cutting</span>
+      <div class="at-scale-val">$80K<span>/mo</span></div>
+      <div class="at-scale-key">Cost to Retain — 13% of handle time, retention-critical moments inside any call type</div>
+    </div>
+    <div class="at-scale-cell is-total">
+      <span class="at-scale-tag">Total</span>
+      <div class="at-scale-val">$600K<span>/mo</span></div>
+      <div class="at-scale-key">The cost-to-serve figure most resolution-rate dashboards never show you</div>
+    </div>
+  </div>
+
+  <div class="at-scale-subhead">At enterprise volume, this unlocks two things</div>
+  <div class="at-scale-unlock-grid">
+    <div class="at-scale-unlock-card">
+      <div class="at-scale-unlock-num">01 · Automation opportunity</div>
+      <div class="at-scale-unlock-title">A dollar figure, not a hunch</div>
+      <div class="at-scale-unlock-desc"><b>70% of contacts</b> come back flagged AI-resolvable — a <b>$3.8M/year</b> recovery opportunity at 100,000 interactions a month, with the reasoning behind every flag, not a black-box score.</div>
+    </div>
+    <div class="at-scale-unlock-card">
+      <div class="at-scale-unlock-num">02 · Cost levers</div>
+      <div class="at-scale-unlock-title">Where to point training and workflow fixes</div>
+      <div class="at-scale-unlock-desc">Phase-level cost concentration shows exactly where handle time pools across the cost center — so <b>agent upskilling</b> targets the real bottleneck and <b>workflow redesign</b> follows evidence, not intuition.</div>
+    </div>
+  </div>
+
+  <a href="/architecture#cost" class="at-scale-link">See the full cost economics →</a>
+</section>
+
+<!-- ════════════════ TRY IT LEAD-IN ════════════════ -->
+<div class="try-it-lead" id="try-it">
+  <div class="section-heading reveal">One interaction, up close</div>
+  <h2 class="try-it-h2 reveal">Watch the pipeline work on a single call</h2>
+  <p class="try-it-sub reveal">This is a mechanics demo — the same engine behind the numbers above, zoomed into one interaction so you can watch all six agents run live.</p>
+</div>
+
 <!-- ════════════════ SCREEN A: INPUT ════════════════ -->
 <div id="screen-input">
   <div class="hero">
-    <div class="hero-logo">CI</div>
+    <div class="hero-logo">CCI</div>
     <div class="hero-text">
-      <div class="hero-eyebrow">Telecom Call Intelligence</div>
+      <div class="hero-eyebrow">Care Cost Intelligence</div>
       <div class="hero-title">Live Analysis Demo</div>
       <div class="hero-sub">
-        Claude Haiku<span>·</span>6-Agent Pipeline<span>·</span>70+ Structured Fields
+        Multi-Agent Interaction Analytics<span>·</span>6-Stage Pipeline<span>·</span>70+ Structured Attributes
       </div>
     </div>
   </div>
 
   <div class="screen">
     <div class="input-card">
-      <div class="input-label">Call Transcript</div>
+      <div class="demo-disclaimer">
+        <div class="dd-row"><span class="dd-icon">⚡</span><span>This is a demonstration environment, run against pre-loaded example interactions to show exactly how the pipeline works. <a href="mailto:vinoth.n@outlook.com?subject=cci.ai%20pilot%20request">Request a pilot →</a> to test it against your own production transcripts.</span></div>
+        <div class="dd-row"><span class="dd-icon">📋</span><span>Expected format — one line per turn: <code>[HH:MM:SS] Speaker: dialogue</code>. Load a sample to see it in practice.</span></div>
+      </div>
+      <div class="input-label">Customer Interaction Transcript</div>
       <textarea
         id="transcript-input"
         class="transcript-area"
-        placeholder="Paste a timestamped call transcript here…&#10;&#10;Example format:&#10;[00:00:05] Agent: Thank you for calling…&#10;[00:00:12] Customer: Hi, I have an issue with…"
+        placeholder="Paste a timestamped interaction transcript here…&#10;&#10;Example format:&#10;[00:00:05] Agent: Thank you for calling…&#10;[00:00:12] Customer: Hi, I have an issue with…"
       ></textarea>
 
       <div class="action-row">
@@ -398,16 +1218,16 @@ textarea{font-family:inherit}
 
       <div id="input-error" class="error-box hidden"></div>
     </div>
-    <p class="processing-note">Analysis typically takes 8–15 seconds · Powered by Claude Haiku 4.5</p>
+    <p class="processing-note">Analysis typically takes 8–15 seconds</p>
   </div>
 </div>
 
 <!-- ════════════════ SCREEN B: PIPELINE ════════════════ -->
 <div id="screen-pipeline" class="hidden">
   <div class="hero">
-    <div class="hero-logo">CI</div>
+    <div class="hero-logo">CCI</div>
     <div class="hero-text">
-      <div class="hero-eyebrow">Telecom Call Intelligence</div>
+      <div class="hero-eyebrow">Care Cost Intelligence</div>
       <div class="hero-title">Analyzing…</div>
       <div class="hero-sub">Running your transcript through the 6-agent pipeline</div>
     </div>
@@ -433,9 +1253,9 @@ textarea{font-family:inherit}
 <!-- ════════════════ SCREEN C: RESULTS ════════════════ -->
 <div id="screen-results" class="hidden">
   <div class="hero">
-    <div class="hero-logo">CI</div>
+    <div class="hero-logo">CCI</div>
     <div class="hero-text">
-      <div class="hero-eyebrow">Telecom Call Intelligence</div>
+      <div class="hero-eyebrow">Care Cost Intelligence</div>
       <div class="hero-title">Analysis Complete</div>
       <div class="hero-sub" id="result-hero-sub">·</div>
     </div>
@@ -447,6 +1267,12 @@ textarea{font-family:inherit}
       <div class="results-summary-text" id="result-summary"></div>
       <div class="meta-chips" id="result-meta-chips"></div>
     </div>
+
+    <!-- Original transcript (collapsed by default) -->
+    <details class="reasoning-details" id="transcript-details" style="margin-bottom:14px;">
+      <summary>View Original Transcript</summary>
+      <div class="reasoning-body" id="transcript-body" style="white-space:pre-wrap;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:0.78rem;"></div>
+    </details>
 
     <!-- Tab bar -->
     <div class="tab-bar">
@@ -498,9 +1324,18 @@ textarea{font-family:inherit}
       </details>
     </div>
 
+    <div class="scale-reminder">
+      You just watched <b>one interaction</b>. In production, this pipeline runs across your full call volume — hundreds, thousands, or hundreds of thousands a month — and rolls up into one cost and quality picture. <a href="/architecture#cost">See the aggregate view →</a>
+    </div>
+
     <button class="reset-btn" onclick="resetToInput()">← Analyze Another Call</button>
   </div>
 </div>
+
+<footer class="site-footer">
+  <div class="site-footer-brand">cci.ai — Care Cost Intelligence</div>
+  <div class="site-footer-tag">Interaction Cost Intelligence for CX &amp; contact center leaders.</div>
+</footer>
 
 <script>
 // ── Sample transcripts ──────────────────────────────────────────────
@@ -575,20 +1410,140 @@ const SAMPLES = {
 
 // ── Agent pipeline definition ──────────────────────────────────────
 const AGENTS = [
-  { name: 'DataIngestionAgent',  step1: 'Validating transcript structure…',   step2: 'Transcript validated',        stepMs: 900  },
-  { name: 'ExtractionAgent',     step1: 'Extracting 70+ fields with Claude Haiku…', step2: '70 fields extracted',    stepMs: 4200 },
-  { name: 'QualityAgent',        step1: 'Scoring extraction quality (100-pt rubric)…', step2: 'QA score computed',   stepMs: 1000 },
-  { name: 'AggregationAgent',    step1: 'Computing KPIs: FCR, AHT, avoidable rate…', step2: 'KPIs aggregated',     stepMs: 900  },
-  { name: 'InsightsAgent',       step1: 'Synthesising automation recommendations…', step2: 'Recommendations ready',  stepMs: 1000 },
+  { name: 'DataIngestionAgent',  step1: 'Validating interaction structure…',   step2: 'Interaction validated',        stepMs: 900  },
+  { name: 'ExtractionAgent',     step1: 'Extracting 70+ interaction attributes…', step2: '70+ attributes extracted',    stepMs: 4200 },
+  { name: 'QualityAgent',        step1: 'Scoring interaction quality (100-pt QM rubric)…', step2: 'Quality Score computed',   stepMs: 1000 },
+  { name: 'AggregationAgent',    step1: 'Computing KPIs: FCR, AHT, cost-to-serve…', step2: 'KPIs aggregated',     stepMs: 900  },
+  { name: 'InsightsAgent',       step1: 'Synthesising root-cause recommendations…', step2: 'Recommendations ready',  stepMs: 1000 },
   { name: 'ExportAgent',         step1: 'Finalising audit trail & decision log…',   step2: 'Audit trail complete',  stepMs: 700  },
 ];
+
+// ── Agent explorer data ─────────────────────────────────────────────
+const AGENT_DETAILS = [
+  {
+    mark: 'DI', name: 'DataIngestionAgent', role: 'Validates the interaction and screens it for PII',
+    desc: 'Checks that timestamps and speaker turns are well-formed, then scans for phone numbers, account numbers, and other identifiers — flagging them for redaction before interaction analytics ever starts.',
+    example: [
+      { l: 'Input',  v: '[00:00:12] Customer: it’s <b>4872-9301</b>, I’m frustrated…' },
+      { l: 'Action', v: '<span class="ok">Account number pattern detected</span> → flagged for redaction' },
+      { l: 'Result',  v: '24 turns · 3m37s · <span class="ok">structure valid</span>' },
+    ],
+  },
+  {
+    mark: 'EX', name: 'ExtractionAgent', role: 'Pulls 70+ structured interaction attributes',
+    desc: 'Reads the full interaction and extracts every issue, journey phase timestamp, product mention, sentiment shift, and cost driver into a structured schema — not a summary, a dataset row per interaction.',
+    example: [
+      { l: 'issue_1_description', v: '"Billed $285 vs usual ~$65 — international roaming"' },
+      { l: 'avoidable_contact', v: '<b>true</b>' },
+      { l: 'agentic_ai_resolvable', v: '<span class="ok">true</span>' },
+    ],
+  },
+  {
+    mark: 'QA', name: 'QualityAgent', role: 'Grades the extraction on a 100-point Quality Management rubric',
+    desc: 'Checks attribute coverage, internal consistency — does the summary match the extracted attributes? — and reasoning quality. A low-confidence extraction gets flagged, not silently trusted.',
+    example: [
+      { l: 'Coverage', v: '68 / 70 attributes populated' },
+      { l: 'Consistency', v: 'reasoning present for every judgment call' },
+      { l: 'Quality Score', v: '<span class="ok">97 / 100</span>' },
+    ],
+  },
+  {
+    mark: 'AG', name: 'AggregationAgent', role: 'Rolls individual interactions into operational KPIs',
+    desc: 'First Contact Resolution, Average Handle Time, avoidable-contact rate, and cost-to-serve — computed across the whole batch, so patterns across hundreds of interactions become visible, not just one.',
+    example: [
+      { l: 'Batch', v: '100 interactions analysed' },
+      { l: 'FCR / AHT', v: '71% · 152s' },
+      { l: 'Cost to serve', v: '<span class="ok">$5.92 / interaction</span>' },
+    ],
+  },
+  {
+    mark: 'IN', name: 'InsightsAgent', role: 'Synthesises what to actually do about it',
+    desc: 'Turns the aggregated KPIs into ranked, specific recommendations — automation candidates, coaching flags, root-cause fixes — using an enterprise-grade reasoning model with an automatic fallback provider.',
+    example: [
+      { l: 'Recommendation', v: '"Automate: suspension detection follows a deterministic policy — reinstate service automatically"' },
+      { l: 'Tag', v: '<span class="ok">AI Automation</span>' },
+    ],
+  },
+  {
+    mark: 'XP', name: 'ExportAgent', role: 'Writes the audit trail and ships the results',
+    desc: 'Every decision any agent made — with reasoning, evidence, and confidence — is written to a decision log and audit trail alongside the CSV/JSON exports. Nothing is a black box afterward.',
+    example: [
+      { l: 'interaction_results.csv', v: '<span class="ok">+1 row</span>' },
+      { l: 'decision_log', v: '6 entries appended' },
+      { l: 'audit_log', v: 'audit_log_20260618.json updated' },
+    ],
+  },
+];
+
+let _agentTabIdx = 0;
+let _agentAutoTimer = null;
+
+function renderAgentTabs() {
+  const wrap = document.getElementById('agents-tabs');
+  if (!wrap) return;
+  wrap.innerHTML = AGENT_DETAILS.map((a, i) => `
+    <button class="agent-tab${i === _agentTabIdx ? ' active' : ''}" data-idx="${i}" onclick="selectAgentTab(${i}, true)">
+      <span class="agent-tab-mark">${a.mark}</span>
+      <span class="agent-tab-info">
+        <span class="agent-tab-idx">0${i + 1}</span><br>
+        <span class="agent-tab-name">${a.name.replace('Agent', ' Agent')}</span>
+      </span>
+      <span class="agent-tab-progress${i === _agentTabIdx ? ' animating' : ''}"></span>
+    </button>
+  `).join('');
+}
+
+function renderAgentPanel() {
+  const a = AGENT_DETAILS[_agentTabIdx];
+  const panel = document.getElementById('agents-panel');
+  if (!panel) return;
+  panel.innerHTML = `
+    <div class="agent-panel-content">
+      <div class="agent-panel-eyebrow">
+        <div class="agent-panel-mark">${a.mark}</div>
+        <div>
+          <div class="agent-panel-step">Agent 0${_agentTabIdx + 1} of 6</div>
+          <div class="agent-panel-name">${a.name}</div>
+        </div>
+      </div>
+      <div class="agent-panel-role">${a.role}</div>
+      <p class="agent-panel-desc">${a.desc}</p>
+      <div class="agent-example">
+        <div class="agent-example-label">Example</div>
+        ${a.example.map(e => `<div class="agent-example-line">${e.l} → ${e.v}</div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function selectAgentTab(i, manual) {
+  _agentTabIdx = i;
+  renderAgentTabs();
+  renderAgentPanel();
+  if (manual) restartAgentAutoCycle();
+}
+
+function restartAgentAutoCycle() {
+  clearTimeout(_agentAutoTimer);
+  _agentAutoTimer = setTimeout(() => {
+    selectAgentTab((_agentTabIdx + 1) % AGENT_DETAILS.length, false);
+    restartAgentAutoCycle();
+  }, 5200);
+}
 
 // ── State ──────────────────────────────────────────────────────────
 let _apiResult = null;
 let _animDone = false;
 let _apiFetching = false;
+let _lastTranscript = '';
 
 // ── Helpers ────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function showScreen(id) {
   ['screen-input','screen-pipeline','screen-results'].forEach(s => {
     document.getElementById(s).classList.toggle('hidden', s !== id);
@@ -619,11 +1574,12 @@ function loadSample(key) {
 }
 
 function resetToInput() {
-  _apiResult = null; _animDone = false; _apiFetching = false;
+  _apiResult = null; _animDone = false; _apiFetching = false; _lastTranscript = '';
   document.getElementById('transcript-input').value = '';
   document.getElementById('input-error').classList.add('hidden');
   document.getElementById('btn-analyze').disabled = false;
   showScreen('screen-input');
+  document.getElementById('try-it').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 // ── Pipeline animation ─────────────────────────────────────────────
@@ -728,7 +1684,9 @@ function runAnalysis() {
   }
   document.getElementById('input-error').classList.add('hidden');
   document.getElementById('btn-analyze').disabled = true;
+  _lastTranscript = tx;
   showScreen('screen-pipeline');
+  document.getElementById('try-it').scrollIntoView({behavior:'smooth', block:'start'});
   runPipelineAnimation();
   fetchAnalysis(tx);
 }
@@ -771,11 +1729,16 @@ function renderResults(data) {
 
   // Hero sub
   document.getElementById('result-hero-sub').textContent =
-    `QA Score: ${qaScore}/100  ·  Processed in ${processingTime}s  ·  ${fmt(data.provider,'Claude Haiku')}`;
+    `Quality Score: ${qaScore}/100  ·  Processed in ${processingTime}s`;
 
   // Summary
   document.getElementById('result-summary').textContent =
     fmt(e.call_summary, 'No summary available.');
+
+  // Original transcript (escaped — raw user input, never trusted as HTML)
+  document.getElementById('transcript-body').innerHTML =
+    _lastTranscript ? escapeHtml(_lastTranscript).replace(/\n/g, '<br>') : '<span style="color:#94A3B8">No transcript captured.</span>';
+  document.getElementById('transcript-details').open = false;
 
   // Meta chips
   const total = e.total_duration_seconds || 0;
@@ -1005,6 +1968,85 @@ function buildRecommendations(e) {
 
   return recs;
 }
+
+// ── Premium/dynamic page chrome ─────────────────────────────────────
+function initAgentExplorer() {
+  renderAgentTabs();
+  renderAgentPanel();
+  restartAgentAutoCycle();
+  const explorer = document.querySelector('.agents-explorer');
+  if (explorer) {
+    explorer.addEventListener('mouseenter', () => clearTimeout(_agentAutoTimer));
+    explorer.addEventListener('mouseleave', () => restartAgentAutoCycle());
+  }
+}
+
+function initScrollReveal() {
+  const els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(el => el.classList.add('is-visible'));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  els.forEach(el => io.observe(el));
+}
+
+function animateCount(el) {
+  const target = parseFloat(el.dataset.count);
+  const prefix = el.dataset.prefix || '';
+  const suffix = el.dataset.suffix || '';
+  const decimals = parseInt(el.dataset.decimals || '0');
+  const duration = 1100;
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min(1, (now - t0) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val = target * eased;
+    el.textContent = `${prefix}${val.toFixed(decimals)}${suffix}`;
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = `${prefix}${target.toFixed(decimals)}${suffix}`;
+  }
+  requestAnimationFrame(tick);
+}
+
+function initProofCountUp() {
+  const strip = document.querySelector('.proof-strip');
+  const vals = document.querySelectorAll('.proof-val[data-count]');
+  if (!strip || !vals.length) return;
+  if (!('IntersectionObserver' in window)) {
+    vals.forEach(animateCount);
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        vals.forEach(animateCount);
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  io.observe(strip);
+}
+
+function initNavScrollShadow() {
+  const nav = document.querySelector('.site-nav');
+  if (!nav) return;
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
+
+initAgentExplorer();
+initScrollReveal();
+initProofCountUp();
+initNavScrollShadow();
 </script>
 </body>
 </html>

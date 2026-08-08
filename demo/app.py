@@ -1,5 +1,5 @@
 """
-demo/app.py — Telecom Call Intelligence · Live Demo Server
+demo/app.py — cci.ai (Care Cost Intelligence) · Live Demo Server
 -----------------------------------------------------------
 Standalone FastAPI app that serves the interactive demo UI and exposes a
 single /analyze endpoint.
@@ -364,7 +364,7 @@ def _make_mock_response(key: str, call_id: str, t0: float) -> dict:
 
 # ── FastAPI app ────────────────────────────────────────────────────
 
-app = FastAPI(title="Call Intelligence Demo", version="1.0.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="cci.ai — Care Cost Intelligence", version="1.0.0", docs_url=None, redoc_url=None)
 
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"],
@@ -379,6 +379,11 @@ class AnalyzeRequest(BaseModel):
 @app.get("/")
 def serve_demo() -> FileResponse:
     return FileResponse(_DEMO_DIR / "index.html", media_type="text/html")
+
+
+@app.get("/architecture")
+def serve_architecture() -> FileResponse:
+    return FileResponse(_DEMO_DIR / "architecture.html", media_type="text/html")
 
 
 @app.get("/health")
@@ -413,7 +418,10 @@ def analyze(req: AnalyzeRequest) -> JSONResponse:
         if result is not None:
             qa = score_field_coverage(result)
             result = OUTPUT_SANITIZER.sanitize_extraction_result(result)
-            for key in ("_prompt_tokens", "_completion_tokens", "_total_tokens"):
+            for key in (
+                "_prompt_tokens", "_completion_tokens", "_total_tokens",
+                "_cache_creation_tokens", "_cache_read_tokens",
+            ):
                 result.pop(key, None)
             return JSONResponse({
                 "call_id": call_id,
