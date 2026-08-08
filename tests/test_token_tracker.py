@@ -6,6 +6,8 @@ All pure unit tests: no API calls, no filesystem access.
 
 from pipeline.config import EXTRACTION_MODEL
 from pipeline.token_tracker import (
+    CACHE_READ_MULTIPLIER,
+    CACHE_WRITE_MULTIPLIER_1H,
     MODEL,
     PRICE_INPUT_PER_MTOK,
     PRICE_OUTPUT_PER_MTOK,
@@ -18,13 +20,14 @@ from pipeline.token_tracker import (
 
 class TestResolvePricing:
     def test_claude_haiku_prefix(self):
+        # Verified against platform.claude.com/docs/en/about-claude/pricing, 2026-08-08.
         in_rate, out_rate, provider, _ = _resolve_pricing("claude-haiku-4-5-20251001")
-        assert (in_rate, out_rate) == (0.80, 4.00)
+        assert (in_rate, out_rate) == (1.00, 5.00)
         assert "Anthropic" in provider
 
     def test_generic_claude_prefix(self):
         in_rate, out_rate, provider, _ = _resolve_pricing("claude-opus-4-8")
-        assert (in_rate, out_rate) == (0.80, 4.00)
+        assert (in_rate, out_rate) == (1.00, 5.00)
         assert "Anthropic" in provider
 
     def test_gemini_25_prefix(self):
@@ -56,6 +59,37 @@ class TestCostUsd:
     def test_output_tokens_cost_more_than_input(self):
         # Holds for every provider in the pricing map
         assert cost_usd(0, 10_000) > cost_usd(10_000, 0)
+
+    def test_cache_params_default_to_zero_and_dont_change_existing_callers(self):
+        # Backward compatibility: every pre-caching call site passes exactly
+        # (prompt_tokens, completion_tokens) — that must keep behaving identically.
+        assert cost_usd(5000, 2000) == cost_usd(5000, 2000, 0, 0)
+
+    def test_cache_read_is_cheaper_than_full_price_input(self):
+        # A cache-read token must cost strictly less than the same token priced
+        # as fresh input — this is the entire point of caching.
+        as_cache_read  = cost_usd(0, 0, 0, 1_000_000)
+        as_fresh_input = cost_usd(1_000_000, 0)
+        assert as_cache_read == round(PRICE_INPUT_PER_MTOK * CACHE_READ_MULTIPLIER, 10)
+        assert as_cache_read < as_fresh_input
+
+    def test_cache_write_costs_more_than_fresh_input(self):
+        # The write premium (2x for the 1h TTL analyzer.py uses) must exceed
+        # standard input price — otherwise BudgetGuard would under-count spend
+        # on the very first call of a batch, before any cache hits occur.
+        as_cache_write = cost_usd(0, 0, 1_000_000, 0)
+        as_fresh_input = cost_usd(1_000_000, 0)
+        assert as_cache_write == PRICE_INPUT_PER_MTOK * CACHE_WRITE_MULTIPLIER_1H
+        assert as_cache_write > as_fresh_input
+
+    def test_full_call_sums_all_four_components(self):
+        expected = (
+            1000 / 1_000_000 * PRICE_INPUT_PER_MTOK
+            + 500 / 1_000_000 * PRICE_OUTPUT_PER_MTOK
+            + 4000 / 1_000_000 * PRICE_INPUT_PER_MTOK * CACHE_WRITE_MULTIPLIER_1H
+            + 200 / 1_000_000 * PRICE_INPUT_PER_MTOK * CACHE_READ_MULTIPLIER
+        )
+        assert cost_usd(1000, 500, 4000, 200) == expected
 
 
 # ── token_summary ─────────────────────────────────────────────────────
@@ -103,3 +137,26 @@ class TestTokenSummary:
         assert s["price_input_per_mtok_usd"] == PRICE_INPUT_PER_MTOK
         assert s["price_output_per_mtok_usd"] == PRICE_OUTPUT_PER_MTOK
         assert "monthly inference cost" in s["pricing_note"]
+
+    def test_calls_without_cache_fields_default_to_zero(self):
+        # Results from before caching existed (or from the Gemini fallback,
+        # which never sets these keys) must not break summarisation.
+        s = token_summary([{"_prompt_tokens": 1000, "_completion_tokens": 500}])
+        assert s["total_cache_creation_tokens"] == 0
+        assert s["total_cache_read_tokens"] == 0
+        assert s["cache_read_savings_usd"] == 0.0
+        assert s["total_tokens"] == 1500
+
+    def test_cache_totals_are_summed_and_costed_separately(self):
+        results = [
+            {"_prompt_tokens": 600, "_completion_tokens": 2145, "_cache_creation_tokens": 4675, "_cache_read_tokens": 0},
+            {"_prompt_tokens": 600, "_completion_tokens": 2145, "_cache_creation_tokens": 0, "_cache_read_tokens": 4675},
+        ]
+        s = token_summary(results)
+        assert s["total_cache_creation_tokens"] == 4675
+        assert s["total_cache_read_tokens"] == 4675
+        assert s["total_tokens"] == 600 * 2 + 2145 * 2 + 4675 * 2
+        assert s["total_cost_usd"] == round(cost_usd(1200, 4290, 4675, 4675), 4)
+        # The second call's cache hit must be cheaper than if it had paid full
+        # input price for that same 4675 tokens.
+        assert s["cache_read_savings_usd"] > 0

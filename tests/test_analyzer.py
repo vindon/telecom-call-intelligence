@@ -125,19 +125,36 @@ class TestAnalyzeTranscript:
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
             analyzer, "_call_claude",
-            lambda client, sp, msg, max_tokens: (json.dumps(payload), 1200, 800),
+            lambda client, sp, msg, max_tokens: (json.dumps(payload), 1200, 800, 0, 0),
         )
         result = analyze_transcript(client=None, system_prompt="sp", transcript=make_transcript())
         assert result["_prompt_tokens"] == 1200
         assert result["_completion_tokens"] == 800
+        assert result["_cache_creation_tokens"] == 0
+        assert result["_cache_read_tokens"] == 0
         assert result["_total_tokens"] == 2000
         assert result["call_id"] == payload["call_id"]
+
+    def test_success_with_cache_hit_injects_cache_accounting(self, monkeypatch, make_transcript, make_record):
+        # Regression: cache tokens must be captured, not silently dropped —
+        # dropping them would undercount both total_tokens and real spend.
+        payload = {k: v for k, v in make_record().items() if not k.startswith("_")}
+        monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
+        monkeypatch.setattr(
+            analyzer, "_call_claude",
+            lambda client, sp, msg, max_tokens: (json.dumps(payload), 600, 2145, 0, 4675),
+        )
+        result = analyze_transcript(client=None, system_prompt="sp", transcript=make_transcript())
+        assert result["_prompt_tokens"] == 600
+        assert result["_cache_creation_tokens"] == 0
+        assert result["_cache_read_tokens"] == 4675
+        assert result["_total_tokens"] == 600 + 2145 + 0 + 4675
 
     def test_persistent_json_error_returns_none(self, monkeypatch, make_transcript):
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
             analyzer, "_call_claude",
-            lambda client, sp, msg, max_tokens: ("not json at all", 10, 10),
+            lambda client, sp, msg, max_tokens: ("not json at all", 10, 10, 0, 0),
         )
         assert analyze_transcript(None, "sp", make_transcript(), max_retries=2) is None
 
@@ -175,7 +192,7 @@ class TestGapFillTranscript:
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
             analyzer, "_call_claude",
-            lambda client, sp, msg, max_tokens: (json.dumps(retry_payload), 100, 50),
+            lambda client, sp, msg, max_tokens: (json.dumps(retry_payload), 100, 50, 0, 0),
         )
         merged = gap_fill_transcript(None, "sp", make_transcript(), first_pass)
         assert merged["fcr_indicator"] is True
@@ -188,12 +205,29 @@ class TestGapFillTranscript:
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
             analyzer, "_call_claude",
-            lambda client, sp, msg, max_tokens: (json.dumps({"fcr_indicator": False}), 100, 50),
+            lambda client, sp, msg, max_tokens: (json.dumps({"fcr_indicator": False}), 100, 50, 0, 0),
         )
         merged = gap_fill_transcript(None, "sp", make_transcript(), first_pass)
         assert merged["_prompt_tokens"] == 2100
         assert merged["_completion_tokens"] == 1550
         assert merged["_total_tokens"] == 3650
+
+    def test_merge_accumulates_cache_tokens_too(self, monkeypatch, make_transcript, make_record):
+        # Regression guard for this session's caching change: gap-fill cache
+        # tokens must add onto the first pass's cache totals, not overwrite them.
+        first_pass = make_record(
+            fcr_indicator=None, _prompt_tokens=600, _completion_tokens=2145,
+            _cache_creation_tokens=4675, _cache_read_tokens=0,
+        )
+        monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
+        monkeypatch.setattr(
+            analyzer, "_call_claude",
+            lambda client, sp, msg, max_tokens: (json.dumps({"fcr_indicator": False}), 100, 50, 0, 4675),
+        )
+        merged = gap_fill_transcript(None, "sp", make_transcript(), first_pass)
+        assert merged["_cache_creation_tokens"] == 4675
+        assert merged["_cache_read_tokens"] == 4675
+        assert merged["_total_tokens"] == 700 + 2195 + 4675 + 4675
 
     def test_failure_returns_first_pass_unchanged(self, monkeypatch, make_transcript, make_record):
         def boom(client, sp, msg, max_tokens):

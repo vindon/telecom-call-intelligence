@@ -157,18 +157,34 @@ def _parse_json_text(text: str) -> dict:
     return json.loads(text.strip())
 
 
-def _call_claude(client: Any, system_prompt: str, user_message: str, max_tokens: int) -> tuple[str, int, int]:
-    """Invoke Claude and return (text, input_tokens, output_tokens)."""
+def _call_claude(client: Any, system_prompt: str, user_message: str, max_tokens: int) -> tuple[str, int, int, int, int]:
+    """
+    Invoke Claude and return (text, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens).
+
+    The system prompt is identical on every call in a batch, so it's marked as
+    an ephemeral 1-hour prompt cache: the first call in the cache window pays a
+    write premium (2x input rate), every subsequent call within the hour reads
+    it at 10% of the input rate instead of the full rate. See token_tracker.py
+    for how these are priced.
+    """
     CLAUDE_RATE_LIMITER.acquire()
     response = client.messages.create(
         model=MODEL,
         max_tokens=max_tokens,
-        system=system_prompt,
+        system=[
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral", "ttl": "1h"},
+            }
+        ],
         messages=[{"role": "user", "content": user_message}],
         temperature=TEMPERATURE,
     )
     text = response.content[0].text
-    return text, response.usage.input_tokens, response.usage.output_tokens
+    cache_creation = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+    cache_read     = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+    return text, response.usage.input_tokens, response.usage.output_tokens, cache_creation, cache_read
 
 
 # ── Core analysis ─────────────────────────────────────────────────────
@@ -192,7 +208,7 @@ def analyze_transcript(
     for attempt in range(max_retries):
         try:
             if _USE_CLAUDE:
-                text, in_tok, out_tok = _call_claude(
+                text, in_tok, out_tok, cache_create_tok, cache_read_tok = _call_claude(
                     client, system_prompt, _build_user_message(transcript), MAX_TOKENS
                 )
             else:
@@ -211,16 +227,21 @@ def analyze_transcript(
                 text = response.text
                 in_tok  = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
                 out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
+                cache_create_tok = 0  # Gemini path does not use Claude's prompt cache
+                cache_read_tok   = 0
 
             SECRET_GUARD.assert_no_secrets_in_output(text)
             OUTPUT_SANITIZER.check_response_size(text, limit=MAX_RESPONSE_BYTES)
 
             result = _parse_json_text(text)
             result = OUTPUT_SANITIZER.sanitize_extraction_result(result)
-            result["_prompt_tokens"]     = in_tok
-            result["_completion_tokens"] = out_tok
-            result["_total_tokens"]      = in_tok + out_tok
-            log.debug("OK  %s  prompt=%d  completion=%d", call_id_short, in_tok, out_tok)
+            result["_prompt_tokens"]         = in_tok
+            result["_completion_tokens"]     = out_tok
+            result["_cache_creation_tokens"] = cache_create_tok
+            result["_cache_read_tokens"]     = cache_read_tok
+            result["_total_tokens"]          = in_tok + out_tok + cache_create_tok + cache_read_tok
+            log.debug("OK  %s  prompt=%d  completion=%d  cache_write=%d  cache_read=%d",
+                       call_id_short, in_tok, out_tok, cache_create_tok, cache_read_tok)
             return result
 
         except json.JSONDecodeError as exc:
@@ -309,7 +330,7 @@ def gap_fill_transcript(
     try:
         gap_msg = _build_gap_fill_message(transcript, missing)
         if _USE_CLAUDE:
-            text, in_tok, out_tok = _call_claude(client, system_prompt, gap_msg, 1024)
+            text, in_tok, out_tok, cache_create_tok, cache_read_tok = _call_claude(client, system_prompt, gap_msg, 1024)
         else:
             GEMINI_RATE_LIMITER.acquire()
             response = client.models.generate_content(
@@ -326,6 +347,8 @@ def gap_fill_transcript(
             text = response.text
             in_tok  = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
             out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
+            cache_create_tok = 0
+            cache_read_tok   = 0
 
         SECRET_GUARD.assert_no_secrets_in_output(text)
         retry_result = _parse_json_text(text)
@@ -337,9 +360,14 @@ def gap_fill_transcript(
                 merged[field] = val
         # Gap-fill spend must count toward token totals — BudgetGuard and
         # token_summary() read these keys for cost enforcement and reporting.
-        merged["_prompt_tokens"]     = merged.get("_prompt_tokens", 0) + in_tok
-        merged["_completion_tokens"] = merged.get("_completion_tokens", 0) + out_tok
-        merged["_total_tokens"]      = merged.get("_prompt_tokens", 0) + merged.get("_completion_tokens", 0)
+        merged["_prompt_tokens"]         = merged.get("_prompt_tokens", 0) + in_tok
+        merged["_completion_tokens"]     = merged.get("_completion_tokens", 0) + out_tok
+        merged["_cache_creation_tokens"] = merged.get("_cache_creation_tokens", 0) + cache_create_tok
+        merged["_cache_read_tokens"]     = merged.get("_cache_read_tokens", 0) + cache_read_tok
+        merged["_total_tokens"] = (
+            merged.get("_prompt_tokens", 0) + merged.get("_completion_tokens", 0)
+            + merged.get("_cache_creation_tokens", 0) + merged.get("_cache_read_tokens", 0)
+        )
         log.info("[ReAct] call %s: gap-fill improved coverage %d → %d",
                  call_id_short, score_field_coverage(first_pass), score_field_coverage(merged))
         return merged

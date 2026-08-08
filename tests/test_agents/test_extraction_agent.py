@@ -91,7 +91,7 @@ class TestExtractionAgent:
         monkeypatch.setattr(
             ext_mod, "analyze_batch", lambda t, **kw: [make_record(call_id="c1")]
         )
-        monkeypatch.setattr(ext_mod, "_cost_usd", lambda p, c: 999.0)
+        monkeypatch.setattr(ext_mod, "_cost_usd", lambda p, c, cc=0, cr=0: 999.0)
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         with pytest.raises(BudgetGuard.BudgetExceededError):

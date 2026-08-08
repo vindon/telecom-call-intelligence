@@ -93,10 +93,15 @@ class ExtractionAgent:
         if failed:
             MEMORY.record_failures(failed, context=f"checkpoint={checkpoint_key}")
 
-        # Budget check — use model-aware pricing from token_tracker (not hardcoded rate)
-        total_prompt = sum(r.get("_prompt_tokens", 0) for r in results)
-        total_out    = sum(r.get("_completion_tokens", 0) for r in results)
-        est_cost     = _cost_usd(total_prompt, total_out)
+        # Budget check — use model-aware pricing from token_tracker (not hardcoded rate).
+        # Cache tokens must be passed separately: pricing them at the full input
+        # rate (like a naive prompt_tokens sum would) overstates spend against
+        # BudgetGuard by ignoring the ~90% discount a cache hit actually gets.
+        total_prompt         = sum(r.get("_prompt_tokens", 0) for r in results)
+        total_out            = sum(r.get("_completion_tokens", 0) for r in results)
+        total_cache_creation = sum(r.get("_cache_creation_tokens", 0) for r in results)
+        total_cache_read     = sum(r.get("_cache_read_tokens", 0) for r in results)
+        est_cost     = _cost_usd(total_prompt, total_out, total_cache_creation, total_cache_read)
         try:
             BUDGET_GUARD.check(est_cost, context=f"after {len(results)} calls (incl. ReAct retries)")
             AUDIT_LOG.record_governance(
