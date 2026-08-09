@@ -1,7 +1,7 @@
 # Product Requirements Document
 
 **Product:** Telecom Call Intelligence Platform
-**Version:** 4.0
+**Version:** 4.5
 **Status:** Production
 **Last updated:** 2026-06-01
 
@@ -171,7 +171,8 @@ This platform applies a 7-agent LangGraph pipeline to 100% of call transcripts, 
 | v1.0 — Production | Batch system, checkpoint, token tracking, QA audit, ARCHITECTURE.md | Complete |
 | v2.0 — Agentic AI | 6-agent LangGraph pipeline, governance, memory, tool registry, orchestrator, 149 tests, CI | Complete |
 | v3.0 — Agentic Patterns | ReAct loop, Chain-of-Thought, deliberation loop, vector memory, 5-component security, approval gate, 198 tests | Complete |
-| v4.0 — Plug-and-Play + Traceability | Claude Haiku 4.5 primary extraction, NVIDIA NIM insights, model-aware cost/validation, DecisionLogger across all agents, 224 tests | **Complete** |
+| v4.0 — Plug-and-Play + Traceability | Claude Haiku 4.5 primary extraction, NVIDIA NIM insights, model-aware cost/validation, DecisionLogger across all agents, 224 tests | Complete |
+| v4.5 — Data-Quality Gate + Strict Failure Policy | Deterministic phase-reconciliation/timestamp-ground-truth/completeness gate (separate from the 100-pt QA score), no-auto-retry human-intervention-required failure policy, spend controls, pre-flight smoke test, 404 tests | **Complete** |
 | v5.0 — Enterprise | Real transcript ingestion (S3/Snowflake/ACD), agent ID mapping, CRM FCR validation | Planned |
 
 ---

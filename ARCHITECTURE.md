@@ -9,7 +9,7 @@ Local CSV (telecom_200k.csv — primary)  ·  HuggingFace stream (fallback, 3.7M
                              │
                              ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│              LangGraph StateGraph  ·  Multi-Agent Pipeline v4.4              │
+│              LangGraph StateGraph  ·  Multi-Agent Pipeline v4.5              │
 │                                                                              │
 │  ┌──────────────────────┐    ┌────────────────────────────────────────────┐  │
 │  │  DataIngestion       │───▶│  Extraction Agent  (2/7)                   │  │
