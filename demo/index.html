@@ -1122,25 +1122,25 @@ a{color:inherit}
 <!-- ════════════════ AT SCALE ════════════════ -->
 <section class="section-wrap at-scale reveal" id="at-scale">
   <div class="section-heading">Proven at production batch scale</div>
-  <h2 class="at-scale-h2">We ran 100 transcripts through this pipeline. Here's exactly what it found.</h2>
-  <p class="at-scale-sub">The interaction below is <b>one call</b>, walked through live so you can watch every agent work. What follows is the aggregate — cost-to-serve, cost-to-sell, and cost-to-retain, broken out from a real 100-transcript production batch. Point this at your enterprise call volume, and the same roll-up scales with it.</p>
+  <h2 class="at-scale-h2">We ran 217 transcripts through this pipeline. 172 passed every check. Here's exactly what it found.</h2>
+  <p class="at-scale-sub">The interaction below is <b>one call</b>, walked through live so you can watch every agent work. What follows is the aggregate — cost-to-serve, cost-to-sell, and cost-to-retain — from a real batch, gated by three deterministic data-integrity checks before any dollar figure is computed from it, not just a QA score. Point this at your enterprise call volume, and the same roll-up scales with it.</p>
 
-  <div class="at-scale-subhead">The cost breakdown — 100-transcript test batch</div>
+  <div class="at-scale-subhead">The cost breakdown — 172 verified calls (of 217 processed)</div>
   <div class="at-scale-grid">
     <div class="at-scale-cell">
       <span class="at-scale-tag">P1–P4</span>
-      <div class="at-scale-val">$468K<span>/mo</span></div>
-      <div class="at-scale-key">Cost to Serve — 78% of handle time spent resolving issues after they've already happened</div>
+      <div class="at-scale-val">$482K<span>/mo</span></div>
+      <div class="at-scale-key">Cost to Serve — 80% of handle time spent resolving issues after they've already happened</div>
     </div>
     <div class="at-scale-cell">
       <span class="at-scale-tag">P5</span>
-      <div class="at-scale-val">$52K<span>/mo</span></div>
-      <div class="at-scale-key">Cost to Sell — 9% of handle time, plan changes and upsell conversations</div>
+      <div class="at-scale-val">$46K<span>/mo</span></div>
+      <div class="at-scale-key">Cost to Sell — 8% of handle time, plan changes and upsell conversations</div>
     </div>
     <div class="at-scale-cell">
       <span class="at-scale-tag">Cross-cutting</span>
-      <div class="at-scale-val">$80K<span>/mo</span></div>
-      <div class="at-scale-key">Cost to Retain — 13% of handle time, retention-critical moments inside any call type</div>
+      <div class="at-scale-val">$72K<span>/mo</span></div>
+      <div class="at-scale-key">Cost to Retain — 12% of handle time, retention-critical moments inside any call type</div>
     </div>
     <div class="at-scale-cell is-total">
       <span class="at-scale-tag">Total</span>
@@ -1148,6 +1148,7 @@ a{color:inherit}
       <div class="at-scale-key">The cost-to-serve figure most resolution-rate dashboards never show you</div>
     </div>
   </div>
+  <p class="at-scale-sub" style="margin-top:10px;font-size:0.82rem;">Why 172 and not 217: 45 calls failed a deterministic phase-time or timestamp check and are excluded here rather than silently averaged in — the same gate that protects every dollar figure above from a bad transcript's timing data. <a href="/architecture#quality">See the data quality gate →</a></p>
 
   <div class="at-scale-subhead">At enterprise volume, this unlocks two things</div>
   <div class="at-scale-unlock-grid">
