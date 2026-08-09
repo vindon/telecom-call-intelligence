@@ -79,13 +79,16 @@ class BudgetGuard:
 
 class QualityGate:
     """
-    Raises QualityGateError if the extraction quality is catastrophically poor.
+    Raises QualityGateError if extraction quality OR data-integrity quality
+    (phase reconciliation / timestamp ground-truth / transcript completeness
+    — see qa_audit.check_data_quality()) is catastrophically poor.
 
-    Fires ONLY on critical failure (pass_rate < min_pass_rate) to protect
-    aggregation and insights from garbage-in / garbage-out.
+    Fires ONLY on critical failure (either pass rate < min_pass_rate) to
+    protect aggregation and insights from garbage-in / garbage-out.
 
-    Normal QA FAIL (pass_rate 50–89%) is non-blocking — LOW records are
-    excluded from aggregation but the pipeline continues.
+    Normal FAIL (pass_rate 50–89%) is non-blocking — LOW-QA and
+    data-quality-gate-failed records are excluded from aggregation but the
+    pipeline continues.
     """
 
     class QualityGateError(RuntimeError):
@@ -98,18 +101,31 @@ class QualityGate:
         """
         Raise QualityGateError on catastrophic extraction failure.
         Called by quality_node after QualityAgent.run().
+
+        Checks TWO independent pass rates, since a run can score perfectly on
+        one while failing the other: the 100-pt QA score (did extraction
+        succeed structurally — fields populated, enums valid) and
+        data_quality_pass_rate_pct (is the phase-level math internally
+        consistent — see qa_audit.check_data_quality()). A run with HIGH QA
+        scores across the board can still have the vast majority of calls
+        fail phase reconciliation — confirmed in production 2026-08-09, where
+        every batch scored ~100% QA pass rate while data_quality_pass_rate_pct
+        ran 15-40%, and this gate never once fired because it only looked at
+        the QA score. Either metric falling below min_pass_rate is catastrophic.
         """
         if not qa_report or qa_report.get("dataset_verdict") == "SKIP":
             return  # no results — handled upstream
 
-        summary    = qa_report.get("summary", {})
-        pass_rate  = summary.get("pass_rate_pct", 100) / 100  # convert pct → fraction
-        n_audited  = qa_report.get("total_calls_audited", 0)
-        avg_score  = summary.get("avg_score", 100)
+        summary      = qa_report.get("summary", {})
+        pass_rate    = summary.get("pass_rate_pct", 100) / 100  # convert pct → fraction
+        n_audited    = qa_report.get("total_calls_audited", 0)
+        avg_score    = summary.get("avg_score", 100)
+        dq_pass_rate_pct = summary.get("data_quality_pass_rate_pct")  # None if caller predates this check
 
         log.info(
-            "[QualityGate] pass_rate=%.1f%%  avg_score=%.1f  n=%d  threshold=%.0f%%",
+            "[QualityGate] pass_rate=%.1f%%  avg_score=%.1f  n=%d  threshold=%.0f%%%s",
             pass_rate * 100, avg_score, n_audited, self.min_pass_rate * 100,
+            f"  data_quality_pass_rate={dq_pass_rate_pct:.1f}%" if dq_pass_rate_pct is not None else "",
         )
 
         if pass_rate < QUALITY_WARN_RATE:
@@ -118,11 +134,23 @@ class QualityGate:
                 "— aggregation will run on a degraded dataset. Check extraction model and prompt.",
                 pass_rate * 100, QUALITY_WARN_RATE * 100,
             )
+        if dq_pass_rate_pct is not None and dq_pass_rate_pct / 100 < QUALITY_WARN_RATE:
+            log.warning(
+                "[QualityGate] WARNING: data_quality_pass_rate=%.1f%% is below quality warning "
+                "threshold %.0f%% — AHT/phase economics for this run are unreliable even though "
+                "the QA score looks fine.",
+                dq_pass_rate_pct, QUALITY_WARN_RATE * 100,
+            )
 
+        failures = []
         if pass_rate < self.min_pass_rate:
+            failures.append(f"QA pass rate {pass_rate*100:.1f}% < minimum {self.min_pass_rate*100:.0f}%")
+        if dq_pass_rate_pct is not None and dq_pass_rate_pct / 100 < self.min_pass_rate:
+            failures.append(f"data quality pass rate {dq_pass_rate_pct:.1f}% < minimum {self.min_pass_rate*100:.0f}%")
+
+        if failures:
             raise self.QualityGateError(
-                f"Pipeline stopped: QA pass rate {pass_rate*100:.1f}% is below "
-                f"minimum {self.min_pass_rate*100:.0f}%. "
+                f"Pipeline stopped: {'; '.join(failures)}. "
                 f"Avg score: {avg_score}/100 across {n_audited} calls. "
                 "Check system prompt and model settings."
             )

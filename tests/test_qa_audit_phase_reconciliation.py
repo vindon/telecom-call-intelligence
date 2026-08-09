@@ -3,10 +3,18 @@ Tests for qa_audit.py's data-quality gate — phase reconciliation, timestamp
 ground-truth, and transcript-completeness checks.
 
 These are deterministic, non-LLM regression tests: the core assertion is
-that the sum of phase-level durations must never exceed total_duration_seconds
-by more than a small tolerance. No API calls, no mocks — pure functions over
-plain dicts, matching CLAUDE.md's rule that governance-adjacent logic is
-tested directly.
+that the sum of the 6 SEQUENTIAL phase fields must never exceed
+total_duration_seconds by more than a small tolerance. No API calls, no
+mocks — pure functions over plain dicts, matching CLAUDE.md's rule that
+governance-adjacent logic is tested directly.
+
+OVERLAY_PHASE_FIELDS (upsell, relationship_building) are deliberately
+excluded from the reconciliation sum — see check_phase_reconciliation()'s
+docstring. This was a real bug (fixed 2026-08-09, verified against 200 real
+extractions): summing all 8 phase fields produced false-positive failures
+on ~73% of records whose 6 sequential fields already summed exactly to
+total, because upsell/relationship-building moments legitimately happen
+*during* another phase rather than as additional wall-clock time.
 """
 
 from pipeline.config import (
@@ -17,6 +25,7 @@ from pipeline.config import (
 )
 from qa_audit import (
     check_data_quality,
+    check_overlay_plausibility,
     check_phase_reconciliation,
     check_timestamp_ground_truth,
     check_transcript_completeness,
@@ -71,12 +80,78 @@ class TestPhaseReconciliation:
         assert result["passed"] is True
         assert result["total_duration_s"] is None
 
-    def test_relationship_building_phase_is_included_in_sum(self, make_record):
-        # Regression: qa_audit's phase_cols historically omitted this field.
+    def test_relationship_building_is_excluded_from_the_sum(self, make_record):
+        # Regression (2026-08-09): relationship_building is an OVERLAY field —
+        # activity happening during another phase, not additional wall-clock
+        # time. A large value here must NOT push the sum over total.
         record = make_record(phase_relationship_building_duration_seconds=100)
         result = check_phase_reconciliation(record)
+        assert result["passed"] is True
+        assert result["phase_sum_s"] == 420.0  # unchanged — overlay field not summed in
+
+    def test_upsell_is_excluded_from_the_sum(self, make_record):
+        record = make_record(phase_upsell_duration_seconds=150)
+        result = check_phase_reconciliation(record)
+        assert result["passed"] is True
+        assert result["phase_sum_s"] == 420.0
+
+    def test_real_production_pattern_sequential_sum_with_overlapping_overlays(self, make_record):
+        # Exact shape of call 003e089f662d... from the 2026-08-09 production run:
+        # 6 sequential phases sum precisely to total (138s), while upsell and
+        # relationship_building report substantial concurrent activity that
+        # overlaps with those same phases. Must pass.
+        record = make_record(
+            total_duration_seconds=138,
+            phase_welcome_duration_seconds=24,
+            phase_discovery_duration_seconds=36,
+            phase_diagnosis_duration_seconds=33,
+            phase_resolution_duration_seconds=13,
+            phase_hold_total_seconds=0,
+            phase_closing_duration_seconds=32,
+            phase_upsell_duration_seconds=33,          # overlaps with diagnosis
+            phase_relationship_building_duration_seconds=15,  # overlaps with another phase
+        )
+        result = check_phase_reconciliation(record)
+        assert result["passed"] is True
+        assert result["phase_sum_s"] == 138.0
+
+    def test_sequential_phase_overcounting_still_fails(self, make_record):
+        # The check must still catch a GENUINE sequential-phase overcount —
+        # excluding overlay fields doesn't mean the gate is toothless.
+        record = make_record(phase_diagnosis_duration_seconds=120 + 300)
+        result = check_phase_reconciliation(record)
         assert result["passed"] is False
-        assert result["phase_sum_s"] == 520.0
+
+
+class TestOverlayPlausibility:
+    def test_overlay_within_total_passes(self, make_record):
+        record = make_record(phase_upsell_duration_seconds=50, phase_relationship_building_duration_seconds=20)
+        result = check_overlay_plausibility(record)
+        assert result["passed"] is True
+        assert result["violations"] == []
+
+    def test_overlay_exceeding_total_fails(self, make_record):
+        record = make_record(total_duration_seconds=100, phase_upsell_duration_seconds=150)
+        result = check_overlay_plausibility(record)
+        assert result["passed"] is False
+        assert len(result["violations"]) == 1
+
+    def test_missing_total_duration_passes(self, make_record):
+        record = make_record()
+        record.pop("total_duration_seconds", None)
+        result = check_overlay_plausibility(record)
+        assert result["passed"] is True
+
+    def test_never_blocks_check_data_quality(self, make_record):
+        # overlay_plausibility is informational only — must never appear in
+        # `failures` or affect `passed`, even when it fails. Sequential phases
+        # are left at their defaults (sum == total == 420) so reconciliation
+        # passes cleanly — only the overlay bound is violated here.
+        record = make_record(phase_upsell_duration_seconds=500)  # > total_duration_seconds=420
+        result = check_data_quality(record)
+        assert result["passed"] is True
+        assert "overlay_plausibility" not in result["failures"]
+        assert result["checks"]["overlay_plausibility"]["passed"] is False
 
 
 class TestTimestampGroundTruth:
@@ -150,5 +225,5 @@ class TestCheckDataQuality:
             "phase_reconciliation", "timestamp_ground_truth", "transcript_truncation",
         }
         assert set(result["checks"]) == {
-            "phase_reconciliation", "timestamp_ground_truth", "transcript_truncation",
+            "phase_reconciliation", "timestamp_ground_truth", "transcript_truncation", "overlay_plausibility",
         }

@@ -495,7 +495,10 @@ run_batches.py
         ├── Task 3: subprocess → run_pipeline.py --offset 40 --n 20
         ├── Task 4: subprocess → run_pipeline.py --offset 60 --n 20
         └── Task 5: subprocess → run_pipeline.py --offset 80 --n 20
-              (failed tasks retried up to max_retries, then logged to AgentMemory)
+              (the first task failure halts ALL remaining tasks immediately —
+               strict human-intervention policy, no auto-retry — and writes
+               outputs/.halted_for_human_review.json, which blocks every
+               subsequent run until cleared with --acknowledge-halt)
 ```
 
 Process isolation: each batch runs as a subprocess — a crash cannot corrupt other batches' checkpoints or state. Interrupted batches resume automatically from checkpoint.
@@ -523,7 +526,7 @@ telecom-call-intelligence/
 │   │   └── export_agent.py        ← Agent 6: ExportAgent
 │   ├── graph.py               ← LangGraph (7 nodes, conditional routing,
 │   │                              approval gate, decision logging, LangSmith)
-│   ├── orchestrator.py        ← WorkPlanner, AgentHealthMonitor, adaptive retry
+│   ├── orchestrator.py        ← WorkPlanner, AgentHealthMonitor, strict halt-on-failure policy
 │   ├── governance.py          ← BudgetGuard, QualityGate, PIIScanner, AuditLog
 │   ├── memory.py              ← AgentMemory — flat JSON cross-run store
 │   ├── tools.py               ← ToolRegistry — JSON-schema tool definitions

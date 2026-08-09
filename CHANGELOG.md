@@ -6,6 +6,47 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.5.0] — 2026-08-09
+
+### Added — Data Quality Gate (phase reconciliation, timestamp ground truth, transcript completeness)
+
+- **`qa_audit.check_data_quality()`** — three deterministic (non-LLM) checks run per call in `QualityAgent`, alongside the 100-pt QA score, and gate aggregation the same way LOW-grade records do:
+  - `check_phase_reconciliation()` — sum of the 6 sequential phases (welcome, discovery, diagnosis, resolution, hold, closing) must reconcile to `total_duration_seconds`
+  - `check_timestamp_ground_truth()` — `total_duration_seconds` cross-checked against `raw_duration_seconds`, threaded through from the source dataset's own turn timestamps (`hf_loader.py` → `data_agent.py` → `extraction_agent.py`)
+  - `check_transcript_completeness()` — new `transcript_truncated`/`truncation_reason` schema fields (LLM-graded), corroborated by a free heuristic (`looks_truncated_heuristic()`)
+- Dataset-level `data_quality_pass_rate_pct` rolls into `qa_report`/`summary.json`; a computed `aht_disclaimer` is written into the dashboard's `summary.json` when it drops below `QUALITY_WARN_RATE`, rendered as a live banner (`.data-disclaimer` in `dashboard/app.py`)
+- **`governance.QualityGate`** — extended to check `data_quality_pass_rate_pct` as an independent catastrophic-failure dimension alongside the QA score. Previously blind to it: a run could score ~100% on the QA score while catastrophically failing phase reconciliation and the gate would never fire.
+- **`retroactive_dq_audit.py`** — new standalone script applying the gate to already-processed batches without any new LLM calls; phase reconciliation runs at full strength on existing records, timestamp ground truth is backfilled by deterministically re-fetching the original transcript slice (free, from the local CSV)
+
+### Fixed — Phase-reconciliation false positives (root cause)
+
+- `check_phase_reconciliation()` was summing all 8 phase-duration fields as mutually-exclusive sequential segments. Two of them — `phase_upsell_duration_seconds` and `phase_relationship_building_duration_seconds` — describe activity happening *during* another phase (an upsell pitch mid-diagnosis), not additional wall-clock time. Verified against 200 real extractions: the 6 truly-sequential fields already summed exactly to `total_duration_seconds` on 77%+ of calls; summing all 8 produced false-positive failures on ~73% of otherwise-correct records. Fields split into `SEQUENTIAL_PHASE_FIELDS` (summed, gated) and `OVERLAY_PHASE_FIELDS` (excluded from the sum, given a non-blocking `check_overlay_plausibility()` bound instead). `prompts/system_prompt.txt` rule 3 rewritten to match — it previously told the model "every second belongs to exactly one phase," which is factually wrong for the overlay fields. **Re-verified against the same 200 already-extracted calls with zero new API spend: data-quality pass rate went from 29.0% (old formula) to 92.5% (corrected formula).**
+- `hf_loader.py` — the offset-based batch sampling used overlapping candidate windows (`all_ids_ordered[offset:offset+n*6]`) for offsets spaced by `n`, and `random.sample()` with a fixed seed against overlapping-but-shifted lists reliably repicked the same underlying conversation IDs. A 10-batch/200-call run only produced 136 truly unique conversations. Replaced with a single deterministic shuffle of the full ID universe sliced into disjoint ranges per offset (`_select_ids()`).
+- `merge_outputs.py` — was aggregating every merged record unconditionally, bypassing the data quality gate that `QualityAgent` already enforces inside a single pipeline run, so a multi-batch merge could silently re-include calls already known to fail. Now applies the gate (retroactively tagging older pre-gate records) before computing KPIs, and reports `data_quality_pass_rate_pct` / a computed `aht_disclaimer` the same way a single run does.
+- `Orchestrator._run_task()` — the `subprocess.TimeoutExpired` and generic-exception handlers never recorded the failure in `agent_health` (only the exit-code≠0 branch did), so hangs and crashes were invisible in the health summary.
+- Assorted stale docstrings/comments referencing moved functions (`data_agent.py::_looks_truncated` → `qa_audit.py::looks_truncated_heuristic`) and the removed retry mechanism.
+
+### Added — Strict human-intervention failure policy
+
+- **`Orchestrator.run()`** — the first batch task failure now halts the entire run immediately: no auto-retry, no proceeding to remaining batches. Writes `outputs/.halted_for_human_review.json`, which blocks every subsequent `run_batches.py` invocation until cleared with `--acknowledge-halt`. Replaces an auto-retry loop that, in production, silently retried a hung batch twice before a human noticed the wasted spend (~$1.8 of discarded work from two batches each retrying into the same hang).
+- Removed the now-dead `max_retries`/`can_retry`/`attempts`/`DEFAULT_MAX_RETRIES` retry-count mechanism entirely rather than leaving it as an inert config flag.
+
+### Added — Spend control for API hangs
+
+- Every LLM client (`anthropic.Anthropic`, `OpenAI`, `genai.Client`) across the codebase (`analyzer.py`, `extraction_agent.py`, `insights_agent.py`, `vector_memory.py`, `api/main.py`, `demo/app.py`) now sets an explicit `timeout=` (`EXTRACTION_API_TIMEOUT_S=60`, `INSIGHTS_API_TIMEOUT_S=45` — config.py) and `max_retries=1`. Previously none set a timeout, defaulting to the SDK's 600s — the same order of magnitude as `Orchestrator`'s own 600s per-batch subprocess timeout, so a slow provider could hang right up to that limit and get the whole batch killed and retried from scratch.
+- **NVIDIA NIM circuit breaker** (`insights_agent.py`) — on a confirmed timeout, marks NVIDIA unavailable for the rest of the run (`outputs/.nvidia_unavailable` sentinel, cleared by `Orchestrator` at the start of a new run) so subsequent passes/batches skip straight to the Claude fallback instead of re-paying the timeout on every call.
+
+### Added — Pre-flight smoke test
+
+- **`smoke_test.py`** — run before any paid batch: free checks (env vars, config sanity, full test suite, offset-disjointness against the actual planned batch parameters) plus an opt-in `--live` flag that runs one real ~$0.01-0.02 call through the full pipeline with a hard 150s timeout, verifying completeness, insights generation, and prompt-cache engagement. Self-cleaning — restores `summary.json` and deletes its own throwaway artifacts.
+
+### Changed
+
+- `run_batches.py` — added `--start-offset` (guarantee a fresh, non-overlapping sample vs. previous runs) and `--acknowledge-halt`; removed `--retries`.
+- `pipeline_version` string corrected from stale `"4.1-multi-agent"` to match this release.
+
+---
+
 ## [4.4.0] — 2026-06-24
 
 ### Added — Standalone Live Demo App

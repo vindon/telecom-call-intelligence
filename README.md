@@ -8,7 +8,7 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph-4A90D9)
 ![Claude](https://img.shields.io/badge/Claude-Haiku%204.5-CC785C?logo=anthropic&logoColor=white)
 ![NVIDIA](https://img.shields.io/badge/NVIDIA-NIM%20LLaMA--3.3--70B-76B900?logo=nvidia&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-364%20passing-22C55E)
+![Tests](https://img.shields.io/badge/Tests-404%20passing-22C55E)
 ![License](https://img.shields.io/badge/License-Proprietary-DC2626)
 
 ---
@@ -46,7 +46,7 @@ Local CSV (telecom_200k.csv — primary) · HuggingFace stream (fallback, 3.7M t
                             │
                             ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│              LangGraph StateGraph  ·  Multi-Agent Pipeline v4.3           │
+│              LangGraph StateGraph  ·  Multi-Agent Pipeline v4.5           │
 │                                                                           │
 │  ┌─────────────────────┐    ┌──────────────────────────────────────────┐  │
 │  │  DataIngestion      │───▶│  Extraction Agent  (2/7)                 │  │
@@ -120,8 +120,8 @@ Every component exists because production autonomous systems need it.
 | **LangSmith tracing** | One env var (`LANGCHAIN_TRACING_V2=true`) enables full node-level span capture | End-to-end observability across all 7 pipeline nodes and every LLM provider |
 | **Dynamic routing** | LangGraph conditional edge after QualityAgent | Catastrophic extraction failure routes to safe export; the pipeline never silently fails |
 | **Checkpoint/resume** | Every API call persisted to `outputs/.checkpoint_{key}.jsonl` immediately | Kill a 100-call job at call 73 — restart and it resumes from 74 with zero duplicated API spend |
-| **Process isolation** | `run_batches.py` → `Orchestrator` → N subprocesses | A crashed batch cannot corrupt other batches; full batch-level retry with health monitoring |
-| **364 unit tests** | Security, governance, decision log, memory, orchestrator, tools, config, graph — all tested without API calls | CI completes in under 7 seconds; tests gate every push to main |
+| **Process isolation** | `run_batches.py` → `Orchestrator` → N subprocesses | A crashed batch cannot corrupt other batches; the first failure halts the entire run and requires explicit human review (`--acknowledge-halt`) — no silent auto-retry |
+| **404 unit tests** | Security, governance, decision log, memory, orchestrator, tools, config, graph — all tested without API calls | CI completes in under 7 seconds; tests gate every push to main |
 
 ---
 
@@ -150,7 +150,7 @@ Every component exists because production autonomous systems need it.
 | Extraction cost (Gemini free tier) | ~$0.00 / 100 calls (free-tier eligible) |
 | Deliberation passes | 3 per insights run |
 | Decision records per run | 15–60 traceable decisions |
-| Test suite | 364 tests · < 7 seconds |
+| Test suite | 404 tests · < 7 seconds |
 | Checkpoint overhead | Zero — resume is instantaneous |
 
 ---
@@ -197,7 +197,7 @@ make dashboard            # executive dashboard at localhost:8501
 ## Developer commands
 
 ```bash
-make test          # 364 unit tests — no API calls required (< 7 seconds)
+make test          # 404 unit tests — no API calls required (< 7 seconds)
 make lint          # ruff linter across all source files
 make check         # lint + type-check + test (full pre-push gate)
 make test-cov      # tests with HTML coverage report
@@ -282,7 +282,7 @@ telecom-call-intelligence/
 │   │   └── export_agent.py         ← Agent 6: ExportAgent (CSV/JSON/decisions/audit)
 │   ├── graph.py                ← LangGraph StateGraph (7 nodes, conditional routing,
 │   │                               approval gate, LangSmith tracing)
-│   ├── orchestrator.py         ← WorkPlanner, AgentHealthMonitor, adaptive retry
+│   ├── orchestrator.py         ← WorkPlanner, AgentHealthMonitor, strict halt-on-failure policy
 │   ├── governance.py           ← BudgetGuard, QualityGate, PIIScanner, AuditLog
 │   ├── memory.py               ← Persistent cross-run flat JSON agent memory
 │   ├── tools.py                ← Formal tool registry with JSON schemas
@@ -292,7 +292,7 @@ telecom-call-intelligence/
 │   ├── token_tracker.py        ← Model-aware token cost accounting
 │   └── logger.py               ← Structured logging (INFO→stdout, DEBUG→file)
 │
-├── tests/                      ← 364 unit tests (zero API calls, < 7 seconds)
+├── tests/                      ← 404 unit tests (zero API calls, < 7 seconds)
 │   ├── test_config.py
 │   ├── test_decision_log.py    ← 24 decision traceability tests
 │   ├── test_governance.py
@@ -323,7 +323,7 @@ telecom-call-intelligence/
 ├── CLAUDE.md                   ← AI assistant guide
 ├── ARCHITECTURE.md             ← Full technical reference
 ├── SECURITY.md                 ← Threat model, PII policy, disclosure process
-└── CHANGELOG.md                ← Versioned history (v0.1 → v4.4)
+└── CHANGELOG.md                ← Versioned history (v0.1 → v4.5)
 ```
 
 ---
@@ -363,7 +363,7 @@ The 7-node architecture is designed for this. Only `data_agent.py` changes when 
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — Multi-agent design, agentic control loops, decision traceability, security layer, state schema
 - [`SECURITY.md`](SECURITY.md) — Threat model, PII handling, API key security, vulnerability disclosure
-- [`CHANGELOG.md`](CHANGELOG.md) — Version history from v0.1 to v4.4
+- [`CHANGELOG.md`](CHANGELOG.md) — Version history from v0.1 to v4.5
 
 ---
 
@@ -371,7 +371,7 @@ The 7-node architecture is designed for this. Only `data_agent.py` changes when 
 
 **Vinoth N** — AI systems engineer with hands-on experience designing and shipping production-grade autonomous agentic AI systems.
 
-This project demonstrates complete ownership of a v4.4 agentic AI system aligned with Anthropic's agentic AI framework: ReAct control loops, Chain-of-Thought prompting, self-reflective deliberation, decision traceability, semantic vector memory, multi-layer security, plug-and-play model architecture, LangGraph orchestration, LLM prompt engineering, quality assurance, governance, observability, and developer tooling — built at the standard a production agentic AI company would actually ship.
+This project demonstrates complete ownership of a v4.5 agentic AI system aligned with Anthropic's agentic AI framework: ReAct control loops, Chain-of-Thought prompting, self-reflective deliberation, decision traceability, semantic vector memory, multi-layer security, plug-and-play model architecture, LangGraph orchestration, LLM prompt engineering, quality assurance, governance, observability, and developer tooling — built at the standard a production agentic AI company would actually ship.
 
 **Open to partnerships in building the agentic AI future:**
 

@@ -90,19 +90,40 @@ ENUM_RULES: dict[str, set[str]] = {
     } for i in range(1, 6)},
 }
 
-# All named phase-duration fields from the extraction schema (prompts/system_prompt.txt).
-# Used by both score_plausibility() (non-negativity) and check_phase_reconciliation()
-# (sum-vs-total). Keep in sync with the OUTPUT JSON SCHEMA phase block.
-PHASE_DURATION_FIELDS: list[str] = [
+# Phases that are contiguous, non-overlapping segments of wall-clock time —
+# their start/end timestamps chain end-to-end (welcome_start == call_start,
+# welcome_end == discovery_start, ..., closing_end == call_end) and must sum
+# to total_duration_seconds. Hold is included: the LLM is instructed to fold
+# hold time into whichever phase it interrupted, not report it as additional
+# time (prompts/system_prompt.txt rule 3) — confirmed against 200 real
+# 2026-08-09 extractions: every record with hold_total>0 still had its 6
+# sequential fields sum exactly to total.
+SEQUENTIAL_PHASE_FIELDS: list[str] = [
     "phase_welcome_duration_seconds",
     "phase_discovery_duration_seconds",
     "phase_diagnosis_duration_seconds",
     "phase_resolution_duration_seconds",
     "phase_hold_total_seconds",
-    "phase_upsell_duration_seconds",
-    "phase_relationship_building_duration_seconds",
     "phase_closing_duration_seconds",
 ]
+
+# Phases that describe activity happening DURING a sequential phase (an
+# upsell pitch mid-diagnosis, an empathetic aside mid-discovery) — not
+# additional wall-clock time. Do NOT include these in a sum against
+# total_duration_seconds: confirmed against 200 real 2026-08-09 extractions
+# that the LLM already reports these as overlapping with the sequential
+# timeline (e.g. phase_upsell_start/end identical to the enclosing phase's
+# range) — summing them in produced false-positive reconciliation failures
+# on ~73% of otherwise-correct records.
+OVERLAY_PHASE_FIELDS: list[str] = [
+    "phase_upsell_duration_seconds",
+    "phase_relationship_building_duration_seconds",
+]
+
+# All named phase-duration fields from the extraction schema (prompts/system_prompt.txt).
+# Used by score_plausibility() (non-negativity applies to every phase field
+# regardless of category). Keep in sync with the OUTPUT JSON SCHEMA phase block.
+PHASE_DURATION_FIELDS: list[str] = SEQUENTIAL_PHASE_FIELDS + OVERLAY_PHASE_FIELDS
 
 
 # ── Scoring functions ─────────────────────────────────────────────────
@@ -286,8 +307,17 @@ def _to_float(val) -> float | None:
 
 def check_phase_reconciliation(record: dict) -> dict:
     """
-    Regression check: sum of named call phases must not exceed total_duration_seconds
-    (within a small tolerance for LLM rounding). Missing/null phase fields count as 0.
+    Regression check: sum of the 6 SEQUENTIAL phases (welcome, discovery,
+    diagnosis, resolution, hold, closing) must not exceed total_duration_seconds
+    (within a small tolerance for LLM rounding). Missing/null phase fields
+    count as 0.
+
+    OVERLAY_PHASE_FIELDS (upsell, relationship_building) are deliberately
+    excluded from this sum — they describe activity happening DURING a
+    sequential phase, not additional wall-clock time. Confirmed against 200
+    real 2026-08-09 extractions: summing all 8 fields produced false-positive
+    failures on ~73% of records whose 6 sequential fields already summed
+    exactly to total. See check_overlay_plausibility() for their own bound.
 
     Returns:
         {"passed": bool, "phase_sum_s": float, "total_duration_s": float | None,
@@ -295,7 +325,7 @@ def check_phase_reconciliation(record: dict) -> dict:
     """
     total = _to_float(record.get("total_duration_seconds"))
     phase_sum = sum(
-        (_to_float(record.get(field)) or 0.0) for field in PHASE_DURATION_FIELDS
+        (_to_float(record.get(field)) or 0.0) for field in SEQUENTIAL_PHASE_FIELDS
     )
 
     if total is None:
@@ -317,6 +347,31 @@ def check_phase_reconciliation(record: dict) -> dict:
         "tolerance_s":      round(tolerance, 1),
         "delta_s":          round(delta, 1),
     }
+
+
+def check_overlay_plausibility(record: dict) -> dict:
+    """
+    Lightweight sanity bound for OVERLAY_PHASE_FIELDS (upsell,
+    relationship_building): each can't individually exceed
+    total_duration_seconds — you can't have more upsell-pitch time than the
+    call lasted. This is NOT a reconciliation (they're allowed, expected, to
+    overlap with the sequential phases) — just a bound against nonsense
+    values. Warning-level signal only; does not gate _dq_gate_passed.
+
+    Returns:
+        {"passed": bool, "violations": list[str]}
+    """
+    total = _to_float(record.get("total_duration_seconds"))
+    if total is None:
+        return {"passed": True, "violations": []}
+
+    violations = []
+    for field in OVERLAY_PHASE_FIELDS:
+        val = _to_float(record.get(field))
+        if val is not None and val > total + 1e-9:
+            violations.append(f"{field}={val}s exceeds total_duration_seconds={total}s")
+
+    return {"passed": not violations, "violations": violations}
 
 
 def check_timestamp_ground_truth(record: dict) -> dict:
@@ -398,15 +453,23 @@ def check_transcript_completeness(record: dict) -> dict:
 
 def check_data_quality(record: dict) -> dict:
     """
-    Runs all three deterministic data-quality checks and returns a combined
+    Runs all deterministic data-quality checks and returns a combined
     verdict. Called once per record by QualityAgent.
+
+    check_overlay_plausibility() is included for visibility (surfaced in
+    decision-log evidence and retroactive audits) but is intentionally never
+    added to `failures` / never affects `passed` — overlap between upsell or
+    relationship-building time and the sequential phases is expected, not a
+    data-integrity fault; only a value that individually exceeds the whole
+    call is worth flagging, and only as a warning signal.
 
     Returns:
         {"passed": bool, "failures": list[str], "checks": {...}}
     """
-    phase_check     = check_phase_reconciliation(record)
-    timestamp_check = check_timestamp_ground_truth(record)
+    phase_check      = check_phase_reconciliation(record)
+    timestamp_check  = check_timestamp_ground_truth(record)
     truncation_check = check_transcript_completeness(record)
+    overlay_check    = check_overlay_plausibility(record)
 
     failures: list[str] = []
     if not phase_check["passed"]:
@@ -420,9 +483,10 @@ def check_data_quality(record: dict) -> dict:
         "passed":   not failures,
         "failures": failures,
         "checks": {
-            "phase_reconciliation":  phase_check,
+            "phase_reconciliation":   phase_check,
             "timestamp_ground_truth": timestamp_check,
-            "transcript_truncation": truncation_check,
+            "transcript_truncation":  truncation_check,
+            "overlay_plausibility":   overlay_check,
         },
     }
 

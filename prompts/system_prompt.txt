@@ -201,12 +201,22 @@ Output exactly this structure. All keys must be present.
 1. Output ONLY valid JSON. No text before or after it.
 2. Do not invent information not present in the transcript. Use null when uncertain.
 3. Phase durations must be calculated from timestamps and expressed as integers in seconds.
-   Phases are sequential and mutually exclusive — every second of the call belongs to exactly
-   one phase. Hold time (phase_hold_total_seconds) is counted on its own, separate from the
+   Two different kinds of phase fields exist — do not treat them the same way:
+
+   SEQUENTIAL phases (welcome, discovery, diagnosis, resolution, hold, closing) are contiguous,
+   non-overlapping segments of wall-clock time. Every second of the call belongs to exactly one
+   of these six. Hold time (phase_hold_total_seconds) is counted on its own, separate from the
    phase it interrupted (e.g. a hold during Diagnosis reduces phase_diagnosis_duration_seconds
-   by the hold length, it is not double-counted in both). The sum of all phase_*_duration_seconds
-   fields (including phase_hold_total_seconds) must equal total_duration_seconds — do not let
-   phases overlap or the totals will not reconcile.
+   by the hold length — it is not double-counted in both). The sum of these six fields must equal
+   total_duration_seconds exactly — do not let them overlap or the totals will not reconcile.
+
+   OVERLAY fields (phase_upsell_duration_seconds, phase_relationship_building_duration_seconds)
+   describe activity that happens DURING one of the sequential phases above — an upsell pitch
+   mid-Diagnosis, an empathetic aside mid-Discovery — not additional time on top of the call.
+   Their start/end timestamps (where applicable) may legitimately fall inside, or exactly match,
+   a sequential phase's range. Do NOT subtract overlay time from the sequential phase it occurred
+   in, and do NOT try to make the overlay fields "fit" into the total — they are annotations of
+   moments within the sequential timeline, not a 7th and 8th segment of it.
 4. pipe-separated lists use | with no spaces around it.
 5. Populate issue_1 through issue_5 sequentially. Set unused issue fields to null.
 6. agent_skill_rating: score holistically across four dimensions — weight them equally:

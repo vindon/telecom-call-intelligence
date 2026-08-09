@@ -80,7 +80,7 @@ class TestQualityGate:
 
     def test_catastrophic_failure_raises(self):
         gate = QualityGate(min_pass_rate=0.40)
-        with pytest.raises(QualityGate.QualityGateError, match="below minimum"):
+        with pytest.raises(QualityGate.QualityGateError, match="QA pass rate"):
             gate.check(self._report(10.0, verdict="FAIL"))
 
     def test_empty_report_skipped(self):
@@ -95,6 +95,42 @@ class TestQualityGate:
         gate = QualityGate(min_pass_rate=0.80)
         with pytest.raises(QualityGate.QualityGateError):
             gate.check(self._report(75.0, verdict="FAIL"))
+
+    # ── data_quality_pass_rate_pct — a run can score perfectly on the 100-pt
+    # QA score while catastrophically failing phase reconciliation (confirmed
+    # in production 2026-08-09: ~100% QA pass rate, 15-40% data quality pass
+    # rate, and this gate never fired because it only looked at the QA score).
+
+    def _report_with_dq(self, pass_rate_pct: float, dq_pass_rate_pct: float, verdict: str = "PASS", n: int = 20) -> dict:
+        report = self._report(pass_rate_pct, verdict, n)
+        report["summary"]["data_quality_pass_rate_pct"] = dq_pass_rate_pct
+        return report
+
+    def test_high_qa_score_but_catastrophic_data_quality_raises(self):
+        gate = QualityGate(min_pass_rate=0.40)
+        with pytest.raises(QualityGate.QualityGateError, match="data quality pass rate"):
+            gate.check(self._report_with_dq(pass_rate_pct=99.0, dq_pass_rate_pct=15.0))
+
+    def test_both_metrics_healthy_passes(self):
+        gate = QualityGate(min_pass_rate=0.40)
+        gate.check(self._report_with_dq(pass_rate_pct=95.0, dq_pass_rate_pct=80.0))  # must not raise
+
+    def test_data_quality_at_threshold_passes(self):
+        gate = QualityGate(min_pass_rate=0.40)
+        gate.check(self._report_with_dq(pass_rate_pct=95.0, dq_pass_rate_pct=40.0))  # boundary
+
+    def test_missing_data_quality_field_does_not_raise(self):
+        # Callers that predate this check (or SKIP verdicts) have no
+        # data_quality_pass_rate_pct key at all — must degrade gracefully.
+        gate = QualityGate(min_pass_rate=0.40)
+        gate.check(self._report(95.0))  # no dq field present — must not raise
+
+    def test_both_metrics_catastrophic_reports_both_in_error(self):
+        gate = QualityGate(min_pass_rate=0.40)
+        with pytest.raises(QualityGate.QualityGateError) as exc_info:
+            gate.check(self._report_with_dq(pass_rate_pct=10.0, dq_pass_rate_pct=5.0, verdict="FAIL"))
+        assert "QA pass rate" in str(exc_info.value)
+        assert "data quality pass rate" in str(exc_info.value)
 
 
 # ── PIIScanner ────────────────────────────────────────────────────────

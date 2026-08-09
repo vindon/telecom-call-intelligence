@@ -25,7 +25,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from pipeline.config import OUTPUT_DIR
+from pipeline.config import OUTPUT_DIR, QUALITY_WARN_RATE
+from qa_audit import check_data_quality
 
 # ── Discovery ─────────────────────────────────────────────────────────
 
@@ -115,8 +116,45 @@ def main() -> None:
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # ── Re-run aggregation on combined dataset ────────────────────────
-    print(f"\n  Aggregating {len(merged)} unique records …")
+    # ── Data quality gate — must run BEFORE aggregation ────────────────
+    # merge_outputs.py used to aggregate() every merged record unconditionally,
+    # bypassing the phase-reconciliation/timestamp-ground-truth/completeness
+    # gate that QualityAgent already enforces inside a single pipeline run —
+    # so AHT/phase economics computed here could silently include calls
+    # already known to fail. Records missing _dq_gate_passed (extracted
+    # before this gate existed) get it computed retroactively here — phase
+    # reconciliation is always computable from saved fields; timestamp
+    # ground-truth and transcript-completeness degrade gracefully (pass) when
+    # their source fields (_raw_duration_seconds, transcript_truncated)
+    # aren't present, same as qa_audit.check_data_quality()'s normal behavior.
+    n_dq_failed = 0
+    for r in merged:
+        if "_dq_gate_passed" not in r:
+            dq = check_data_quality(r)
+            r["_dq_gate_passed"] = dq["passed"]
+            r["_dq_failures"]    = dq["failures"]
+        if not r["_dq_gate_passed"]:
+            n_dq_failed += 1
+
+    n = len(merged)
+    dq_pass_rate = round((n - n_dq_failed) / n * 100, 1) if n else 100.0
+
+    # Only records that pass BOTH the QA grade and the data quality gate feed
+    # KPI aggregation — mirrors AggregationAgent's qa_passed_results filter.
+    trusted = [r for r in merged if r.get("_qa_grade") != "LOW" and r.get("_dq_gate_passed")]
+    n_low = sum(1 for r in merged if r.get("_qa_grade") == "LOW")
+
+    print(f"\n  Data quality gate: {dq_pass_rate}% passed ({n_dq_failed}/{n} failed) — "
+          f"{len(trusted)}/{n} records trusted for KPI aggregation "
+          f"({n_low} LOW QA grade, {n_dq_failed} failed data quality)")
+
+    if not trusted:
+        print("\n  ✗ No records pass both QA and the data quality gate — cannot aggregate KPIs.")
+        print("    Run retroactive_dq_audit.py for a detailed per-call breakdown.")
+        return
+
+    # ── Re-run aggregation on the trusted subset ───────────────────────
+    print(f"  Aggregating {len(trusted)} trusted records (of {n} merged) …")
     # Load dotenv for any imports that need it
     from dotenv import load_dotenv
 
@@ -124,12 +162,27 @@ def main() -> None:
     from pipeline.token_tracker import token_summary
     load_dotenv()
 
-    metrics      = aggregate_metrics(merged)
-    usage_summary = token_summary(merged)
+    metrics      = aggregate_metrics(trusted)
+    usage_summary = token_summary(trusted)
     metrics["token_usage"] = usage_summary
+    metrics["qa_summary"] = {
+        "data_quality_pass_rate_pct": dq_pass_rate,
+        "data_quality_n_failed":      n_dq_failed,
+        "n_low_qa_grade":             n_low,
+        "n_trusted_for_aggregation":  len(trusted),
+        "n_merged_total":             n,
+    }
+    if dq_pass_rate < QUALITY_WARN_RATE * 100:
+        metrics["aht_disclaimer"] = (
+            f"Data quality gate passed only {dq_pass_rate}% of the {n} merged calls "
+            f"({n_dq_failed} excluded for phase/timestamp/completeness failures) — "
+            "AHT and phase-level cost economics are computed from the smaller trusted "
+            f"subset ({len(trusted)} calls) and should not drive staffing or cost "
+            "decisions without review."
+        )
 
     kpis = metrics["kpis"]
-    print(f"  ✓ Total calls    : {kpis['total_calls_analyzed']}")
+    print(f"  ✓ Total calls    : {kpis['total_calls_analyzed']}  (of {n} merged, {n - len(trusted)} excluded)")
     print(f"  ✓ FCR rate       : {kpis['fcr_rate_pct']}%")
     print(f"  ✓ Avg AHT        : {kpis['avg_handle_time_minutes']} min")
     print(f"  ✓ Agentic AI oppty: {kpis['agentic_ai_resolvable_pct']}%")
@@ -160,6 +213,10 @@ def main() -> None:
         "duplicates_removed": sum(
             len(json.load(open(f, encoding="utf-8"))) for f in files
         ) - len(merged),
+        "data_quality_pass_rate_pct": dq_pass_rate,
+        "n_dq_failed":                n_dq_failed,
+        "n_low_qa_grade":             n_low,
+        "n_trusted_for_aggregation":  len(trusted),
         "output_files": {
             "combined_json":  str(combined_path),
             "summary_json":   str(summary_path),

@@ -38,7 +38,7 @@ Key files:
 - `pipeline/config.py` — **single source of truth** for all constants (models, budget, thresholds)
 - `pipeline/graph.py` — LangGraph 7-node pipeline with conditional routing and approval gate
 - `pipeline/decision_log.py` — `DecisionRecord`, `DecisionLogger`, `summarize_decisions()`
-- `pipeline/orchestrator.py` — batch work planning, health monitoring, retry
+- `pipeline/orchestrator.py` — batch work planning, health monitoring, strict halt-on-failure policy (see below)
 - `pipeline/governance.py` — BudgetGuard (reads `BUDGET_USD`), QualityGate, PIIScanner, AuditLog
 - `pipeline/security.py` — InputSanitizer, OutputSanitizer, AgentScopeGuard, SecretGuard, RateLimiter
 - `pipeline/token_tracker.py` — model-aware token accounting; `cost_usd(prompt, completion)` dispatches by `EXTRACTION_MODEL`
@@ -52,7 +52,7 @@ Key files:
 
 ```bash
 make install-dev    # install all deps (prod + dev)
-make test           # run 364-test suite
+make test           # run 404-test suite
 make test-fast      # skip @slow and @integration tests
 make lint           # ruff linter
 make check          # lint + type-check + test (full gate)
@@ -127,13 +127,17 @@ Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `reac
 
 Phase-level AHT breakdowns and `total_duration_seconds` are LLM-inferred from transcript text, not measured. `QualityAgent` runs three deterministic (non-LLM) checks per call via `qa_audit.check_data_quality()`, in addition to the 100-pt score:
 
-- **Phase reconciliation** — sum of all `phase_*_duration_seconds` fields must not exceed `total_duration_seconds` beyond `PHASE_RECONCILIATION_TOLERANCE_S`/`_PCT` (config.py). Regression-tested in `tests/test_qa_audit_phase_reconciliation.py`.
+- **Phase reconciliation** — sum of the 6 `SEQUENTIAL_PHASE_FIELDS` (welcome, discovery, diagnosis, resolution, hold, closing) must not exceed `total_duration_seconds` beyond `PHASE_RECONCILIATION_TOLERANCE_S`/`_PCT` (config.py). `OVERLAY_PHASE_FIELDS` (upsell, relationship_building) are deliberately **excluded** from this sum — they describe activity happening *during* a sequential phase (e.g. an upsell pitch mid-Diagnosis), not additional wall-clock time; summing all 8 fields was a real bug that produced false-positive failures on ~73% of correctly-extracted calls (found and fixed 2026-08-09 against 200 real extractions — see `qa_audit.py`'s field-group docstrings). Overlay fields get their own non-blocking sanity bound via `check_overlay_plausibility()`. Regression-tested in `tests/test_qa_audit_phase_reconciliation.py`.
 - **Timestamp ground truth** — `total_duration_seconds` is cross-checked against `_raw_duration_seconds` (the actual first-to-last-turn span from the source dataset's own timestamps, threaded through `hf_loader.py` → `data_agent.py` → `extraction_agent.py`), within `TIMESTAMP_GROUND_TRUTH_TOLERANCE_S`/`_PCT`.
-- **Transcript completeness** — the LLM-graded `transcript_truncated`/`truncation_reason` schema fields (prompts/system_prompt.txt), corroborated by a cheap heuristic (`data_agent.py::_looks_truncated`) that is evidence-only and never gates alone.
+- **Transcript completeness** — the LLM-graded `transcript_truncated`/`truncation_reason` schema fields (prompts/system_prompt.txt), corroborated by a cheap heuristic (`qa_audit.looks_truncated_heuristic()`, called from `data_agent.py`) that is evidence-only and never gates alone.
 
-Records failing any check get `_dq_gate_passed=False` and are excluded from aggregation alongside LOW-grade QA records — this is a data-integrity fact, not a quality nuance, so it is **not** blended into the 100-pt score. The dataset-level `data_quality_pass_rate_pct` rolls into `qa_report["summary"]` and, when it drops below `QUALITY_WARN_RATE`, `ExportAgent` writes a computed `aht_disclaimer` string into `summary.json` that the dashboard renders as a banner (`.data-disclaimer` in `dashboard/app.py`) — a run-specific caveat in the actual report, not just static doc text.
+Records failing any check get `_dq_gate_passed=False` and are excluded from aggregation alongside LOW-grade QA records — this is a data-integrity fact, not a quality nuance, so it is **not** blended into the 100-pt score. The dataset-level `data_quality_pass_rate_pct` rolls into `qa_report["summary"]`/`merge_outputs.py`'s merge manifest and, when it drops below `QUALITY_WARN_RATE`, an `aht_disclaimer` string is written into `summary.json` (by `ExportAgent` for a single run, by `merge_outputs.py` for a multi-batch merge — **both** paths must apply the gate before aggregating, or the merge path silently re-includes calls the live pipeline already excluded) that the dashboard renders as a banner (`.data-disclaimer` in `dashboard/app.py`).
 
 **Disclaimer, stated plainly:** this system's AHT and phase-level cost economics are only as accurate as the completeness of the input transcript and the fidelity of its timestamps. Don't drive staffing or cost decisions from a run where `data_quality_pass_rate_pct` is low without reviewing the flagged calls first.
+
+### Strict failure policy — human intervention required, no auto-retry
+
+`Orchestrator.run()` halts the **entire** multi-batch run on the first task failure — it does not retry and does not proceed to the next batch. A halt writes `outputs/.halted_for_human_review.json` (gitignored), which blocks every subsequent `run_batches.py` invocation until a human reviews the failure and explicitly clears it with `--acknowledge-halt`. This replaced an auto-retry loop that, in production on 2026-08-09, silently retried a hung batch twice before a human noticed the wasted spend (~$1.8 of discarded work). There is no config flag to re-enable auto-retry — this is intentional; do not add one without discussing it first. Every LLM client construction (`anthropic.Anthropic`, `OpenAI`, `genai.Client`) must also set an explicit `timeout=` (`EXTRACTION_API_TIMEOUT_S`/`INSIGHTS_API_TIMEOUT_S` in config.py) and `max_retries=1` — an unbounded client timeout is what caused the original hang, and SDK-level retries compound wasted spend on top of a bad provider the same way batch-level auto-retry did.
 
 ### Adding new agents
 1. Create `pipeline/agents/your_agent.py` with a stateless class + `run(state: dict) -> dict`
@@ -164,11 +168,11 @@ Records failing any check get `_dq_gate_passed=False` and are excluded from aggr
 ## Running Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -v              # all 364 tests
+.venv/bin/python -m pytest tests/ -v              # all 404 tests
 .venv/bin/python -m pytest tests/ -m "not slow"   # skip API tests
 ```
 
-Expected: **364 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
+Expected: **404 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
 
 ---
 
