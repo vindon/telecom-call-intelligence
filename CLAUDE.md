@@ -121,7 +121,19 @@ def run(self, state: dict) -> dict:
     return {**state, "decision_log": dl.finalize()}
 ```
 
-Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `react_gap_fill_outcome`, `qa_exclusion`, `qa_grade_assignment`, `quality_gate_outcome`, `aggregation_scope`, `cost_model_applied`, `provider_selected`, `deliberation_outcome`, `routing_decision`, `approval_decision`, `export_scope`.
+Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `react_gap_fill_outcome`, `qa_exclusion`, `qa_grade_assignment`, `quality_gate_outcome`, `aggregation_scope`, `cost_model_applied`, `provider_selected`, `deliberation_outcome`, `routing_decision`, `approval_decision`, `export_scope`, `data_quality_gate_outcome`, `phase_reconciliation_failure`, `timestamp_ground_truth_mismatch`, `transcript_truncation_detected`.
+
+### Data quality gate — AHT/timestamp integrity (separate from the 100-pt QA score)
+
+Phase-level AHT breakdowns and `total_duration_seconds` are LLM-inferred from transcript text, not measured. `QualityAgent` runs three deterministic (non-LLM) checks per call via `qa_audit.check_data_quality()`, in addition to the 100-pt score:
+
+- **Phase reconciliation** — sum of all `phase_*_duration_seconds` fields must not exceed `total_duration_seconds` beyond `PHASE_RECONCILIATION_TOLERANCE_S`/`_PCT` (config.py). Regression-tested in `tests/test_qa_audit_phase_reconciliation.py`.
+- **Timestamp ground truth** — `total_duration_seconds` is cross-checked against `_raw_duration_seconds` (the actual first-to-last-turn span from the source dataset's own timestamps, threaded through `hf_loader.py` → `data_agent.py` → `extraction_agent.py`), within `TIMESTAMP_GROUND_TRUTH_TOLERANCE_S`/`_PCT`.
+- **Transcript completeness** — the LLM-graded `transcript_truncated`/`truncation_reason` schema fields (prompts/system_prompt.txt), corroborated by a cheap heuristic (`data_agent.py::_looks_truncated`) that is evidence-only and never gates alone.
+
+Records failing any check get `_dq_gate_passed=False` and are excluded from aggregation alongside LOW-grade QA records — this is a data-integrity fact, not a quality nuance, so it is **not** blended into the 100-pt score. The dataset-level `data_quality_pass_rate_pct` rolls into `qa_report["summary"]` and, when it drops below `QUALITY_WARN_RATE`, `ExportAgent` writes a computed `aht_disclaimer` string into `summary.json` that the dashboard renders as a banner (`.data-disclaimer` in `dashboard/app.py`) — a run-specific caveat in the actual report, not just static doc text.
+
+**Disclaimer, stated plainly:** this system's AHT and phase-level cost economics are only as accurate as the completeness of the input transcript and the fidelity of its timestamps. Don't drive staffing or cost decisions from a run where `data_quality_pass_rate_pct` is low without reviewing the flagged calls first.
 
 ### Adding new agents
 1. Create `pipeline/agents/your_agent.py` with a stateless class + `run(state: dict) -> dict`

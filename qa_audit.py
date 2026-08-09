@@ -28,7 +28,15 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from pipeline.config import OUTPUT_DIR, QA_HIGH_THRESHOLD, QA_PASS_THRESHOLD
+from pipeline.config import (
+    OUTPUT_DIR,
+    PHASE_RECONCILIATION_TOLERANCE_PCT,
+    PHASE_RECONCILIATION_TOLERANCE_S,
+    QA_HIGH_THRESHOLD,
+    QA_PASS_THRESHOLD,
+    TIMESTAMP_GROUND_TRUTH_TOLERANCE_PCT,
+    TIMESTAMP_GROUND_TRUTH_TOLERANCE_S,
+)
 
 # ── Schema ────────────────────────────────────────────────────────────
 
@@ -81,6 +89,20 @@ ENUM_RULES: dict[str, set[str]] = {
         "agent_action", "self_serve_guidance", "escalated", "workaround", "unresolved",
     } for i in range(1, 6)},
 }
+
+# All named phase-duration fields from the extraction schema (prompts/system_prompt.txt).
+# Used by both score_plausibility() (non-negativity) and check_phase_reconciliation()
+# (sum-vs-total). Keep in sync with the OUTPUT JSON SCHEMA phase block.
+PHASE_DURATION_FIELDS: list[str] = [
+    "phase_welcome_duration_seconds",
+    "phase_discovery_duration_seconds",
+    "phase_diagnosis_duration_seconds",
+    "phase_resolution_duration_seconds",
+    "phase_hold_total_seconds",
+    "phase_upsell_duration_seconds",
+    "phase_relationship_building_duration_seconds",
+    "phase_closing_duration_seconds",
+]
 
 
 # ── Scoring functions ─────────────────────────────────────────────────
@@ -228,17 +250,8 @@ def score_plausibility(record: dict) -> tuple[float, list[str]]:
         pass
 
     # Phase durations non-negative
-    phase_cols = [
-        "phase_welcome_duration_seconds",
-        "phase_discovery_duration_seconds",
-        "phase_diagnosis_duration_seconds",
-        "phase_resolution_duration_seconds",
-        "phase_hold_total_seconds",
-        "phase_upsell_duration_seconds",
-        "phase_closing_duration_seconds",
-    ]
     neg_phases = []
-    for col in phase_cols:
+    for col in PHASE_DURATION_FIELDS:
         val = record.get(col)
         if not _is_null(val):
             try:
@@ -252,6 +265,166 @@ def score_plausibility(record: dict) -> tuple[float, list[str]]:
 
     score = max(0.0, round(max_pts - deduct, 1))
     return score, issues
+
+
+# ── Data quality gate (deterministic, non-LLM) ─────────────────────────
+#
+# These checks are kept separate from the 100-pt QA score above: a phase-sum
+# or timestamp mismatch is a data-integrity fact (pass/fail), not a quality
+# nuance to blend into a weighted score. QualityAgent runs both per call and
+# excludes failures from aggregation the same way LOW-grade QA records are
+# excluded — see CLAUDE.md's "What success looks like" data-quality disclaimer.
+
+def _to_float(val) -> float | None:
+    if _is_null(val):
+        return None
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def check_phase_reconciliation(record: dict) -> dict:
+    """
+    Regression check: sum of named call phases must not exceed total_duration_seconds
+    (within a small tolerance for LLM rounding). Missing/null phase fields count as 0.
+
+    Returns:
+        {"passed": bool, "phase_sum_s": float, "total_duration_s": float | None,
+         "tolerance_s": float, "delta_s": float}
+    """
+    total = _to_float(record.get("total_duration_seconds"))
+    phase_sum = sum(
+        (_to_float(record.get(field)) or 0.0) for field in PHASE_DURATION_FIELDS
+    )
+
+    if total is None:
+        # No total to reconcile against — not this check's failure mode
+        # (score_completeness already penalises a missing total_duration_seconds).
+        return {
+            "passed": True, "phase_sum_s": round(phase_sum, 1),
+            "total_duration_s": None, "tolerance_s": 0.0, "delta_s": 0.0,
+        }
+
+    tolerance = max(PHASE_RECONCILIATION_TOLERANCE_S, PHASE_RECONCILIATION_TOLERANCE_PCT * total)
+    delta = phase_sum - total
+    passed = delta <= tolerance + 1e-9  # float-precision guard at the exact boundary
+
+    return {
+        "passed":           passed,
+        "phase_sum_s":      round(phase_sum, 1),
+        "total_duration_s": round(total, 1),
+        "tolerance_s":      round(tolerance, 1),
+        "delta_s":          round(delta, 1),
+    }
+
+
+def check_timestamp_ground_truth(record: dict) -> dict:
+    """
+    Cross-checks the LLM's total_duration_seconds against raw_duration_seconds —
+    the actual first-to-last-turn span from the source dataset's own timestamps
+    (see pipeline/hf_loader.py::_build_transcripts). Skips (passes) when no
+    ground-truth duration is available, e.g. an enterprise source that doesn't
+    supply per-turn timestamps.
+
+    Returns:
+        {"passed": bool, "total_duration_s": float | None,
+         "raw_duration_s": float | None, "tolerance_s": float, "delta_s": float}
+    """
+    total = _to_float(record.get("total_duration_seconds"))
+    raw   = _to_float(record.get("_raw_duration_seconds"))
+
+    if total is None or raw is None:
+        return {
+            "passed": True, "total_duration_s": total,
+            "raw_duration_s": raw, "tolerance_s": 0.0, "delta_s": 0.0,
+        }
+
+    tolerance = max(TIMESTAMP_GROUND_TRUTH_TOLERANCE_S, TIMESTAMP_GROUND_TRUTH_TOLERANCE_PCT * raw)
+    delta = abs(total - raw)
+    passed = delta <= tolerance + 1e-9  # float-precision guard at the exact boundary
+
+    return {
+        "passed":           passed,
+        "total_duration_s": round(total, 1),
+        "raw_duration_s":   round(raw, 1),
+        "tolerance_s":      round(tolerance, 1),
+        "delta_s":          round(delta, 1),
+    }
+
+
+# Weak, free-to-compute completeness signal: a call transcript that ends
+# without any closing-phrase pattern in its final turns was plausibly cut
+# off before a resolution/closing phase. Corroborating evidence only — the
+# LLM-graded transcript_truncated field (prompts/system_prompt.txt) is the
+# primary signal used by check_transcript_completeness() below. Shared by
+# DataIngestionAgent (live pipeline) and retroactive_dq_audit.py (historical
+# runs that predate the transcript_truncated schema field and have no
+# primary signal to fall back on).
+CLOSING_PATTERNS = (
+    "thank you for calling", "thanks for calling", "have a great day",
+    "have a good day", "anything else i can help", "anything else i can do",
+    "is there anything else", "goodbye", "bye now", "take care",
+    "reference number", "have a nice day",
+)
+
+
+def looks_truncated_heuristic(transcript_text: str, tail_turns: int = 3) -> bool:
+    """Heuristic: True if none of the last `tail_turns` lines contain a closing phrase."""
+    lines = [ln for ln in transcript_text.strip().splitlines() if ln.strip()]
+    tail = " ".join(lines[-tail_turns:]).lower()
+    return not any(pattern in tail for pattern in CLOSING_PATTERNS)
+
+
+def check_transcript_completeness(record: dict) -> dict:
+    """
+    Surfaces the LLM-graded transcript_truncated field (schema fields added
+    to prompts/system_prompt.txt) as a pass/fail data-quality check. A
+    transcript the model judged truncated produces unreliable phase economics
+    even though extraction otherwise "succeeded".
+
+    Returns:
+        {"passed": bool, "truncated": bool, "reason": str | None}
+    """
+    truncated_raw = record.get("transcript_truncated")
+    truncated = str(truncated_raw).strip().lower() == "true" if not _is_null(truncated_raw) else False
+
+    return {
+        "passed":    not truncated,
+        "truncated": truncated,
+        "reason":    record.get("truncation_reason") if truncated else None,
+    }
+
+
+def check_data_quality(record: dict) -> dict:
+    """
+    Runs all three deterministic data-quality checks and returns a combined
+    verdict. Called once per record by QualityAgent.
+
+    Returns:
+        {"passed": bool, "failures": list[str], "checks": {...}}
+    """
+    phase_check     = check_phase_reconciliation(record)
+    timestamp_check = check_timestamp_ground_truth(record)
+    truncation_check = check_transcript_completeness(record)
+
+    failures: list[str] = []
+    if not phase_check["passed"]:
+        failures.append("phase_reconciliation")
+    if not timestamp_check["passed"]:
+        failures.append("timestamp_ground_truth")
+    if not truncation_check["passed"]:
+        failures.append("transcript_truncation")
+
+    return {
+        "passed":   not failures,
+        "failures": failures,
+        "checks": {
+            "phase_reconciliation":  phase_check,
+            "timestamp_ground_truth": timestamp_check,
+            "transcript_truncation": truncation_check,
+        },
+    }
 
 
 # ── Per-call audit ────────────────────────────────────────────────────

@@ -80,6 +80,10 @@ def _build_transcripts(df_sel: pd.DataFrame, selected_ids: list[str]) -> list[di
             "customer_turns":  int((conv_df["speaker"] == "client").sum()),
             "raw_start":       start_dt.strftime("%H:%M:%S"),
             "raw_end":         end_dt.strftime("%H:%M:%S"),
+            # Computed from the datetimes directly (not the HH:MM:SS strings
+            # above, which lose date info and can't be safely re-subtracted
+            # downstream) — ground truth for qa_audit.check_timestamp_ground_truth().
+            "raw_duration_seconds": (end_dt - start_dt).total_seconds(),
         })
 
     return transcripts
@@ -197,7 +201,7 @@ def load_telecom_transcripts(
         List of dicts with keys:
           call_id, call_date, transcript_text,
           turn_count, agent_turns, customer_turns,
-          raw_start, raw_end
+          raw_start, raw_end, raw_duration_seconds
     """
     if LOCAL_CSV_PATH.exists():
         return _load_from_csv(n, seed, offset)

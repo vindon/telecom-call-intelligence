@@ -17,18 +17,29 @@ Grade bands:
 
 Dataset verdict: PASS if ≥90% of calls score ≥60 (configurable).
 
+Data quality gate (separate from the 100-pt score — see qa_audit.check_data_quality):
+  A record failing phase reconciliation, timestamp ground-truth, or transcript
+  completeness is excluded from aggregation alongside LOW-grade records, since
+  these are data-integrity facts, not quality nuances. The dataset-level
+  data_quality_pass_rate_pct rolls up into qa_report/summary.json and drives
+  a run-specific AHT disclaimer in the dashboard when it falls below
+  QUALITY_WARN_RATE.
+
 Outputs injected into PipelineState:
-  qa_report          — full per-call scores + dataset-level summary
-  qa_passed_results  — HIGH + MEDIUM records forwarded to aggregation
+  qa_report          — full per-call scores + dataset-level summary (incl.
+                        data_quality_pass_rate_pct)
+  qa_passed_results  — HIGH + MEDIUM records that also passed the data
+                        quality gate, forwarded to aggregation
 """
 
 import time
 
 from pipeline.config import QA_PASS_THRESHOLD as PASS_THRESHOLD
+from pipeline.config import QUALITY_WARN_RATE
 from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, QUALITY_GATE
 from pipeline.logger import get_logger
-from qa_audit import audit_record, build_report
+from qa_audit import audit_record, build_report, check_data_quality
 
 log = get_logger(__name__)
 
@@ -56,20 +67,45 @@ class QualityAgent:
 
         dl = DecisionLogger(self.name, state)
 
-        # Attach per-call QA score into the result dict itself
+        # Attach per-call QA score + data-quality gate result into the result dict itself
         scored_results: list[dict] = []
+        n_dq_failed = 0
         for r in results:
             audit = audit_record(r)
             grade = audit["grade"]
             score = audit["total_score"]
+            dq = check_data_quality(r)
             enriched = {
                 **r,
-                "_qa_score":      score,
-                "_qa_grade":      grade,
-                "_qa_n_issues":   audit["total_issues"],
-                "_qa_dimensions": audit["dimension_scores"],
+                "_qa_score":       score,
+                "_qa_grade":       grade,
+                "_qa_n_issues":    audit["total_issues"],
+                "_qa_dimensions":  audit["dimension_scores"],
+                "_dq_gate_passed": dq["passed"],
+                "_dq_failures":    dq["failures"],
             }
             scored_results.append(enriched)
+
+            if not dq["passed"]:
+                n_dq_failed += 1
+                call_id = str(r.get("call_id", "?"))[:16]
+                for failure_type in dq["failures"]:
+                    check = dq["checks"][failure_type]
+                    dl.log(
+                        decision_type=(
+                            "phase_reconciliation_failure" if failure_type == "phase_reconciliation" else
+                            "timestamp_ground_truth_mismatch" if failure_type == "timestamp_ground_truth" else
+                            "transcript_truncation_detected"
+                        ),
+                        decision=f"Data quality gate failed for {call_id}: {failure_type}",
+                        reason=(
+                            f"Deterministic {failure_type} check failed — record excluded from "
+                            "aggregation to protect AHT/phase-economics accuracy"
+                        ),
+                        evidence={"call_id": call_id, **{k: v for k, v in check.items() if k != "reason"}},
+                        call_id=call_id, confidence="high",
+                        alternatives=["Include with data-quality flag (rejected: would corrupt AHT economics)"],
+                    )
 
             # Log LOW grades and borderline MEDIUM (60-65) decisions
             if grade == "LOW":
@@ -94,16 +130,25 @@ class QualityAgent:
         # Build dataset-level report (uses qa_audit.build_report internals)
         report = build_report(results, source_file="inline_pipeline", pass_threshold=PASS_THRESHOLD)
 
-        # Only forward HIGH / MEDIUM records to aggregation
-        passed = [r for r in scored_results if r["_qa_grade"] != "LOW"]
-        low_count = len(scored_results) - len(passed)
+        # Data-quality pass rate rolls up alongside the QA pass rate — same
+        # summary dict, so ExportAgent's existing qa_summary → summary.json
+        # wiring carries it through to the dashboard without further changes.
+        n = len(scored_results)
+        dq_pass_rate = round((n - n_dq_failed) / n * 100, 1) if n else 100.0
+        report["summary"]["data_quality_pass_rate_pct"] = dq_pass_rate
+        report["summary"]["data_quality_n_failed"] = n_dq_failed
+
+        # Only forward records that are both QA-passed (HIGH/MEDIUM) and
+        # data-quality-gate-passed to aggregation.
+        passed = [r for r in scored_results if r["_qa_grade"] != "LOW" and r["_dq_gate_passed"]]
+        low_count = len(scored_results) - sum(1 for r in scored_results if r["_qa_grade"] != "LOW")
 
         verdict = report["dataset_verdict"]
         summary = report["summary"]
 
         log.info(
             "[%s] QA complete: avg=%.1f  pass_rate=%.1f%%  verdict=%s  "
-            "HIGH=%d  MEDIUM=%d  LOW=%d (excluded)",
+            "HIGH=%d  MEDIUM=%d  LOW=%d (excluded)  data_quality_pass_rate=%.1f%% (%d failed)",
             self.name,
             summary["avg_score"],
             summary["pass_rate_pct"],
@@ -111,6 +156,7 @@ class QualityAgent:
             summary["grade_HIGH"],
             summary["grade_MEDIUM"],
             summary["grade_LOW"],
+            dq_pass_rate, n_dq_failed,
         )
 
         if low_count:
@@ -118,6 +164,24 @@ class QualityAgent:
                 "[%s] Excluded %d LOW-quality records from aggregation",
                 self.name, low_count,
             )
+        if n_dq_failed:
+            log.warning(
+                "[%s] Excluded %d record(s) failing the data-quality gate (phase/timestamp/completeness)",
+                self.name, n_dq_failed,
+            )
+
+        dl.log(
+            decision_type="data_quality_gate_outcome",
+            decision=f"Data quality pass rate: {dq_pass_rate}% ({n_dq_failed}/{n} failed)",
+            reason=(
+                f"{'Below' if dq_pass_rate < QUALITY_WARN_RATE * 100 else 'Above'} "
+                f"QUALITY_WARN_RATE={QUALITY_WARN_RATE * 100:.0f}% — "
+                "phase-reconciliation, timestamp ground-truth, and transcript-completeness "
+                "checks combined; failing records excluded from aggregation"
+            ),
+            evidence={"pass_rate_pct": dq_pass_rate, "n_failed": n_dq_failed, "n_total": n},
+            confidence="high",
+        )
 
         # Governance: quality gate check (catastrophic failure only)
         gate_passed = True
@@ -160,11 +224,12 @@ class QualityAgent:
         AUDIT_LOG.record_agent_end(
             self.name,
             {
-                "avg_score": summary.get("avg_score", 0),
-                "verdict":   verdict,
-                "n_passed":  len(passed),
-                "n_low":     low_count,
-                "gate_ok":   gate_passed,
+                "avg_score":    summary.get("avg_score", 0),
+                "verdict":      verdict,
+                "n_passed":     len(passed),
+                "n_low":        low_count,
+                "n_dq_failed":  n_dq_failed,
+                "gate_ok":      gate_passed,
             },
             elapsed_s=time.monotonic() - t0,
         )

@@ -1564,6 +1564,16 @@ def main():
         # ── 1 — THE EVIDENCE ──────────────────────────────────────
         _sec("1 — The Evidence: What the Transcripts Reveal")
 
+        aht_disclaimer = data.get("aht_disclaimer")
+        if aht_disclaimer:
+            st.markdown(
+                f'<div class="data-disclaimer">'
+                f'<div class="data-disclaimer-icon">⚠️</div>'
+                f'<div><strong>Data quality notice —</strong> {html.escape(aht_disclaimer)}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
         col_issue, col_phase = st.columns([4, 6])
 
         with col_issue:

@@ -41,6 +41,8 @@ Output exactly this structure. All keys must be present.
   "call_start_time": "<HH:MM:SS | null>",
   "call_end_time": "<HH:MM:SS | null>",
   "total_duration_seconds": 0,
+  "transcript_truncated": false,
+  "truncation_reason": "<string | null>",
   "agent_id": "<string | null>",
   "customer_id": "<string | null>",
   "queue_name": "<string | null>",
@@ -199,6 +201,12 @@ Output exactly this structure. All keys must be present.
 1. Output ONLY valid JSON. No text before or after it.
 2. Do not invent information not present in the transcript. Use null when uncertain.
 3. Phase durations must be calculated from timestamps and expressed as integers in seconds.
+   Phases are sequential and mutually exclusive — every second of the call belongs to exactly
+   one phase. Hold time (phase_hold_total_seconds) is counted on its own, separate from the
+   phase it interrupted (e.g. a hold during Diagnosis reduces phase_diagnosis_duration_seconds
+   by the hold length, it is not double-counted in both). The sum of all phase_*_duration_seconds
+   fields (including phase_hold_total_seconds) must equal total_duration_seconds — do not let
+   phases overlap or the totals will not reconcile.
 4. pipe-separated lists use | with no spaces around it.
 5. Populate issue_1 through issue_5 sequentially. Set unused issue fields to null.
 6. agent_skill_rating: score holistically across four dimensions — weight them equally:
@@ -291,6 +299,17 @@ Output exactly this structure. All keys must be present.
     - Any case where the customer attempted self-serve first and it failed
 
     Always populate self_serve_channel_applicable with the most suitable channel when true.
+
+17. transcript_truncated: set true if the transcript appears to be cut off before a natural
+    conversation end — e.g. it stops mid-sentence, mid-issue, or without any closing exchange
+    (no thanks, confirmation, or goodbye from either party), even if the transcript is otherwise
+    long enough to analyze. This is independent of whether the issue was resolved — a call can
+    end with an unresolved issue and still be complete (agent said they'd escalate, customer
+    acknowledged, call ended normally). Set false whenever the conversation reaches a natural
+    close. When true, populate truncation_reason with a short phrase (e.g. "cuts off mid-sentence
+    during diagnosis", "ends abruptly after hold, no resolution or goodbye"). Do not let a
+    truncated transcript inflate any phase duration — only report timestamps for phases actually
+    observed in the available text.
 
 16. product_1 through product_5: populate sequentially for every distinct product, plan, add-on, or service mentioned.
     Set unused slots to null for all six sub-fields.

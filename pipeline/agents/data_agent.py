@@ -8,6 +8,8 @@ Responsibilities:
   • Apply offset-based batching for non-overlapping parallel batch runs
   • Enforce minimum quality thresholds (length, turn count, non-empty)
   • Emit validation_errors for skipped transcripts
+  • Flag a weak truncation heuristic (corroborating evidence for QualityAgent's
+    LLM-graded completeness check — see qa_audit.check_transcript_completeness)
 
 Outputs injected into PipelineState:
   raw_transcripts       — all fetched transcript dicts
@@ -20,6 +22,7 @@ from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, PII_SCANNER
 from pipeline.hf_loader import load_telecom_transcripts
 from pipeline.logger import get_logger
+from qa_audit import looks_truncated_heuristic
 
 log = get_logger(__name__)
 
@@ -103,6 +106,7 @@ class DataIngestionAgent:
                     alternatives=["Block transcript entirely (rejected: redaction preserves data)"],
                 )
 
+            t["_heuristic_truncation_flag"] = looks_truncated_heuristic(t["transcript_text"])
             valid.append(t)
 
         if pii_count:

@@ -21,7 +21,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from pipeline.config import OUTPUT_DIR
+from pipeline.config import OUTPUT_DIR, QUALITY_WARN_RATE
 from pipeline.decision_log import DecisionLogger, summarize_decisions
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
@@ -91,6 +91,21 @@ class ExportAgent:
             metrics["qa_summary"]        = qa_report.get("summary", {})
             metrics["agent_insights"]    = insights
             metrics["decision_summary"]  = summarize_decisions(decision_log)
+
+            # Run-specific AHT/phase-economics disclaimer — computed, not static,
+            # so it lives in the actual report the business reads. Surfaced by
+            # the dashboard whenever this run's data-quality pass rate is low
+            # enough that phase-level cost allocation shouldn't be trusted as-is.
+            dq_pass_rate = metrics["qa_summary"].get("data_quality_pass_rate_pct", 100.0)
+            if dq_pass_rate < QUALITY_WARN_RATE * 100:
+                n_failed = metrics["qa_summary"].get("data_quality_n_failed", 0)
+                metrics["aht_disclaimer"] = (
+                    f"Data quality gate passed only {dq_pass_rate}% of analyzed calls "
+                    f"({n_failed} excluded for phase/timestamp/completeness failures) — "
+                    "AHT and phase-level cost economics in this run are less reliable than "
+                    "usual and should not drive staffing or cost decisions without review."
+                )
+
             with open(summary_path, "w", encoding="utf-8") as fh:
                 json.dump(metrics, fh, indent=2)
             log.info("[%s] Summary JSON: %s", self.name, summary_path)
@@ -149,6 +164,7 @@ class ExportAgent:
             "n_failed":           len(state.get("failed_call_ids", [])),
             "qa_verdict":         qa_report.get("dataset_verdict", "N/A"),
             "qa_avg_score":       qa_report.get("summary", {}).get("avg_score", 0),
+            "data_quality_pass_rate_pct": qa_report.get("summary", {}).get("data_quality_pass_rate_pct", 100.0),
             "validation_errors":  state.get("validation_errors", []),
             "failed_call_ids":    state.get("failed_call_ids", []),
             "token_usage":        usage,

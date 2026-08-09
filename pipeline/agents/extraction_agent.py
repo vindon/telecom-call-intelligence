@@ -87,6 +87,17 @@ class ExtractionAgent:
         # ── Observe + Reason + Act (ReAct gap-fill loop) ─────────────
         results, react_stats = self._react_loop(results, transcripts, dl)
 
+        # Merge ground-truth timestamp + truncation heuristic from the source
+        # transcript onto each result — QualityAgent's data-quality gate
+        # (qa_audit.check_timestamp_ground_truth) needs these alongside the
+        # LLM's own total_duration_seconds.
+        transcript_map = {t["call_id"]: t for t in transcripts}
+        for r in results:
+            src = transcript_map.get(r.get("call_id"))
+            if src is not None:
+                r["_raw_duration_seconds"] = src.get("raw_duration_seconds")
+                r["_heuristic_truncation_flag"] = src.get("_heuristic_truncation_flag", False)
+
         result_ids = {r.get("call_id") for r in results}
         failed = [t["call_id"] for t in transcripts if t["call_id"] not in result_ids]
 

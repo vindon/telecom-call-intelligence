@@ -209,7 +209,9 @@ def summarize_decisions(decision_log: list[dict]) -> dict[str, Any]:
     _notable_types = frozenset({
         "qa_exclusion", "quality_gate_outcome", "routing_decision",
         "approval_decision", "provider_selected", "react_trigger",
-        "transcript_skip",
+        "transcript_skip", "data_quality_gate_outcome",
+        "phase_reconciliation_failure", "timestamp_ground_truth_mismatch",
+        "transcript_truncation_detected",
     })
 
     for rec in decision_log:

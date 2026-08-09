@@ -68,6 +68,19 @@ QUALITY_WARN_RATE  = 0.70   # warning threshold — logs prominently but does no
 MIN_TRANSCRIPT_CHARS = 150
 MIN_TURN_COUNT       = 4
 
+# ── Data quality gate (AHT / timestamp integrity) ──────────────────────
+# Tolerance for summing phase durations vs. total_duration_seconds. Both are
+# LLM-read-off-transcript values, not measured — this absorbs rounding, not
+# genuine overcounting. See qa_audit.check_phase_reconciliation().
+PHASE_RECONCILIATION_TOLERANCE_S   = 5.0
+PHASE_RECONCILIATION_TOLERANCE_PCT = 0.03
+# Tolerance for total_duration_seconds vs. raw_duration_seconds (ground-truth
+# span from the source dataset's own turn timestamps). Wider than the phase
+# tolerance because raw turn timestamps don't capture true hold/silence time,
+# so some divergence from the LLM's narrative-paced total is expected.
+TIMESTAMP_GROUND_TRUTH_TOLERANCE_S   = 30.0
+TIMESTAMP_GROUND_TRUTH_TOLERANCE_PCT = 0.10
+
 # ── QA scoring ─────────────────────────────────────────────────────────
 QA_HIGH_THRESHOLD  = 85   # ≥85 → HIGH grade (production-ready)
 QA_PASS_THRESHOLD  = 60   # ≥60 → MEDIUM grade (usable)
