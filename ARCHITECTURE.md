@@ -1,4 +1,4 @@
-# Telecom Call Intelligence — Technical Architecture v4.4
+# Telecom Call Intelligence — Technical Architecture v4.5
 
 ## System Overview
 
@@ -355,7 +355,17 @@ Each agent is a **stateless class** with a single `run(state: dict) -> dict` met
 
 **Dynamic routing:** If `QualityGate` fires (pass rate < 40%), `_quality_gate_failed` is set in `qa_report` and the graph routes directly to ExportAgent.
 
-**Outputs:** `analysis_results` (QA-enriched), `qa_report`, `qa_passed_results`, `decision_log`
+**Data quality gate (separate from the 100-pt score):** three deterministic, non-LLM checks (`qa_audit.check_data_quality()`) run per call and gate aggregation the same way a `LOW` QA grade does — a record can score 100/100 on the rubric above and still be excluded here:
+
+| Check | What it verifies |
+|-------|-------------------|
+| Phase reconciliation | Sum of the 6 sequential phase durations (welcome → closing) reconciles to `total_duration_seconds`, within tolerance. The 2 overlay fields (upsell, relationship-building) describe concurrent activity, not additive time, and are excluded from the sum. |
+| Timestamp ground truth | `total_duration_seconds` cross-checked against `_raw_duration_seconds`, the actual first-to-last-turn span from the source dataset's own timestamps. |
+| Transcript completeness | LLM-graded `transcript_truncated` field, corroborated by a free heuristic (`looks_truncated_heuristic()`, evidence-only, never gates alone). |
+
+Records failing any check get `_dq_gate_passed=False` and are excluded from `qa_passed_results` alongside `LOW`-grade records. Dataset-level `data_quality_pass_rate_pct` and a `data_quality_failure_breakdown` (`{check_name: count}`) roll into `qa_report["summary"]`; on the 217 real calls processed to date, 172 (79.3%) pass — 45 excluded (`phase_reconciliation` ×33, `transcript_truncation` ×15, `timestamp_ground_truth` ×1). Below `QUALITY_WARN_RATE`, an `aht_disclaimer` string is computed and rendered as a live banner in the dashboard (`.data-disclaimer`, `dashboard/app.py`); the same funnel and breakdown power a dedicated "Data Quality Gate" panel in the dashboard's QA & Pipeline Health tab.
+
+**Outputs:** `analysis_results` (QA-enriched), `qa_report` (incl. `data_quality_pass_rate_pct`, `data_quality_failure_breakdown`), `qa_passed_results`, `decision_log`
 
 ---
 
@@ -472,7 +482,7 @@ State is **immutable**: every agent returns `{**state, new_key: new_value}`. Age
 | Component | Trigger | Behaviour |
 |-----------|---------|-----------|
 | `BudgetGuard` | After ExtractionAgent batch | Raises `BudgetExceededError` if cumulative cost > `BUDGET_USD` (from `config.py`); warns at 80%; uses `token_tracker.cost_usd()` — provider-aware, not hardcoded |
-| `QualityGate` | After QualityAgent scores all results | Raises `QualityGateError` if pass rate < `MIN_PASS_RATE` (from `config.py`); sets `_quality_gate_failed` for graph routing |
+| `QualityGate` | After QualityAgent scores all results | Raises `QualityGateError` if the QA pass rate **or** the independent `data_quality_pass_rate_pct` (phase reconciliation / timestamp ground truth / completeness) falls below `MIN_PASS_RATE` (from `config.py`); sets `_quality_gate_failed` for graph routing |
 | `PIIScanner` | DataIngestionAgent, per transcript | Detects 6 PII types (phone, SSN, email, credit card, DOB, account number); auto-redacts to `[REDACTED]` |
 | `AuditLog` | Every agent boundary | Append-only structured event log: `agent_start`, `agent_end`, `tool_call`, `governance_check`, `pii_detection`, `error` |
 
@@ -538,15 +548,18 @@ telecom-call-intelligence/
 ├── prompts/
 │   └── system_prompt.txt      ← 70-field extraction schema + CoT instructions
 ├── tests/
+│   ├── test_agents/            ← per-agent unit tests (data, extraction, quality, aggregation, insights, export)
 │   ├── test_config.py
-│   ├── test_decision_log.py   ← 24 decision traceability tests
+│   ├── test_decision_log.py    ← decision traceability tests
 │   ├── test_governance.py
+│   ├── test_hf_loader.py       ← offset-disjointness / sampling regression tests
 │   ├── test_memory.py
-│   ├── test_orchestrator.py
+│   ├── test_orchestrator.py    ← strict halt-on-failure policy tests
+│   ├── test_qa_audit_phase_reconciliation.py  ← sequential vs. overlay phase reconciliation regression tests
 │   ├── test_tools.py
 │   ├── test_graph.py
-│   └── test_security.py       ← 51 security tests
-├── dashboard/app.py           ← Streamlit executive dashboard (6 sections, light theme)
+│   └── test_security.py        ← security module tests
+├── dashboard/app.py           ← Streamlit executive dashboard (4 tabs: Cost to Serve, Automation Strategy, QA & Pipeline Health, Live Pipeline Demo — light theme)
 ├── run_pipeline.py            ← Single-batch entry point (model-aware key validation)
 ├── run_batches.py             ← Multi-batch orchestrator (delegates to Orchestrator)
 ├── merge_outputs.py           ← Merge batch JSONs → combined dataset

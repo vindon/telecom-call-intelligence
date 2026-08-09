@@ -1,7 +1,7 @@
 {
   "meta": {
     "total_calls_analyzed": 172,
-    "analysis_timestamp": "2026-08-09T17:30:40.555068",
+    "analysis_timestamp": "2026-08-09T17:58:24.071028",
     "dataset": "talkmap/telecom-conversation-corpus",
     "model": "claude-haiku-4-5-20251001",
     "inference_provider": "Anthropic (Claude)",
@@ -630,6 +630,11 @@
   "qa_summary": {
     "data_quality_pass_rate_pct": 79.3,
     "data_quality_n_failed": 45,
+    "data_quality_failure_breakdown": {
+      "phase_reconciliation": 33,
+      "timestamp_ground_truth": 1,
+      "transcript_truncation": 15
+    },
     "n_low_qa_grade": 0,
     "n_trusted_for_aggregation": 172,
     "n_merged_total": 217

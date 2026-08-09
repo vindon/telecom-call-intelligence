@@ -140,6 +140,7 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
     <div class="site-nav-links">
       <a href="#built">How it's built</a>
       <a href="#cost">Cost</a>
+      <a href="#quality">Data quality</a>
       <a href="#metrics">Every metric</a>
       <a href="/#try-it" class="site-nav-cta">Try it live</a>
     </div>
@@ -183,20 +184,20 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
 <section class="section-block section-wrap" id="cost">
   <div class="section-kicker reveal">What it costs to run</div>
   <h2 class="section-h2 reveal">Real inference cost from a real run — not a per-vendor estimate</h2>
-  <p class="section-lede reveal">These figures come from an actual pipeline run against 78 real telecom care calls sourced from the public <code>talkmap/telecom-conversation-corpus</code> dataset, on <code>claude-haiku-4-5-20251001</code>. Nothing below is rounded up for effect — it's what the run's own token accounting recorded.</p>
+  <p class="section-lede reveal">These figures come from an actual pipeline run against 172 real telecom care calls — sourced from the public <code>talkmap/telecom-conversation-corpus</code> dataset, on <code>claude-haiku-4-5-20251001</code>, and independently verified by the data-quality gate described below before being counted here. Nothing below is rounded up for effect — it's what the run's own token accounting recorded.</p>
 
   <div class="stat-grid reveal">
-    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">625,812</div><div class="stat-cell-key">Total tokens across 78 calls (458,526 prompt / 167,286 completion)</div></div>
-    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">8,023</div><div class="stat-cell-key">Avg tokens/call — 5,879 prompt + 2,145 completion</div></div>
-    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">$1.036</div><div class="stat-cell-key">Total inference cost for the 78-call run</div></div>
-    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">1.328¢</div><div class="stat-cell-key">Avg cost per call, at this sample's avg. call length (152s)</div></div>
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">1,427,140</div><div class="stat-cell-key">Total tokens across 172 verified calls</div></div>
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">8,297</div><div class="stat-cell-key">Avg tokens/call — 2,539 prompt (cache-discounted) + 2,157 completion</div></div>
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">$2.365</div><div class="stat-cell-key">Total inference cost for the 172-call verified sample</div></div>
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">1.375¢</div><div class="stat-cell-key">Avg cost per call, at this sample's avg. call length (161s)</div></div>
   </div>
 
   <div class="callout reveal">
     <div class="callout-label">The caveat that actually matters</div>
-    <div class="callout-title">This 1.328¢/call is priced on a 152-second average call. Real enterprise calls run longer — and cost scales, but not the way you'd expect.</div>
-    <div class="callout-body">The sample dataset averages <b>152 seconds (2.5 min)</b> per call. Typical enterprise care calls run <b>600–1,100 seconds — 4 to 7× longer</b>. Token cost doesn't scale 4–7× with it, though: <b>prompt tokens</b> (the transcript text) scale with call length, but <b>completion tokens</b> (the 70-field structured output) are bounded by a fixed schema — capped at 5 issues and 5 products per call — so they stay roughly flat regardless of how long the call runs. Since Claude Haiku prices output at 5× input ($4.00 vs $0.80 per million tokens), that fixed completion cost anchors the total, and real cost grows sub-linearly with call length.</div>
-    <div class="callout-highlight">Net effect: a call 7× longer than this sample's average costs roughly <b>3.1×</b> more to process, not 7× more — because the most expensive part of the bill (the output) barely moves.</div>
+    <div class="callout-title">This 1.375¢/call is priced on a 161-second average call. Real enterprise calls run longer — and cost scales, but not the way you'd expect.</div>
+    <div class="callout-body">The sample dataset averages <b>161 seconds (2.7 min)</b> per call. Typical enterprise care calls run <b>600–1,100 seconds — 4 to 7× longer</b>. Token cost doesn't scale 4–7× with it, though: <b>prompt tokens</b> (the transcript text) scale with call length, but <b>completion tokens</b> (the 70-field structured output) are bounded by a fixed schema — capped at 5 issues and 5 products per call — so they stay roughly flat regardless of how long the call runs. Since Claude Haiku prices output at 5× input ($5.00 vs $1.00 per million tokens), that fixed completion cost anchors the total, and real cost grows sub-linearly with call length. Prompt cost is further reduced by prompt caching — the ~2,500-token system prompt is billed once per cache window (10% of the input rate on every repeat read), not once per call.</div>
+    <div class="callout-highlight">Net effect: a call 7× longer than this sample's average costs roughly <b>3×</b> more to process, not 7× more — because the most expensive part of the bill (the output) barely moves.</div>
   </div>
 
   <div class="table-scroll reveal">
@@ -206,21 +207,21 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
       </thead>
       <tbody>
         <tr>
-          <td class="emph">152s (sample avg)</td><td>1×</td><td>5,879</td><td>2,145</td><td class="emph">$0.0133</td><td>$1,328</td>
+          <td class="emph">161s (sample avg)</td><td>1×</td><td>2,539</td><td>2,157</td><td class="emph">$0.0137</td><td>$1,375</td>
           <td><span class="badge badge-measured">Measured</span></td>
         </tr>
         <tr>
-          <td class="emph">600s (enterprise, short end)</td><td>~4×</td><td>~23,500</td><td>~2,145<sup>†</sup></td><td class="emph">~$0.027</td><td>~$2,700</td>
+          <td class="emph">600s (enterprise, short end)</td><td>~3.7×</td><td>~9,460</td><td>~2,157<sup>†</sup></td><td class="emph">~$0.0207</td><td>~$2,070</td>
           <td><span class="badge badge-projected">Projected</span></td>
         </tr>
         <tr>
-          <td class="emph">1,100s (enterprise, long end)</td><td>~7×</td><td>~41,150</td><td>~2,145<sup>†</sup></td><td class="emph">~$0.042</td><td>~$4,150</td>
+          <td class="emph">1,100s (enterprise, long end)</td><td>~6.8×</td><td>~17,350</td><td>~2,157<sup>†</sup></td><td class="emph">~$0.0286</td><td>~$2,860</td>
           <td><span class="badge badge-projected">Projected</span></td>
         </tr>
       </tbody>
     </table>
   </div>
-  <p class="section-lede" style="font-size:.78rem;margin-top:10px;">† Held flat at the measured average because the output schema is bounded (max 5 issues, 5 products per call) — actual completion tokens may grow modestly for unusually complex long calls, but not proportionally with duration. Projected rows are extrapolations from measured per-token pricing, not separately benchmarked against real enterprise transcripts — validating this against your own call length distribution is exactly what the one-week pilot is for.</p>
+  <p class="section-lede" style="font-size:.78rem;margin-top:10px;">† Held flat at the measured average because the output schema is bounded (max 5 issues, 5 products per call) — actual completion tokens may grow modestly for unusually complex long calls, but not proportionally with duration. Prompt tokens shown exclude the cached system prompt (billed once per cache window, not per call) — only the transcript-scaling portion is projected against call length. Projected rows are extrapolations from measured per-token pricing, not separately benchmarked against real enterprise transcripts — validating this against your own call length distribution is exactly what the one-week pilot is for.</p>
 
   <div class="stat-grid reveal" style="margin-top:28px;grid-template-columns:repeat(3,1fr);">
     <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">~15–18s</div><div class="stat-cell-key">End-to-end processing latency per call, live-tested (input → six agents → result)</div></div>
@@ -230,7 +231,41 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
 
   <p class="section-lede" style="margin-top:24px;">One more honest gap: <b>InsightsAgent</b> (the recommendation-synthesis step) runs once per batch on NVIDIA NIM or a Claude fallback — its cost isn't itemised in the per-call figures above because it doesn't scale per call. We haven't separately benchmarked its cost across providers yet; treat it as a small, roughly-fixed addition per batch rather than a hidden per-call multiplier.</p>
 
-  <p class="section-lede" style="margin-top:18px;font-weight:600;color:#0F172A;">Context: even at the top of the enterprise range, projected inference cost is ~$4,150/month at 100,000 calls — under <b>0.7%</b> of the $600K/month cost-to-serve baseline this same sample surfaced elsewhere on this site. The analysis costs a rounding error next to what it finds.</p>
+  <p class="section-lede" style="margin-top:18px;font-weight:600;color:#0F172A;">Context: even at the top of the enterprise range, projected inference cost is ~$2,860/month at 100,000 calls — under <b>0.5%</b> of the $600K/month cost-to-serve baseline this same sample surfaced elsewhere on this site. The analysis costs a rounding error next to what it finds.</p>
+</section>
+
+<!-- ═══════════════ DATA QUALITY & RELIABILITY ═══════════════ -->
+<section class="section-block section-wrap" id="quality">
+  <div class="section-kicker reveal">Data quality — the honest part</div>
+  <h2 class="section-h2 reveal">Not every call the model touches gets trusted — and that's the point</h2>
+  <p class="section-lede reveal">Most AI call-analytics tools report a number for every call the model processes, silently baking in whatever the model got wrong. This pipeline runs three deterministic, non-LLM checks on every extraction — phase-by-phase time reconciliation, a cross-check against the source recording's own timestamps, and transcript-completeness detection — before a call's numbers are allowed to touch the AHT/cost dashboard. A call that fails is <b>excluded from aggregation and logged with a specific reason</b>, never silently included.</p>
+
+  <div class="stat-grid reveal">
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">217</div><div class="stat-cell-key">Calls run through the data-quality gate to date, across all batches</div></div>
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">172 / 79.3%</div><div class="stat-cell-key">Pass all three checks — fully trusted for board-level AHT/cost reporting</div></div>
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">45</div><div class="stat-cell-key">Excluded, each with a specific logged reason — not silently included</div></div>
+    <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">100%</div><div class="stat-cell-key">Extraction success rate — the LLM never crashed on a single call; every exclusion is a quality judgment, not a technical failure</div></div>
+  </div>
+
+  <div class="table-scroll reveal" style="margin-top:28px;">
+    <table class="proj-table">
+      <thead>
+        <tr><th>Why a call was excluded</th><th>Count</th><th>What it actually means</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="emph">Transcript truncation</td><td>15</td><td>The model itself flagged the input as cut off — a call-recording/export problem upstream, not an extraction failure</td></tr>
+        <tr><td class="emph">Phase-time reconciliation</td><td>33</td><td>The model's own phase-by-phase breakdown didn't sum to its stated total call length — a reasoning imperfection, typically under a minute of drift</td></tr>
+        <tr><td class="emph">Timestamp ground-truth mismatch</td><td>1</td><td>The model's stated call length didn't match the source recording's actual timestamps — the rarest and most serious category</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="section-lede" style="font-size:.78rem;margin-top:10px;">A call can trip more than one check, so the reasons don't sum exactly to 45. Live counts, not a fixed claim — pulled directly from <code>outputs/summary.json</code> on every dashboard load.</p>
+
+  <div class="callout reveal">
+    <div class="callout-label">What this means at enterprise scale</div>
+    <div class="callout-title">At 100,000 calls/month, ~79,300 get board-ready analytics automatically. ~20,700 get routed to review instead of quietly corrupting the numbers.</div>
+    <div class="callout-body">That's the actual product: not "AI reads every call," but <b>AI reads every call and tells you which ones it isn't confident enough about to bill your decisions on</b>. A pipeline that reports 100% is either hand-picking its examples or hiding its error rate inside the average. This one measures it, categorizes it, and gates on it — in code, at the aggregation layer, not as a caveat in a slide deck.</div>
+  </div>
 </section>
 
 <!-- ═══════════════ WHY ENTERPRISES NEED THIS ═══════════════ -->
@@ -277,26 +312,30 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
       <table class="metrics-table">
         <thead><tr><th>Metric</th><th>Value</th><th>Type</th><th>Source</th></tr></thead>
         <tbody>
-          <tr><td>Calls in sample run</td><td class="mnum">78</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Live pipeline run, <code>outputs/summary.json</code></td></tr>
-          <tr><td>Avg. call duration (sample)</td><td class="mnum">152s</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">talkmap/telecom-conversation-corpus (HuggingFace)</td></tr>
-          <tr><td>Total tokens (sample)</td><td class="mnum">625,812</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>outputs/summary.json</code></td></tr>
-          <tr><td>Avg tokens / call (sample)</td><td class="mnum">8,023</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">5,879 prompt + 2,145 completion, <code>outputs/summary.json</code></td></tr>
-          <tr><td>Total inference cost (sample)</td><td class="mnum">$1.036</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>pipeline/token_tracker.py</code> · <code>outputs/summary.json</code></td></tr>
-          <tr><td>Avg cost / call (sample)</td><td class="mnum">$0.01328</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Same</td></tr>
-          <tr><td>Claude Haiku 4.5 pricing</td><td class="mnum">$0.80 in / $4.00 out per Mtok</td><td><span class="badge badge-thirdparty">Vendor rate</span></td><td class="msrc">Anthropic, as configured in <code>pipeline/token_tracker.py</code></td></tr>
+          <tr><td>Calls run through the gate to date</td><td class="mnum">217</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Live pipeline runs, <code>outputs/summary.json</code> → <code>qa_summary.n_merged_total</code></td></tr>
+          <tr><td>Calls trusted for reporting (data-quality gate)</td><td class="mnum">172 (79.3%)</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>qa_summary.n_trusted_for_aggregation</code> — see Data Quality section above</td></tr>
+          <tr><td>Calls excluded — phase-time reconciliation</td><td class="mnum">33</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>qa_summary.data_quality_failure_breakdown.phase_reconciliation</code></td></tr>
+          <tr><td>Calls excluded — transcript truncation</td><td class="mnum">15</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>qa_summary.data_quality_failure_breakdown.transcript_truncation</code></td></tr>
+          <tr><td>Calls excluded — timestamp ground-truth mismatch</td><td class="mnum">1</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>qa_summary.data_quality_failure_breakdown.timestamp_ground_truth</code></td></tr>
+          <tr><td>Avg. call duration (trusted sample)</td><td class="mnum">161s</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">talkmap/telecom-conversation-corpus (HuggingFace) · <code>outputs/summary.json</code></td></tr>
+          <tr><td>Total tokens (trusted sample)</td><td class="mnum">1,427,140</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>outputs/summary.json</code></td></tr>
+          <tr><td>Avg tokens / call (trusted sample)</td><td class="mnum">8,297</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">2,539 prompt (cache-discounted) + 2,157 completion, <code>outputs/summary.json</code></td></tr>
+          <tr><td>Total inference cost (trusted sample)</td><td class="mnum">$2.365</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc"><code>pipeline/token_tracker.py</code> · <code>outputs/summary.json</code></td></tr>
+          <tr><td>Avg cost / call (trusted sample)</td><td class="mnum">$0.01375</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Same</td></tr>
+          <tr><td>Claude Haiku 4.5 pricing</td><td class="mnum">$1.00 in / $5.00 out per Mtok</td><td><span class="badge badge-thirdparty">Vendor rate</span></td><td class="msrc">Anthropic, as configured in <code>pipeline/token_tracker.py</code></td></tr>
           <tr><td>Enterprise call length range</td><td class="mnum">600–1,100s</td><td><span class="badge badge-projected">Estimate</span></td><td class="msrc">Industry AHT range — not separately measured in this build</td></tr>
-          <tr><td>Projected cost / call @ 600s</td><td class="mnum">~$0.027</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Extrapolated: prompt tokens ×4, completion held flat (bounded schema)</td></tr>
-          <tr><td>Projected cost / call @ 1,100s</td><td class="mnum">~$0.042</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Same method, ×7 prompt tokens</td></tr>
+          <tr><td>Projected cost / call @ 600s</td><td class="mnum">~$0.0207</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Extrapolated: prompt tokens ×3.7, completion held flat (bounded schema)</td></tr>
+          <tr><td>Projected cost / call @ 1,100s</td><td class="mnum">~$0.0286</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Same method, ×6.8 prompt tokens</td></tr>
           <tr><td>Processing latency / call</td><td class="mnum">~15–18s</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Live end-to-end test runs, demo app <code>processing_time_seconds</code></td></tr>
-          <tr><td>Monthly cost @ 100K calls (sample-length)</td><td class="mnum">~$1,328</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Linear scale-up of measured avg cost/call</td></tr>
-          <tr><td>Monthly cost @ 100K calls (enterprise-length)</td><td class="mnum">~$2,700–$4,150</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Linear scale-up of the two projected rows above</td></tr>
-          <tr><td>Cost-to-serve baseline (same sample)</td><td class="mnum">$600K / mo</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Dashboard, modelled at 100,000 calls/mo from the 78-call sample</td></tr>
+          <tr><td>Monthly cost @ 100K calls (sample-length)</td><td class="mnum">~$1,375</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Linear scale-up of measured avg cost/call</td></tr>
+          <tr><td>Monthly cost @ 100K calls (enterprise-length)</td><td class="mnum">~$2,070–$2,860</td><td><span class="badge badge-projected">Projected</span></td><td class="msrc">Linear scale-up of the two projected rows above</td></tr>
+          <tr><td>Cost-to-serve baseline (same sample)</td><td class="mnum">$600K / mo</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Dashboard, modelled at 100,000 calls/mo from the trusted sample</td></tr>
           <tr><td>AI resolution rate — Intercom Fin</td><td class="mnum">76%</td><td><span class="badge badge-thirdparty">Third-party</span></td><td class="msrc">fin.ai, across 12,000+ customers</td></tr>
           <tr><td>AI resolution rate — Zendesk AI Agents</td><td class="mnum">50–80%</td><td><span class="badge badge-thirdparty">Third-party</span></td><td class="msrc">Zendesk Relate 2026 announcement</td></tr>
           <tr><td>AI resolution rate — Sierra (via Chime)</td><td class="mnum">70%</td><td><span class="badge badge-thirdparty">Third-party</span></td><td class="msrc">Public Sierra/Chime case study</td></tr>
           <tr><td>AI deflection rate — Decagon</td><td class="mnum">~80%</td><td><span class="badge badge-thirdparty">Third-party</span></td><td class="msrc">Public Decagon customer case studies</td></tr>
           <tr><td>Median cost per assisted contact</td><td class="mnum">$13.50</td><td><span class="badge badge-thirdparty">Third-party</span></td><td class="msrc">Gartner cost-to-serve benchmark</td></tr>
-          <tr><td>Automated tests passing</td><td class="mnum">364</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Repo pytest suite</td></tr>
+          <tr><td>Automated tests passing</td><td class="mnum">404</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Repo pytest suite</td></tr>
           <tr><td>Governance guards</td><td class="mnum">6</td><td><span class="badge badge-measured">Measured</span></td><td class="msrc">Budget, Quality, PII, Audit, Rate limit, Scope — <code>pipeline/governance.py</code>, <code>pipeline/security.py</code></td></tr>
           <tr><td>Budget allocation model</td><td class="mnum">Pre-divided / batch</td><td><span class="badge badge-config">Architecture</span></td><td class="msrc"><code>pipeline/orchestrator.py</code> — <code>BUDGET_USD ÷ n_batches</code></td></tr>
           <tr><td>Claude rate limit (per process)</td><td class="mnum">50 / 60s</td><td><span class="badge badge-config">Config</span></td><td class="msrc"><code>pipeline/security.py</code> — <code>CLAUDE_RATE_LIMITER</code></td></tr>

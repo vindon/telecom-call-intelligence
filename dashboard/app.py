@@ -1014,6 +1014,38 @@ def chart_phases(phase_seconds: dict) -> go.Figure:
     return fig
 
 
+_DQ_FAILURE_LABELS = {
+    "phase_reconciliation":   "Phase-time reconciliation",
+    "timestamp_ground_truth": "Timestamp ground-truth mismatch",
+    "transcript_truncation":  "Transcript truncation",
+}
+
+
+def chart_dq_failure_breakdown(breakdown: dict) -> go.Figure:
+    """Horizontal bar of why calls were excluded by the data-quality gate — live from summary.json."""
+    items  = sorted(breakdown.items(), key=lambda kv: kv[1], reverse=True)
+    labels = [_DQ_FAILURE_LABELS.get(k, k) for k, _ in items]
+    counts = [v for _, v in items]
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=counts, y=labels, orientation="h",
+        marker=dict(color=AMBER, line_width=0),
+        text=[str(c) for c in counts],
+        textposition="outside",
+        textfont=dict(color="#334155", size=12, family="Inter"),
+        hovertemplate="<b>%{y}</b><br>%{x} call(s) excluded<extra></extra>",
+    ))
+    fig.update_layout(
+        **PLOTLY,
+        height=170,
+        xaxis=dict(title="Calls excluded", gridcolor="#F1F5F9", zeroline=False),
+        yaxis=dict(tickfont=dict(size=11, color="#334155"), autorange="reversed"),
+        margin=dict(l=8, r=32, t=8, b=32),
+    )
+    return fig
+
+
 def chart_issue_mix(issue_dist: dict, n_calls: int) -> go.Figure:
     cats   = sorted(issue_dist.items(), key=lambda x: -x[1])
     total  = sum(v for _, v in cats) or 1
@@ -2284,6 +2316,60 @@ def main():
                 f'</div>',
                 unsafe_allow_html=True,
             )
+
+        # ── Data quality gate — verification funnel ────────────────
+        qa_summary = data.get("qa_summary", {})
+        if qa_summary:
+            _sec("Data Quality Gate — The Honest Numbers")
+            st.markdown(
+                "<div style='font-size:0.88rem;color:#64748B;line-height:1.65;margin-bottom:18px;'>"
+                "Not every extracted call is trusted for KPI aggregation. Every merged record runs through "
+                "three deterministic, non-LLM checks — phase-time reconciliation, timestamp ground-truth, and "
+                "transcript completeness — before it counts toward AHT or cost economics. This is what actually "
+                "passed, out of what was actually processed.</div>",
+                unsafe_allow_html=True,
+            )
+
+            n_merged  = qa_summary.get("n_merged_total", 0)
+            n_trusted = qa_summary.get("n_trusted_for_aggregation", 0)
+            n_dq_fail = qa_summary.get("data_quality_n_failed", 0)
+            n_low_qa  = qa_summary.get("n_low_qa_grade", 0)
+            dq_rate   = qa_summary.get("data_quality_pass_rate_pct", 0)
+            breakdown = qa_summary.get("data_quality_failure_breakdown", {})
+
+            f1, f2, f3, f4 = st.columns(4)
+            funnel_cards = [
+                (f1, "Calls Processed",       f"{n_merged:,}",              "#0F172A",  "total merged across all batches"),
+                (f2, "Verified & Trusted",    f"{n_trusted:,}",             "#059669",  f"{dq_rate:.1f}% data-quality pass rate"),
+                (f3, "Excluded — Data Quality", f"{n_dq_fail:,}",           "#DC2626",  "phase / timestamp / truncation"),
+                (f4, "Excluded — Low QA Grade", f"{n_low_qa:,}",            "#D97706",  "below the 100-pt QA rubric floor"),
+            ]
+            for col, label, val, color, note in funnel_cards:
+                with col:
+                    st.markdown(
+                        f'<div class="scard" style="border-top:3px solid {color};">'
+                        f'<div class="scard-label">{label}</div>'
+                        f'<div class="scard-val" style="color:{color};font-size:1.8rem;">{val}</div>'
+                        f'<div class="scard-note">{note}</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+
+            if breakdown:
+                st.markdown(
+                    "<div style='font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;"
+                    "color:#94A3B8;margin:22px 0 4px;'>Why calls were excluded</div>",
+                    unsafe_allow_html=True,
+                )
+                st.plotly_chart(chart_dq_failure_breakdown(breakdown), use_container_width=True, key="dq_breakdown")
+                st.markdown(
+                    "<div style='font-size:0.78rem;color:#94A3B8;line-height:1.6;margin-top:-8px;'>"
+                    "At enterprise scale, this is not a defect to hide — it's the reliability contract. A pipeline "
+                    "that silently included unreconcilable phase timing or truncated transcripts in its AHT/cost "
+                    "numbers would be the actual risk. Excluding them, and naming why, is what makes the trusted "
+                    "subset defensible.</div>",
+                    unsafe_allow_html=True,
+                )
 
         # ── KPI scorecard vs industry benchmark ───────────────────
         _sec("KPI Scorecard — Achieved vs. Industry Benchmark")

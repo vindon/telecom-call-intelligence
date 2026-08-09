@@ -46,6 +46,16 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - `run_batches.py` — added `--start-offset` (guarantee a fresh, non-overlapping sample vs. previous runs) and `--acknowledge-halt`; removed `--retries`.
 - `pipeline_version` string corrected from stale `"4.1-multi-agent"` to match this release.
 
+### Added — Success metrics surfaced honestly across every customer-facing surface
+
+Of 217 real calls processed to date, 172 (79.3%) pass the full QA + data-quality gate; 45 are excluded with three named, categorized reasons (`phase_reconciliation` ×33, `transcript_truncation` ×15, `timestamp_ground_truth` ×1). This funnel — trusted vs. excluded, with reasons — is now presented consistently everywhere the product is shown, rather than only living in `summary.json`:
+
+- **`pipeline/agents/quality_agent.py`** / **`merge_outputs.py`** — both now compute and emit `data_quality_failure_breakdown` (a `{failure_type: count}` dict) alongside the existing `data_quality_pass_rate_pct`/`n_trusted_for_aggregation`/`n_merged_total` fields in `qa_summary`, so the reason-level breakdown is available to every downstream consumer, not just the pass/fail rate.
+- **`docs/executive_deck.html`** — new Slide 11/15 "Data Quality — The Honest Numbers"; cover and closing slides updated from stale 78-call figures to 172 verified / 217 processed.
+- **`demo/architecture.html`** — new `#quality` section "Data Quality & Reliability" (stat grid + reasons table + enterprise-scale callout); Cost section numbers refreshed to the current 172-call sample (1,427,140 tokens, $2.365, 1.375¢/call).
+- **`README.md`** — new "Proven at scale" section with the same funnel and reason breakdown.
+- **`dashboard/app.py`** — new "Data Quality Gate — The Honest Numbers" panel in the QA & Pipeline Health tab: a 4-card verification funnel (processed / trusted / excluded-data-quality / excluded-low-QA) plus a live `chart_dq_failure_breakdown()` bar chart of exclusion reasons, both reading directly from `summary.json`'s `qa_summary` — no hardcoded numbers.
+
 ---
 
 ## [4.4.0] — 2026-06-24

@@ -165,8 +165,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
     </div>
     <div>
       <div class="s1-tag">Pipeline Output</div>
-      <div class="s1-stat">78</div>
-      <div class="s1-stat-label">Calls Analysed</div>
+      <div class="s1-stat">172</div>
+      <div class="s1-stat-label">Verified Calls · of 217 processed</div>
     </div>
     <div>
       <div class="s1-tag">Extraction Quality</div>
@@ -1099,8 +1099,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
             <div><div style="font-size:0.82rem;font-weight:700">Structured Fields</div><div style="font-size:0.75rem;color:#64748B">Per call, per transcript</div></div>
           </div>
           <div class="kcard" style="flex-direction:row;display:flex;align-items:center;gap:14px">
-            <div style="font-size:2rem;font-weight:900;color:#CD040B;flex-shrink:0">78</div>
-            <div><div style="font-size:0.82rem;font-weight:700">Calls Analysed</div><div style="font-size:0.75rem;color:#64748B">Real transcripts · full audit trail</div></div>
+            <div style="font-size:2rem;font-weight:900;color:#CD040B;flex-shrink:0">172</div>
+            <div><div style="font-size:0.82rem;font-weight:700">Verified Calls</div><div style="font-size:0.75rem;color:#64748B">Of 217 processed · full audit trail — see Data Quality slide</div></div>
           </div>
         </div>
       </div>
@@ -1121,11 +1121,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
           </div>
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F8FAFC;border-radius:8px">
             <div style="width:8px;height:8px;background:#10B981;border-radius:50%;flex-shrink:0"></div>
-            <div style="font-size:0.78rem;color:#334155"><strong>QualityGate</strong> — LOW-grade records excluded from KPIs</div>
+            <div style="font-size:0.78rem;color:#334155"><strong>QualityGate</strong> — LOW-grade &amp; data-quality-failed records excluded from KPIs</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F8FAFC;border-radius:8px">
             <div style="width:8px;height:8px;background:#10B981;border-radius:50%;flex-shrink:0"></div>
-            <div style="font-size:0.78rem;color:#334155"><strong>364 tests passing</strong> — CI/CD on Python 3.11 &amp; 3.12</div>
+            <div style="font-size:0.78rem;color:#334155"><strong>404 tests passing</strong> — CI/CD on Python 3.11 &amp; 3.12</div>
           </div>
         </div>
       </div>
@@ -1158,13 +1158,99 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!-- SLIDE 11 — RECOMMENDATIONS                             -->
+<!-- SLIDE 11 — DATA QUALITY / SUCCESS METRICS              -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div class="slide">
   <div class="slide-body">
     <div class="slide-header">
       <div>
         <div class="slide-num">11 / 15</div>
+        <div class="slide-title">Data Quality — The Honest Numbers</div>
+        <div class="slide-subtitle">Every call is gated by 3 deterministic checks before it touches a KPI. This is what "battle-tested" actually looks like, not a demo.</div>
+      </div>
+      <div class="slide-tag">Reliability</div>
+    </div>
+
+    <div class="three-col" style="gap:20px;margin-top:20px;flex:1">
+      <div>
+        <div class="section-label">The Funnel</div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+          <div class="kcard" style="flex-direction:row;display:flex;align-items:center;gap:14px">
+            <div style="font-size:2rem;font-weight:900;color:#0F172A;flex-shrink:0">217</div>
+            <div><div style="font-size:0.82rem;font-weight:700">Calls Processed</div><div style="font-size:0.75rem;color:#64748B">Real transcripts, across every batch to date</div></div>
+          </div>
+          <div class="kcard" style="flex-direction:row;display:flex;align-items:center;gap:14px">
+            <div style="font-size:2rem;font-weight:900;color:#10B981;flex-shrink:0">172</div>
+            <div><div style="font-size:0.82rem;font-weight:700">Fully Trusted — 79.3%</div><div style="font-size:0.75rem;color:#64748B">Pass QA score + all 3 data-integrity checks</div></div>
+          </div>
+          <div class="kcard" style="flex-direction:row;display:flex;align-items:center;gap:14px">
+            <div style="font-size:2rem;font-weight:900;color:#CD040B;flex-shrink:0">45</div>
+            <div><div style="font-size:0.82rem;font-weight:700">Excluded, With a Reason</div><div style="font-size:0.75rem;color:#64748B">Flagged and logged — never silently included</div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Why Calls Get Excluded</div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          <div style="padding:10px 14px;background:#F8FAFC;border-radius:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:0.78rem;font-weight:700;color:#334155">Transcript truncation</div><div style="font-size:0.9rem;font-weight:800;color:#0F172A">15</div></div>
+            <div style="font-size:0.72rem;color:#64748B;margin-top:3px">Model flagged the input itself as cut off — a data-pipeline issue, not an extraction failure</div>
+          </div>
+          <div style="padding:10px 14px;background:#F8FAFC;border-radius:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:0.78rem;font-weight:700;color:#334155">Phase-time reconciliation</div><div style="font-size:0.9rem;font-weight:800;color:#0F172A">33</div></div>
+            <div style="font-size:0.72rem;color:#64748B;margin-top:3px">Model's own phase breakdown didn't sum to its stated call length — a reasoning imperfection</div>
+          </div>
+          <div style="padding:10px 14px;background:#F8FAFC;border-radius:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:0.78rem;font-weight:700;color:#334155">Timestamp ground-truth mismatch</div><div style="font-size:0.9rem;font-weight:800;color:#0F172A">1</div></div>
+            <div style="font-size:0.72rem;color:#64748B;margin-top:3px">Stated call length didn't match the source recording's real timestamps — rarest, most serious</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">At Enterprise Scale</div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          <div style="padding:12px 16px;background:#0F172A;border-radius:8px">
+            <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);font-weight:600;letter-spacing:0.08em;text-transform:uppercase">At 100,000 calls/mo</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#fff;margin-top:2px">~79,300 automated, board-ready</div>
+            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:2px">Zero human review needed</div>
+          </div>
+          <div style="padding:12px 16px;background:#0F172A;border-radius:8px">
+            <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Correctly routed to review</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#fff;margin-top:2px">~20,700 calls/mo</div>
+            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:2px">Instead of silently corrupting AHT</div>
+          </div>
+          <div style="padding:12px 16px;background:#CD040B;border-radius:8px">
+            <div style="font-size:0.68rem;color:rgba(255,255,255,0.7);font-weight:600;letter-spacing:0.08em;text-transform:uppercase">The alternative</div>
+            <div style="font-size:0.85rem;font-weight:700;color:#fff;margin-top:2px">Most tools report 100%</div>
+            <div style="font-size:0.72rem;color:rgba(255,255,255,0.7);margin-top:2px">Silently baking in every error</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;background:#0F172A;border-radius:10px;padding:16px 32px;display:flex;align-items:center;justify-content:space-between">
+      <div style="color:rgba(255,255,255,0.6);font-size:0.82rem;font-weight:500;max-width:520px">Not "AI reads every call" — AI reads every call and tells you which ones it isn't confident enough about to bill your decisions on.</div>
+      <div style="display:flex;gap:48px">
+        <div style="text-align:center"><div style="color:#10B981;font-weight:800;font-size:1.1rem">100%</div><div style="color:rgba(255,255,255,0.4);font-size:0.65rem">Extraction success — zero technical failures</div></div>
+        <div style="text-align:center"><div style="color:#3B82F6;font-weight:800;font-size:1.1rem">3</div><div style="color:rgba(255,255,255,0.4);font-size:0.65rem">Deterministic checks, in code</div></div>
+        <div style="background:#CD040B;border-radius:8px;padding:8px 24px;text-align:center"><div style="color:#fff;font-weight:900;font-size:1.2rem">79.3%</div><div style="color:rgba(255,255,255,0.7);font-size:0.65rem">Verified trust rate, this run</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer-line">
+    <span>TELECOM CALL INTELLIGENCE · EXECUTIVE REPORT · JUNE 2026</span>
+    <span>CONFIDENTIAL</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 12 — RECOMMENDATIONS                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide">
+  <div class="slide-body">
+    <div class="slide-header">
+      <div>
+        <div class="slide-num">12 / 15</div>
         <div class="slide-title">Strategic Recommendations — Priority Order</div>
         <div class="slide-subtitle">Three builds, three phases, one outcome: 76% cost reduction and a new revenue stream</div>
       </div>
@@ -1237,14 +1323,14 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!-- SLIDE 12 — CLOSING / NEXT STEPS                        -->
+<!-- SLIDE 13 — CLOSING / NEXT STEPS                        -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div class="slide" style="background:#0F172A">
   <div class="slide-body" style="justify-content:center">
     <div style="text-align:center;margin-bottom:48px">
       <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#CD040B;margin-bottom:16px">Telecom Call Intelligence · June 2026</div>
       <div style="font-size:3.2rem;font-weight:900;color:#fff;line-height:1.05;margin-bottom:20px">$12.6M within reach.<br><span style="color:#CD040B">The data proves it.</span></div>
-      <div style="font-size:1rem;color:#94A3B8;max-width:680px;margin:0 auto;line-height:1.7">78 real calls. 70+ signals each. One conclusion: this care operation has world-class agents, world-class conversion, and a demand problem that AI can solve. The three builds above are not experiments — they are fully scoped, evidence-backed, production-ready initiatives.</div>
+      <div style="font-size:1rem;color:#94A3B8;max-width:680px;margin:0 auto;line-height:1.7">172 verified calls, out of 217 processed — every one gated by 3 deterministic quality checks, not cherry-picked. 70+ signals each. One conclusion: this care operation has world-class agents, world-class conversion, and a demand problem that AI can solve. The three builds above are not experiments — they are fully scoped, evidence-backed, production-ready initiatives.</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:48px">
       <div style="border:1.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;text-align:center">

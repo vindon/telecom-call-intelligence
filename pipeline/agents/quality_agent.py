@@ -70,6 +70,10 @@ class QualityAgent:
         # Attach per-call QA score + data-quality gate result into the result dict itself
         scored_results: list[dict] = []
         n_dq_failed = 0
+        # Tallied per failure_type so the dashboard/executive reporting can show
+        # WHY calls were excluded, not just how many — see data_quality_failure_breakdown
+        # in the summary below. A call failing multiple checks counts once per check.
+        dq_failure_breakdown: dict[str, int] = {}
         for r in results:
             audit = audit_record(r)
             grade = audit["grade"]
@@ -90,6 +94,7 @@ class QualityAgent:
                 n_dq_failed += 1
                 call_id = str(r.get("call_id", "?"))[:16]
                 for failure_type in dq["failures"]:
+                    dq_failure_breakdown[failure_type] = dq_failure_breakdown.get(failure_type, 0) + 1
                     check = dq["checks"][failure_type]
                     dl.log(
                         decision_type=(
@@ -137,6 +142,7 @@ class QualityAgent:
         dq_pass_rate = round((n - n_dq_failed) / n * 100, 1) if n else 100.0
         report["summary"]["data_quality_pass_rate_pct"] = dq_pass_rate
         report["summary"]["data_quality_n_failed"] = n_dq_failed
+        report["summary"]["data_quality_failure_breakdown"] = dq_failure_breakdown
 
         # Only forward records that are both QA-passed (HIGH/MEDIUM) and
         # data-quality-gate-passed to aggregation.

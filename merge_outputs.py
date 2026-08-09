@@ -136,12 +136,15 @@ def main() -> None:
     # transcript_truncated) aren't present, same as
     # qa_audit.check_data_quality()'s normal behavior for pre-gate records.
     n_dq_failed = 0
+    dq_failure_breakdown: dict[str, int] = {}
     for r in merged:
         dq = check_data_quality(r)
         r["_dq_gate_passed"] = dq["passed"]
         r["_dq_failures"]    = dq["failures"]
         if not r["_dq_gate_passed"]:
             n_dq_failed += 1
+            for failure_type in dq["failures"]:
+                dq_failure_breakdown[failure_type] = dq_failure_breakdown.get(failure_type, 0) + 1
 
     n = len(merged)
     dq_pass_rate = round((n - n_dq_failed) / n * 100, 1) if n else 100.0
@@ -173,11 +176,12 @@ def main() -> None:
     usage_summary = token_summary(trusted)
     metrics["token_usage"] = usage_summary
     metrics["qa_summary"] = {
-        "data_quality_pass_rate_pct": dq_pass_rate,
-        "data_quality_n_failed":      n_dq_failed,
-        "n_low_qa_grade":             n_low,
-        "n_trusted_for_aggregation":  len(trusted),
-        "n_merged_total":             n,
+        "data_quality_pass_rate_pct":      dq_pass_rate,
+        "data_quality_n_failed":           n_dq_failed,
+        "data_quality_failure_breakdown":  dq_failure_breakdown,
+        "n_low_qa_grade":                  n_low,
+        "n_trusted_for_aggregation":       len(trusted),
+        "n_merged_total":                  n,
     }
     if dq_pass_rate < QUALITY_WARN_RATE * 100:
         metrics["aht_disclaimer"] = (

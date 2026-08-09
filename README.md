@@ -155,6 +155,31 @@ Every component exists because production autonomous systems need it.
 
 ---
 
+## Proven at scale — the data-quality story, told honestly
+
+A 100-pt QA score only tells you the extraction was *structurally* well-formed — every field populated, every enum valid. It doesn't tell you whether the model's own phase-by-phase time math actually adds up, whether the input transcript was complete, or whether the stated call length matches the source recording. Most AI call-analytics tools never check. This one does, on every call, with three deterministic (non-LLM) checks that gate aggregation — see [`qa_audit.check_data_quality()`](qa_audit.py).
+
+**Real numbers, across every batch run to date** (live from `outputs/summary.json`, not a cherry-picked example):
+
+| | |
+|---|---|
+| Calls processed | **217** |
+| Extraction success rate | **100%** — zero technical/LLM failures |
+| **Fully trusted** (QA score + all 3 data-integrity checks) | **172 (79.3%)** |
+| Excluded, each with a specific logged reason | 45 |
+
+**Why calls get excluded** — not a vague error rate, three specific, auditable reasons:
+
+| Reason | Count | What it actually means |
+|---|---|---|
+| Transcript truncation | 15 | The model flagged the input itself as cut off — a data-pipeline issue, not an extraction failure |
+| Phase-time reconciliation | 33 | The model's own phase breakdown didn't sum to its stated total call length — a reasoning imperfection |
+| Timestamp ground-truth mismatch | 1 | Stated call length didn't match the source recording's real timestamps — rarest, most serious |
+
+**At enterprise scale (100K calls/month):** ~79,300 calls/month get fully automated, board-ready analytics with zero human review. ~20,700/month are correctly routed to review instead of silently corrupting the aggregate AHT numbers — that gating, enforced in code at the aggregation layer (not a caveat in a doc), is the actual product.
+
+---
+
 ## Quick start
 
 **Prerequisites:** Python 3.11+
