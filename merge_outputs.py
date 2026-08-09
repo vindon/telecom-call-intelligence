@@ -121,18 +121,25 @@ def main() -> None:
     # bypassing the phase-reconciliation/timestamp-ground-truth/completeness
     # gate that QualityAgent already enforces inside a single pipeline run —
     # so AHT/phase economics computed here could silently include calls
-    # already known to fail. Records missing _dq_gate_passed (extracted
-    # before this gate existed) get it computed retroactively here — phase
-    # reconciliation is always computable from saved fields; timestamp
-    # ground-truth and transcript-completeness degrade gracefully (pass) when
-    # their source fields (_raw_duration_seconds, transcript_truncated)
-    # aren't present, same as qa_audit.check_data_quality()'s normal behavior.
+    # already known to fail.
+    #
+    # ALWAYS recompute here — never trust an existing _dq_gate_passed tag,
+    # even if one is already present. A tag baked in at extraction time
+    # reflects whatever qa_audit.py's check logic was AT THAT MOMENT; if the
+    # check formula is fixed later (as happened 2026-08-09 — the phase
+    # reconciliation formula was wrong and got corrected), old tags go stale
+    # silently and a "not in r" guard would keep trusting the wrong answer
+    # for every record extracted before the fix. Recomputation is pure
+    # Python over already-saved fields — no API cost — so there's no reason
+    # to ever skip it. Ground-truth/completeness checks degrade gracefully
+    # (pass) when their source fields (_raw_duration_seconds,
+    # transcript_truncated) aren't present, same as
+    # qa_audit.check_data_quality()'s normal behavior for pre-gate records.
     n_dq_failed = 0
     for r in merged:
-        if "_dq_gate_passed" not in r:
-            dq = check_data_quality(r)
-            r["_dq_gate_passed"] = dq["passed"]
-            r["_dq_failures"]    = dq["failures"]
+        dq = check_data_quality(r)
+        r["_dq_gate_passed"] = dq["passed"]
+        r["_dq_failures"]    = dq["failures"]
         if not r["_dq_gate_passed"]:
             n_dq_failed += 1
 

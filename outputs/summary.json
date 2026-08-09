@@ -1,476 +1,525 @@
 {
   "meta": {
-    "total_calls_analyzed": 94,
-    "analysis_timestamp": "2026-08-09T16:50:23.217295",
+    "total_calls_analyzed": 172,
+    "analysis_timestamp": "2026-08-09T17:30:40.555068",
     "dataset": "talkmap/telecom-conversation-corpus",
     "model": "claude-haiku-4-5-20251001",
     "inference_provider": "Anthropic (Claude)",
     "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark. Replace with actual ACD data for production."
   },
   "kpis": {
-    "total_calls_analyzed": 94,
-    "avg_handle_time_seconds": 153.0,
-    "avg_handle_time_minutes": 2.5,
-    "fcr_rate_pct": 57.4,
-    "avoidable_call_rate_pct": 55.3,
-    "self_serve_deflection_pct": 60.6,
-    "agentic_ai_resolvable_pct": 41.5,
-    "proactive_outreach_pct": 19.1,
-    "all_issues_resolved_pct": 63.8,
-    "escalation_rate_pct": 28.7,
-    "upsell_attempted_pct": 30.9,
-    "upsell_conversion_pct": 93.1,
-    "sentiment_improved_pct": 81.9,
-    "agent_tool_struggle_pct": 2.1,
-    "multi_issue_call_pct": 6.4,
-    "avg_issues_per_call": 1.0,
-    "avg_hold_time_seconds": 0.4,
+    "total_calls_analyzed": 172,
+    "avg_handle_time_seconds": 160.7,
+    "avg_handle_time_minutes": 2.7,
+    "fcr_rate_pct": 64.5,
+    "avoidable_call_rate_pct": 59.3,
+    "self_serve_deflection_pct": 59.3,
+    "agentic_ai_resolvable_pct": 44.2,
+    "proactive_outreach_pct": 25.0,
+    "all_issues_resolved_pct": 69.2,
+    "escalation_rate_pct": 23.3,
+    "upsell_attempted_pct": 34.9,
+    "upsell_conversion_pct": 91.7,
+    "sentiment_improved_pct": 87.8,
+    "agent_tool_struggle_pct": 1.7,
+    "multi_issue_call_pct": 5.2,
+    "avg_issues_per_call": 1.1,
+    "avg_hold_time_seconds": 0.2,
     "avg_hold_count": 0.1,
-    "avg_empathy_statements": 1.7,
-    "prevent_pct": 19.1,
-    "automate_pct": 48.9,
-    "human_required_pct": 31.9,
-    "automate_self_serve_pct": 48.9,
-    "automate_agentic_pct": 0.0
+    "avg_empathy_statements": 1.9,
+    "prevent_pct": 25.0,
+    "automate_pct": 45.3,
+    "human_required_pct": 29.7,
+    "automate_self_serve_pct": 43.6,
+    "automate_agentic_pct": 1.7
   },
   "phase_avg_seconds": {
-    "Welcome & Auth": 24.3,
-    "Discovery": 41.0,
-    "Diagnosis": 31.9,
-    "Resolution": 35.2,
-    "Hold": 0.4,
-    "Upsell": 10.8,
-    "Closing": 17.1
+    "Welcome & Auth": 24.6,
+    "Discovery": 43.7,
+    "Diagnosis": 33.3,
+    "Resolution": 36.4,
+    "Hold": 0.2,
+    "Upsell": 13.1,
+    "Closing": 20.4
   },
   "phase_drilldown": {
     "Discovery": [
       {
         "intent": "complaint",
-        "avg_seconds": 62.0,
-        "calls": 1,
-        "stall_pct": 100.0
+        "avg_seconds": 65.0,
+        "calls": 3,
+        "stall_pct": 33.3
       },
       {
-        "intent": "insurance",
-        "avg_seconds": 46.5,
-        "calls": 2,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "technical",
-        "avg_seconds": 43.0,
-        "calls": 32,
-        "stall_pct": 9.4
-      },
-      {
-        "intent": "device",
-        "avg_seconds": 41.1,
-        "calls": 21,
+        "intent": "plan",
+        "avg_seconds": 48.6,
+        "calls": 17,
         "stall_pct": 0.0
       },
       {
         "intent": "information",
-        "avg_seconds": 37.9,
-        "calls": 17,
-        "stall_pct": 5.9
+        "avg_seconds": 47.9,
+        "calls": 28,
+        "stall_pct": 7.1
+      },
+      {
+        "intent": "technical",
+        "avg_seconds": 44.2,
+        "calls": 61,
+        "stall_pct": 6.6
+      },
+      {
+        "intent": "insurance",
+        "avg_seconds": 43.0,
+        "calls": 3,
+        "stall_pct": 0.0
       }
     ],
     "Diagnosis": [
       {
-        "intent": "device",
-        "avg_seconds": 49.6,
-        "calls": 21,
-        "stall_pct": 19.0
-      },
-      {
         "intent": "technical",
-        "avg_seconds": 39.5,
-        "calls": 32,
-        "stall_pct": 21.9
+        "avg_seconds": 42.0,
+        "calls": 61,
+        "stall_pct": 16.4
       },
       {
-        "intent": "complaint",
-        "avg_seconds": 27.0,
-        "calls": 1,
+        "intent": "device",
+        "avg_seconds": 39.0,
+        "calls": 38,
+        "stall_pct": 15.8
+      },
+      {
+        "intent": "account",
+        "avg_seconds": 29.4,
+        "calls": 9,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "billing",
+        "avg_seconds": 25.9,
+        "calls": 10,
         "stall_pct": 0.0
       },
       {
         "intent": "information",
-        "avg_seconds": 22.6,
-        "calls": 17,
-        "stall_pct": 5.9
-      },
-      {
-        "intent": "billing",
-        "avg_seconds": 16.5,
-        "calls": 6,
-        "stall_pct": 0.0
+        "avg_seconds": 25.1,
+        "calls": 28,
+        "stall_pct": 3.6
       }
     ],
     "Resolution": [
       {
         "intent": "plan",
-        "avg_seconds": 50.5,
-        "calls": 6,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "information",
-        "avg_seconds": 48.8,
+        "avg_seconds": 54.4,
         "calls": 17,
         "stall_pct": 0.0
       },
       {
-        "intent": "device",
-        "avg_seconds": 41.6,
-        "calls": 21,
+        "intent": "information",
+        "avg_seconds": 45.4,
+        "calls": 28,
         "stall_pct": 0.0
       },
       {
-        "intent": "insurance",
-        "avg_seconds": 38.5,
-        "calls": 2,
+        "intent": "device",
+        "avg_seconds": 39.5,
+        "calls": 38,
         "stall_pct": 0.0
       },
       {
         "intent": "billing",
-        "avg_seconds": 31.3,
-        "calls": 6,
+        "avg_seconds": 31.8,
+        "calls": 10,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "insurance",
+        "avg_seconds": 31.7,
+        "calls": 3,
         "stall_pct": 0.0
       }
     ],
     "Upsell": [
       {
         "intent": "plan",
-        "avg_seconds": 34.3,
-        "calls": 6,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "information",
-        "avg_seconds": 30.4,
+        "avg_seconds": 42.9,
         "calls": 17,
         "stall_pct": 0.0
       },
       {
+        "intent": "information",
+        "avg_seconds": 28.4,
+        "calls": 28,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "insurance",
+        "avg_seconds": 16.3,
+        "calls": 3,
+        "stall_pct": 0.0
+      },
+      {
+        "intent": "account",
+        "avg_seconds": 9.0,
+        "calls": 9,
+        "stall_pct": 0.0
+      },
+      {
         "intent": "device",
-        "avg_seconds": 5.1,
-        "calls": 21,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "technical",
-        "avg_seconds": 1.8,
-        "calls": 32,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "billing",
-        "avg_seconds": 1.2,
-        "calls": 6,
+        "avg_seconds": 6.8,
+        "calls": 38,
         "stall_pct": 0.0
       }
     ]
   },
   "distributions": {
     "issue_category": {
-      "technical": 34,
-      "device": 21,
-      "information": 19,
-      "billing": 7,
-      "plan": 7,
-      "account": 6,
-      "insurance": 2,
-      "other": 1,
-      "complaint": 1
+      "technical": 63,
+      "device": 39,
+      "information": 30,
+      "plan": 18,
+      "billing": 13,
+      "account": 11,
+      "complaint": 4,
+      "insurance": 3,
+      "other": 1
     },
     "cost_driver": {
-      "information_only": 34.0,
-      "device": 18.1,
-      "technical": 17.0,
-      "plan_change": 14.9,
-      "complaint": 9.6,
-      "billing": 5.3,
-      "account": 1.1
+      "information_only": 29.1,
+      "technical": 19.8,
+      "plan_change": 19.2,
+      "device": 18.6,
+      "complaint": 7.0,
+      "billing": 5.2,
+      "account": 1.2
     },
     "agent_skill": {
       "adequate": 50.0,
-      "proficient": 46.8,
-      "needs_improvement": 3.2
+      "proficient": 48.3,
+      "needs_improvement": 1.7
     },
     "customer_sentiment_start": {
-      "neutral": 52.1,
-      "frustrated": 40.4,
-      "distressed": 3.2,
-      "negative": 1.1,
-      "positive": 1.1,
-      "concerned": 1.1,
-      "irritated": 1.1
+      "neutral": 52.3,
+      "frustrated": 41.3,
+      "distressed": 2.3,
+      "negative": 1.2,
+      "concerned": 1.2,
+      "positive": 0.6,
+      "irritated": 0.6,
+      "disappointed": 0.6
     },
     "customer_sentiment_end": {
-      "positive": 71.3,
-      "neutral": 21.3,
-      "frustrated": 4.3,
-      "distressed": 2.1,
-      "resigned": 1.1
+      "positive": 74.4,
+      "neutral": 19.2,
+      "frustrated": 2.3,
+      "distressed": 1.7,
+      "satisfied": 1.2,
+      "resigned": 0.6,
+      "dismissive": 0.6
     },
     "handle_time_efficiency": {
-      "efficient": 74.5,
-      "average": 23.4,
-      "inefficient": 2.1
+      "efficient": 82.0,
+      "average": 16.9,
+      "inefficient": 1.2
     },
     "self_serve_channel": {
-      "app": 40.6,
-      "app|website": 37.5,
-      "none": 10.9,
-      "website": 9.4,
-      "website|app": 1.6
+      "app|website": 40.5,
+      "app": 39.6,
+      "website": 8.1,
+      "none": 8.1,
+      "website|app": 1.8,
+      "website|app|chatbot": 0.9,
+      "app|website|chatbot": 0.9
     },
     "repeat_call_risk": {
-      "low": 66.0,
-      "high": 18.1,
-      "medium": 16.0
+      "low": 69.8,
+      "medium": 15.7,
+      "high": 14.5
     },
     "agent_disproportionate_phase": {
-      "diagnosis": 42.9,
-      "discovery": 21.4,
-      "welcome": 14.3,
-      "closing": 10.7,
-      "resolution": 7.1,
-      "none": 3.6
+      "diagnosis": 43.6,
+      "discovery": 23.1,
+      "welcome": 12.8,
+      "closing": 10.3,
+      "resolution": 5.1,
+      "none": 5.1
     },
     "upsell_outcome": {
-      "not_attempted": 69.1,
-      "accepted": 28.7,
-      "declined": 2.1
+      "not_attempted": 65.1,
+      "accepted": 32.0,
+      "declined": 2.9
     },
     "resolution_method_issue1": {
-      "agent_action": 50.0,
-      "escalated": 29.3,
+      "agent_action": 53.5,
+      "escalated": 22.4,
       "self_serve_guidance": 14.1,
-      "workaround": 3.3,
-      "unresolved": 2.2,
-      "workaround|escalated": 1.1
+      "workaround": 7.6,
+      "unresolved": 1.8,
+      "workaround|escalated": 0.6
     },
     "account_type": {
-      "postpaid": 59.6,
-      "unknown": 35.1,
-      "business": 3.2,
-      "prepaid": 2.1
+      "postpaid": 65.1,
+      "unknown": 30.2,
+      "business": 3.5,
+      "prepaid": 1.2
     }
   },
   "cost_levers": {
     "cost_per_call_usd": 6.0,
     "monthly_volume_estimate": 100000,
     "baseline_monthly_cost_usd": 600000,
-    "self_serve_savings_usd": 249390,
-    "agentic_ai_savings_usd": 0,
-    "proactive_care_savings_usd": 68760,
-    "total_savings_opportunity_usd": 318150,
-    "savings_pct_of_baseline": 53.0,
-    "serve_time_pct": 82.4,
-    "serve_cost_usd": 494400,
-    "sell_time_pct": 6.7,
-    "sell_cost_usd": 40200,
-    "retain_time_pct": 10.9,
-    "retain_cost_usd": 65400
+    "self_serve_savings_usd": 222360,
+    "agentic_ai_savings_usd": 7140,
+    "proactive_care_savings_usd": 90000,
+    "total_savings_opportunity_usd": 319500,
+    "savings_pct_of_baseline": 53.2,
+    "serve_time_pct": 80.4,
+    "serve_cost_usd": 482400,
+    "sell_time_pct": 7.6,
+    "sell_cost_usd": 45600,
+    "retain_time_pct": 12.0,
+    "retain_cost_usd": 72000
   },
   "issue_breakdown": {
     "categories": [
       {
         "category": "technical",
-        "count": 32,
-        "pct": 34.0,
-        "dollars": 204255,
+        "count": 61,
+        "pct": 35.5,
+        "dollars": 212791,
         "segments": {
           "prevent": {
-            "count": 5,
-            "pct": 15.6,
+            "count": 15,
+            "pct": 24.6,
             "methods": {
-              "agent_action": 3,
-              "escalated": 2
+              "agent_action": 7,
+              "escalated": 4,
+              "workaround": 3,
+              "self_serve_guidance": 1
             }
           },
           "automate_self_serve": {
-            "count": 14,
-            "pct": 43.8,
+            "count": 19,
+            "pct": 31.1,
             "methods": {
-              "agent_action": 6,
-              "self_serve_guidance": 4,
+              "agent_action": 9,
+              "self_serve_guidance": 5,
               "escalated": 2,
-              "workaround|escalated": 1,
-              "workaround": 1
+              "workaround": 2,
+              "workaround|escalated": 1
+            }
+          },
+          "automate_agentic": {
+            "count": 1,
+            "pct": 1.6,
+            "methods": {
+              "agent_action": 1
             }
           },
           "human": {
-            "count": 13,
-            "pct": 40.6,
+            "count": 26,
+            "pct": 42.6,
             "methods": {
-              "escalated": 10,
-              "agent_action": 2,
-              "workaround": 1
+              "escalated": 17,
+              "agent_action": 5,
+              "workaround": 4
             }
           }
         }
       },
       {
         "category": "device",
-        "count": 21,
-        "pct": 22.3,
-        "dollars": 134043,
+        "count": 38,
+        "pct": 22.1,
+        "dollars": 132558,
         "segments": {
           "prevent": {
-            "count": 1,
-            "pct": 4.8,
+            "count": 4,
+            "pct": 10.5,
             "methods": {
-              "agent_action": 1
+              "agent_action": 2,
+              "workaround": 2
             }
           },
           "automate_self_serve": {
-            "count": 9,
-            "pct": 42.9,
+            "count": 15,
+            "pct": 39.5,
             "methods": {
-              "agent_action": 4,
-              "self_serve_guidance": 3,
+              "self_serve_guidance": 7,
+              "agent_action": 6,
               "escalated": 1,
               "workaround": 1
             }
           },
-          "human": {
-            "count": 11,
-            "pct": 52.4,
-            "methods": {
-              "escalated": 6,
-              "agent_action": 5
-            }
-          }
-        }
-      },
-      {
-        "category": "information",
-        "count": 17,
-        "pct": 18.1,
-        "dollars": 108511,
-        "segments": {
-          "prevent": {
-            "count": 4,
-            "pct": 23.5,
-            "methods": {
-              "agent_action": 3,
-              "self_serve_guidance": 1
-            }
-          },
-          "automate_self_serve": {
-            "count": 12,
-            "pct": 70.6,
-            "methods": {
-              "agent_action": 8,
-              "self_serve_guidance": 3,
-              "escalated": 1
-            }
-          },
-          "human": {
-            "count": 1,
-            "pct": 5.9,
-            "methods": {
-              "agent_action": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "billing",
-        "count": 6,
-        "pct": 6.4,
-        "dollars": 38298,
-        "segments": {
-          "prevent": {
-            "count": 4,
-            "pct": 66.7,
-            "methods": {
-              "agent_action": 4
-            }
-          },
-          "automate_self_serve": {
+          "automate_agentic": {
             "count": 2,
-            "pct": 33.3,
+            "pct": 5.3,
             "methods": {
-              "escalated": 1,
-              "self_serve_guidance": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "account",
-        "count": 6,
-        "pct": 6.4,
-        "dollars": 38298,
-        "segments": {
-          "prevent": {
-            "count": 1,
-            "pct": 16.7,
-            "methods": {
-              "escalated": 1
-            }
-          },
-          "automate_self_serve": {
-            "count": 4,
-            "pct": 66.7,
-            "methods": {
-              "escalated": 1,
-              "unresolved": 1,
-              "agent_action": 1,
-              "self_serve_guidance": 1
+              "agent_action": 2
             }
           },
           "human": {
-            "count": 1,
-            "pct": 16.7,
+            "count": 17,
+            "pct": 44.7,
             "methods": {
+              "escalated": 8,
+              "agent_action": 8,
               "unresolved": 1
             }
           }
         }
       },
       {
-        "category": "plan",
-        "count": 6,
-        "pct": 6.4,
-        "dollars": 38298,
+        "category": "information",
+        "count": 28,
+        "pct": 16.3,
+        "dollars": 97674,
         "segments": {
           "prevent": {
-            "count": 3,
-            "pct": 50.0,
+            "count": 6,
+            "pct": 21.4,
             "methods": {
-              "agent_action": 3
+              "agent_action": 5,
+              "self_serve_guidance": 1
+            }
+          },
+          "automate_self_serve": {
+            "count": 21,
+            "pct": 75.0,
+            "methods": {
+              "agent_action": 12,
+              "self_serve_guidance": 8,
+              "escalated": 1
+            }
+          },
+          "human": {
+            "count": 1,
+            "pct": 3.6,
+            "methods": {
+              "agent_action": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "plan",
+        "count": 17,
+        "pct": 9.9,
+        "dollars": 59302,
+        "segments": {
+          "prevent": {
+            "count": 9,
+            "pct": 52.9,
+            "methods": {
+              "agent_action": 8,
+              "workaround": 1
+            }
+          },
+          "automate_self_serve": {
+            "count": 8,
+            "pct": 47.1,
+            "methods": {
+              "agent_action": 8
+            }
+          }
+        }
+      },
+      {
+        "category": "billing",
+        "count": 10,
+        "pct": 5.8,
+        "dollars": 34884,
+        "segments": {
+          "prevent": {
+            "count": 7,
+            "pct": 70.0,
+            "methods": {
+              "agent_action": 7
             }
           },
           "automate_self_serve": {
             "count": 3,
-            "pct": 50.0,
+            "pct": 30.0,
             "methods": {
-              "agent_action": 3
+              "escalated": 1,
+              "self_serve_guidance": 1,
+              "agent_action": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "account",
+        "count": 9,
+        "pct": 5.2,
+        "dollars": 31395,
+        "segments": {
+          "prevent": {
+            "count": 1,
+            "pct": 11.1,
+            "methods": {
+              "escalated": 1
+            }
+          },
+          "automate_self_serve": {
+            "count": 6,
+            "pct": 66.7,
+            "methods": {
+              "agent_action": 3,
+              "escalated": 1,
+              "unresolved": 1,
+              "self_serve_guidance": 1
+            }
+          },
+          "human": {
+            "count": 2,
+            "pct": 22.2,
+            "methods": {
+              "unresolved": 1,
+              "agent_action": 1
+            }
+          }
+        }
+      },
+      {
+        "category": "complaint",
+        "count": 3,
+        "pct": 1.7,
+        "dollars": 10465,
+        "segments": {
+          "prevent": {
+            "count": 1,
+            "pct": 33.3,
+            "methods": {
+              "agent_action": 1
+            }
+          },
+          "human": {
+            "count": 2,
+            "pct": 66.7,
+            "methods": {
+              "agent_action": 1,
+              "escalated": 1
             }
           }
         }
       },
       {
         "category": "insurance",
-        "count": 2,
-        "pct": 2.1,
-        "dollars": 12766,
+        "count": 3,
+        "pct": 1.7,
+        "dollars": 10465,
         "segments": {
           "automate_self_serve": {
-            "count": 1,
-            "pct": 50.0,
+            "count": 2,
+            "pct": 66.7,
             "methods": {
-              "agent_action": 1
+              "agent_action": 2
             }
           },
           "human": {
             "count": 1,
-            "pct": 50.0,
+            "pct": 33.3,
             "methods": {
               "agent_action": 1
             }
@@ -480,23 +529,8 @@
       {
         "category": "other",
         "count": 1,
-        "pct": 1.1,
-        "dollars": 6383,
-        "segments": {
-          "human": {
-            "count": 1,
-            "pct": 100.0,
-            "methods": {
-              "escalated": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "complaint",
-        "count": 1,
-        "pct": 1.1,
-        "dollars": 6383,
+        "pct": 0.6,
+        "dollars": 3488,
         "segments": {
           "human": {
             "count": 1,
@@ -510,49 +544,49 @@
     ],
     "build_queue": [
       {
-        "category": "technical",
+        "category": "information",
         "segment": "automate",
-        "count": 14,
-        "pct": 43.8,
-        "dollars": 89362,
-        "category_count": 32,
-        "self_serve_count": 14,
+        "count": 21,
+        "pct": 75.0,
+        "dollars": 73256,
+        "category_count": 28,
+        "self_serve_count": 21,
         "agentic_count": 0,
         "methods": {
-          "agent_action": 6,
-          "self_serve_guidance": 4,
-          "escalated": 2,
-          "workaround|escalated": 1,
-          "workaround": 1
+          "agent_action": 12,
+          "self_serve_guidance": 8,
+          "escalated": 1
         }
       },
       {
-        "category": "information",
+        "category": "technical",
         "segment": "automate",
-        "count": 12,
-        "pct": 70.6,
-        "dollars": 76596,
-        "category_count": 17,
-        "self_serve_count": 12,
-        "agentic_count": 0,
+        "count": 20,
+        "pct": 32.8,
+        "dollars": 69767,
+        "category_count": 61,
+        "self_serve_count": 19,
+        "agentic_count": 1,
         "methods": {
-          "agent_action": 8,
-          "self_serve_guidance": 3,
-          "escalated": 1
+          "agent_action": 10,
+          "self_serve_guidance": 5,
+          "escalated": 2,
+          "workaround": 2,
+          "workaround|escalated": 1
         }
       },
       {
         "category": "device",
         "segment": "automate",
-        "count": 9,
-        "pct": 42.9,
-        "dollars": 57447,
-        "category_count": 21,
-        "self_serve_count": 9,
-        "agentic_count": 0,
+        "count": 17,
+        "pct": 44.7,
+        "dollars": 59302,
+        "category_count": 38,
+        "self_serve_count": 15,
+        "agentic_count": 2,
         "methods": {
-          "agent_action": 4,
-          "self_serve_guidance": 3,
+          "self_serve_guidance": 7,
+          "agent_action": 8,
           "escalated": 1,
           "workaround": 1
         }
@@ -560,13 +594,15 @@
       {
         "category": "technical",
         "segment": "prevent",
-        "count": 5,
-        "pct": 15.6,
-        "dollars": 31915,
-        "category_count": 32,
+        "count": 15,
+        "pct": 24.6,
+        "dollars": 52326,
+        "category_count": 61,
         "methods": {
-          "agent_action": 3,
-          "escalated": 2
+          "agent_action": 7,
+          "escalated": 4,
+          "workaround": 3,
+          "self_serve_guidance": 1
         }
       }
     ]
@@ -574,29 +610,28 @@
   "token_usage": {
     "model": "claude-haiku-4-5-20251001",
     "provider": "Anthropic (Claude)",
-    "calls_with_usage": 94,
+    "calls_with_usage": 172,
     "calls_missing_usage": 0,
-    "total_prompt_tokens": 369858,
-    "total_completion_tokens": 200991,
+    "total_prompt_tokens": 436703,
+    "total_completion_tokens": 371051,
     "total_cache_creation_tokens": 5613,
-    "total_cache_read_tokens": 190233,
-    "total_tokens": 766695,
-    "avg_prompt_tokens_per_call": 3935.0,
-    "avg_completion_tokens_per_call": 2138.0,
-    "avg_total_tokens_per_call": 8156.0,
-    "total_cost_usd": 1.4051,
-    "avg_cost_per_call_usd": 0.014947,
-    "cache_read_savings_usd": 0.1712,
+    "total_cache_read_tokens": 613773,
+    "total_tokens": 1427140,
+    "avg_prompt_tokens_per_call": 2539.0,
+    "avg_completion_tokens_per_call": 2157.0,
+    "avg_total_tokens_per_call": 8297.0,
+    "total_cost_usd": 2.3646,
+    "avg_cost_per_call_usd": 0.013747,
+    "cache_read_savings_usd": 0.5524,
     "price_input_per_mtok_usd": 1.0,
     "price_output_per_mtok_usd": 5.0,
-    "pricing_note": "claude-haiku-4-5-20251001 \u00b7 Paid tier pricing \u2014 no free tier for Claude Haiku. At 100K calls/mo avg 8,156 tokens/call, monthly inference cost \u2248 $1,494.75 USD."
+    "pricing_note": "claude-haiku-4-5-20251001 \u00b7 Paid tier pricing \u2014 no free tier for Claude Haiku. At 100K calls/mo avg 8,297 tokens/call, monthly inference cost \u2248 $1,374.74 USD."
   },
   "qa_summary": {
-    "data_quality_pass_rate_pct": 43.3,
-    "data_quality_n_failed": 123,
+    "data_quality_pass_rate_pct": 79.3,
+    "data_quality_n_failed": 45,
     "n_low_qa_grade": 0,
-    "n_trusted_for_aggregation": 94,
+    "n_trusted_for_aggregation": 172,
     "n_merged_total": 217
-  },
-  "aht_disclaimer": "Data quality gate passed only 43.3% of the 217 merged calls (123 excluded for phase/timestamp/completeness failures) \u2014 AHT and phase-level cost economics are computed from the smaller trusted subset (94 calls) and should not drive staffing or cost decisions without review."
+  }
 }
