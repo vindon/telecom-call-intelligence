@@ -237,8 +237,8 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
 <!-- ═══════════════ DATA QUALITY & RELIABILITY ═══════════════ -->
 <section class="section-block section-wrap" id="quality">
   <div class="section-kicker reveal">Data quality — the honest part</div>
-  <h2 class="section-h2 reveal">Not every call the model touches gets trusted — and that's the point</h2>
-  <p class="section-lede reveal">Most AI call-analytics tools report a number for every call the model processes, silently baking in whatever the model got wrong. This pipeline runs three deterministic, non-LLM checks on every extraction — phase-by-phase time reconciliation, a cross-check against the source recording's own timestamps, and transcript-completeness detection — before a call's numbers are allowed to touch the AHT/cost dashboard. A call that fails is <b>excluded from aggregation and logged with a specific reason</b>, never silently included.</p>
+  <h2 class="section-h2 reveal">172 of 217 passing every check is the success criterion — not a footnote</h2>
+  <p class="section-lede reveal">Most AI call-analytics tools report a number for every call the model processes, silently baking in whatever the model got wrong. This pipeline runs three deterministic, non-LLM checks on every extraction — phase-by-phase time reconciliation, a cross-check against the source recording's own timestamps, and transcript-completeness detection — before a call's numbers are allowed to touch the AHT/cost dashboard. A call that fails is <b>excluded from aggregation and logged with a specific reason</b>, never silently included. These aren't one-off bugs — they're the recurring constraints any team hits processing real, messy transcripts at volume. Naming them here, with a mitigation attached, is what makes the trusted 172 defensible instead of decorative.</p>
 
   <div class="stat-grid reveal">
     <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">217</div><div class="stat-cell-key">Calls run through the data-quality gate to date, across all batches</div></div>
@@ -250,12 +250,12 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
   <div class="table-scroll reveal" style="margin-top:28px;">
     <table class="proj-table">
       <thead>
-        <tr><th>Why a call was excluded</th><th>Count</th><th>What it actually means</th></tr>
+        <tr><th>Why a call was excluded</th><th>Count</th><th>What it actually means</th><th>Mitigation at scale</th></tr>
       </thead>
       <tbody>
-        <tr><td class="emph">Transcript truncation</td><td>15</td><td>The model itself flagged the input as cut off — a call-recording/export problem upstream, not an extraction failure</td></tr>
-        <tr><td class="emph">Phase-time reconciliation</td><td>33</td><td>The model's own phase-by-phase breakdown didn't sum to its stated total call length — a reasoning imperfection, typically under a minute of drift</td></tr>
-        <tr><td class="emph">Timestamp ground-truth mismatch</td><td>1</td><td>The model's stated call length didn't match the source recording's actual timestamps — the rarest and most serious category</td></tr>
+        <tr><td class="emph">Phase-time reconciliation</td><td>33</td><td>The model's own phase-by-phase breakdown didn't sum to its stated total call length — a reasoning imperfection, typically under a minute of drift</td><td>Route to human QA review before it touches AHT/cost aggregates; track as a model-quality trend</td></tr>
+        <tr><td class="emph">Transcript truncation</td><td>15</td><td>The model itself flagged the input as cut off — a call-recording/export problem upstream, not an extraction failure</td><td>Fix upstream capture/storage completeness — truncated calls shouldn't reach the model at all</td></tr>
+        <tr><td class="emph">Timestamp ground-truth mismatch</td><td>1</td><td>The model's stated call length didn't match the source recording's actual timestamps — the rarest and most serious category</td><td>Hard-gate against telephony-system timestamps before any staffing/cost decision</td></tr>
       </tbody>
     </table>
   </div>

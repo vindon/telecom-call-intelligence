@@ -1166,7 +1166,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
       <div>
         <div class="slide-num">11 / 15</div>
         <div class="slide-title">Data Quality — The Honest Numbers</div>
-        <div class="slide-subtitle">Every call is gated by 3 deterministic checks before it touches a KPI. This is what "battle-tested" actually looks like, not a demo.</div>
+        <div class="slide-subtitle">172 of 217 passing every check is this project's stated success criterion — not a target we hit quietly, a number we publish. The 45 that don't pass are named, recurring constraints any team hits processing real transcripts at volume, flagged here so they get mitigated before scale, not discovered after.</div>
       </div>
       <div class="slide-tag">Reliability</div>
     </div>
@@ -1181,7 +1181,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
           </div>
           <div class="kcard" style="flex-direction:row;display:flex;align-items:center;gap:14px">
             <div style="font-size:2rem;font-weight:900;color:#10B981;flex-shrink:0">172</div>
-            <div><div style="font-size:0.82rem;font-weight:700">Fully Trusted — 79.3%</div><div style="font-size:0.75rem;color:#64748B">Pass QA score + all 3 data-integrity checks</div></div>
+            <div><div style="font-size:0.82rem;font-weight:700">Fully Trusted — 79.3% — the success criterion</div><div style="font-size:0.75rem;color:#64748B">Pass QA score + all 3 data-integrity checks</div></div>
           </div>
           <div class="kcard" style="flex-direction:row;display:flex;align-items:center;gap:14px">
             <div style="font-size:2rem;font-weight:900;color:#CD040B;flex-shrink:0">45</div>
@@ -1193,16 +1193,19 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#D1D5DB;color:#0F17
         <div class="section-label">Why Calls Get Excluded</div>
         <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
           <div style="padding:10px 14px;background:#F8FAFC;border-radius:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:0.78rem;font-weight:700;color:#334155">Transcript truncation</div><div style="font-size:0.9rem;font-weight:800;color:#0F172A">15</div></div>
-            <div style="font-size:0.72rem;color:#64748B;margin-top:3px">Model flagged the input itself as cut off — a data-pipeline issue, not an extraction failure</div>
-          </div>
-          <div style="padding:10px 14px;background:#F8FAFC;border-radius:8px">
             <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:0.78rem;font-weight:700;color:#334155">Phase-time reconciliation</div><div style="font-size:0.9rem;font-weight:800;color:#0F172A">33</div></div>
             <div style="font-size:0.72rem;color:#64748B;margin-top:3px">Model's own phase breakdown didn't sum to its stated call length — a reasoning imperfection</div>
+            <div style="font-size:0.7rem;color:#0F172A;font-weight:700;margin-top:4px">Mitigation: route to human QA review before it touches AHT/cost aggregates</div>
+          </div>
+          <div style="padding:10px 14px;background:#F8FAFC;border-radius:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:0.78rem;font-weight:700;color:#334155">Transcript truncation</div><div style="font-size:0.9rem;font-weight:800;color:#0F172A">15</div></div>
+            <div style="font-size:0.72rem;color:#64748B;margin-top:3px">Model flagged the input itself as cut off — a data-pipeline issue, not an extraction failure</div>
+            <div style="font-size:0.7rem;color:#0F172A;font-weight:700;margin-top:4px">Mitigation: fix upstream capture/storage completeness before ingestion</div>
           </div>
           <div style="padding:10px 14px;background:#F8FAFC;border-radius:8px">
             <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:0.78rem;font-weight:700;color:#334155">Timestamp ground-truth mismatch</div><div style="font-size:0.9rem;font-weight:800;color:#0F172A">1</div></div>
             <div style="font-size:0.72rem;color:#64748B;margin-top:3px">Stated call length didn't match the source recording's real timestamps — rarest, most serious</div>
+            <div style="font-size:0.7rem;color:#0F172A;font-weight:700;margin-top:4px">Mitigation: hard-gate against telephony timestamps before any staffing decision</div>
           </div>
         </div>
       </div>

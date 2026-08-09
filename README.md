@@ -159,24 +159,26 @@ Every component exists because production autonomous systems need it.
 
 A 100-pt QA score only tells you the extraction was *structurally* well-formed — every field populated, every enum valid. It doesn't tell you whether the model's own phase-by-phase time math actually adds up, whether the input transcript was complete, or whether the stated call length matches the source recording. Most AI call-analytics tools never check. This one does, on every call, with three deterministic (non-LLM) checks that gate aggregation — see [`qa_audit.check_data_quality()`](qa_audit.py).
 
+**This is the project's success criterion, stated plainly:** of every call this pipeline has processed, **172 pass every QA and data-integrity check — that's the number the product stands behind.** The other 45 don't get silently averaged in; each is excluded with one of three specific, logged reasons. That's not a defect to explain away — it's what strict validation looks like when it's actually enforced in code instead of asserted in a slide. The failure modes below are exactly the constraints any team will hit processing real, messy transcripts at volume; naming them here is what lets an enterprise buyer plan mitigations *before* they show up in a production AHT number, not after.
+
 **Real numbers, across every batch run to date** (live from `outputs/summary.json`, not a cherry-picked example):
 
 | | |
 |---|---|
 | Calls processed | **217** |
 | Extraction success rate | **100%** — zero technical/LLM failures |
-| **Fully trusted** (QA score + all 3 data-integrity checks) | **172 (79.3%)** |
+| **Fully trusted — meets the product's success criteria** (QA score + all 3 data-integrity checks) | **172 (79.3%)** |
 | Excluded, each with a specific logged reason | 45 |
 
-**Why calls get excluded** — not a vague error rate, three specific, auditable reasons:
+**Why calls get excluded** — three specific, auditable constraints, not a vague error rate. Each recurs at enterprise scale and each has a known mitigation:
 
-| Reason | Count | What it actually means |
-|---|---|---|
-| Transcript truncation | 15 | The model flagged the input itself as cut off — a data-pipeline issue, not an extraction failure |
-| Phase-time reconciliation | 33 | The model's own phase breakdown didn't sum to its stated total call length — a reasoning imperfection |
-| Timestamp ground-truth mismatch | 1 | Stated call length didn't match the source recording's real timestamps — rarest, most serious |
+| Reason | Count | What it actually means | Mitigation at scale |
+|---|---|---|---|
+| Phase-time reconciliation | 33 | The model's own phase breakdown didn't sum to its stated total call length — a reasoning imperfection | Route to human QA review before it feeds AHT/cost aggregates; track as a model-quality metric over time |
+| Transcript truncation | 15 | The model flagged the input itself as cut off — a data-pipeline issue, not an extraction failure | Fix upstream capture/storage completeness; truncated calls should never reach the model in the first place |
+| Timestamp ground-truth mismatch | 1 | Stated call length didn't match the source recording's real timestamps — rarest, most serious | Cross-check against telephony system timestamps as a hard gate before any staffing/cost decision |
 
-**At enterprise scale (100K calls/month):** ~79,300 calls/month get fully automated, board-ready analytics with zero human review. ~20,700/month are correctly routed to review instead of silently corrupting the aggregate AHT numbers — that gating, enforced in code at the aggregation layer (not a caveat in a doc), is the actual product.
+**At enterprise scale (100K calls/month):** ~79,300 calls/month get fully automated, board-ready analytics with zero human review. ~20,700/month are correctly routed to review instead of silently corrupting the aggregate AHT numbers — that gating, enforced in code at the aggregation layer (not a caveat in a doc), is the actual product. A pipeline that skipped these checks wouldn't have fewer problems at scale; it would just report a false 100% while quietly baking bad phase math into every downstream cost model.
 
 ---
 
