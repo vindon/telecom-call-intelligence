@@ -240,6 +240,17 @@ table.metrics-table td.msrc{color:#475569;font-size:0.77rem;}
   <h2 class="section-h2 reveal">172 of 217 passing every check is the success criterion — not a footnote</h2>
   <p class="section-lede reveal">Most AI call-analytics tools report a number for every call the model processes, silently baking in whatever the model got wrong. This pipeline runs three deterministic, non-LLM checks on every extraction — phase-by-phase time reconciliation, a cross-check against the source recording's own timestamps, and transcript-completeness detection — before a call's numbers are allowed to touch the AHT/cost dashboard. A call that fails is <b>excluded from aggregation and logged with a specific reason</b>, never silently included. These aren't one-off bugs — they're the recurring constraints any team hits processing real, messy transcripts at volume. Naming them here, with a mitigation attached, is what makes the trusted 172 defensible instead of decorative.</p>
 
+  <div class="reveal" style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;">
+    <div style="flex:1;min-width:260px;background:#F8FAFC;border-radius:12px;padding:16px 20px;">
+      <div style="font-size:0.7rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#94A3B8;margin-bottom:4px;">Check 1 — QA Score (0–100 per call)</div>
+      <div style="font-size:0.85rem;color:#334155;line-height:1.55;">Did the LLM extract this call's 70+ fields correctly — completeness, valid enums, internal consistency, plausible ranges? A call can score 100/100 here and still fail Check 2 below.</div>
+    </div>
+    <div style="flex:1;min-width:260px;background:#F8FAFC;border-radius:12px;padding:16px 20px;border-left:3px solid #CD040B;">
+      <div style="font-size:0.7rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#94A3B8;margin-bottom:4px;">Check 2 — Data Quality Gate (pass/fail per call)</div>
+      <div style="font-size:0.85rem;color:#334155;line-height:1.55;">Can this call's <b>time data</b> be trusted? This is the check the 217/172 numbers below come from — it exists specifically to protect the Cost-to-Serve / Cost-to-Sell / Cost-to-Retain P&L split shown on the live dashboard, which is computed as a direct proportion of each call's phase-duration fields.</div>
+    </div>
+  </div>
+
   <div class="stat-grid reveal">
     <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">217</div><div class="stat-cell-key">Calls run through the data-quality gate to date, across all batches</div></div>
     <div class="stat-cell"><span class="badge badge-measured">Measured</span><div class="stat-cell-val">172 / 79.3%</div><div class="stat-cell-key">Pass all three checks — fully trusted for board-level AHT/cost reporting</div></div>

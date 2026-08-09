@@ -125,6 +125,12 @@ Named decision types: `transcript_skip`, `pii_redaction`, `react_trigger`, `reac
 
 ### Data quality gate — AHT/timestamp integrity (separate from the 100-pt QA score)
 
+**Two named, independent checks — do not conflate them in docs, UI copy, or code comments:**
+- **QA Score** (0-100, `qa_audit.audit_record()`) answers "did the LLM extract this call's fields correctly?" — completeness/enum-validity/consistency/plausibility of the extraction itself.
+- **Data Quality Gate** (pass/fail, `qa_audit.check_data_quality()`) answers "can this call's *time data* be trusted?" — a call can score 100/100 on the QA Score and still fail this gate.
+
+The Data Quality Gate exists specifically to protect cost-lever accuracy: `pipeline/aggregator.py::_phase_pnl()` allocates the entire Cost-to-Serve (P1-P4) / Cost-to-Sell (P5) / Cost-to-Retain (cross-cutting) monthly-cost split in direct proportion to each call's phase-duration fields. If a call's phase reconciliation is broken and it isn't excluded, every downstream dollar figure (the dashboard's hero "Cost to Serve $XXXk/mo", the enterprise cost projection) is wrong by the same proportion — silently, since the QA Score alone can't see it. This is why the gate is a separate pass/fail check feeding `AggregationAgent`, not a 4th dimension folded into the 100-pt score.
+
 Phase-level AHT breakdowns and `total_duration_seconds` are LLM-inferred from transcript text, not measured. `QualityAgent` runs three deterministic (non-LLM) checks per call via `qa_audit.check_data_quality()`, in addition to the 100-pt score:
 
 - **Phase reconciliation** — sum of the 6 `SEQUENTIAL_PHASE_FIELDS` (welcome, discovery, diagnosis, resolution, hold, closing) must not exceed `total_duration_seconds` beyond `PHASE_RECONCILIATION_TOLERANCE_S`/`_PCT` (config.py). `OVERLAY_PHASE_FIELDS` (upsell, relationship_building) are deliberately **excluded** from this sum — they describe activity happening *during* a sequential phase (e.g. an upsell pitch mid-Diagnosis), not additional wall-clock time; summing all 8 fields was a real bug that produced false-positive failures on ~73% of correctly-extracted calls (found and fixed 2026-08-09 against 200 real extractions — see `qa_audit.py`'s field-group docstrings). Overlay fields get their own non-blocking sanity bound via `check_overlay_plausibility()`. Regression-tested in `tests/test_qa_audit_phase_reconciliation.py`.

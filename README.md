@@ -137,14 +137,16 @@ Every component exists because production autonomous systems need it.
 
 ---
 
-## Results (100-call production run)
+## Results (representative single-batch run)
+
+Pipeline mechanics for a typical single run — cost, runtime, extraction reliability. For the cumulative, honest **pass/fail picture across every call this pipeline has ever processed** (the number that actually gates cost-lever accuracy), see "Proven at scale" below — the two are answering different questions and are not the same metric.
 
 | Metric | Value |
 |--------|-------|
 | Calls analysed | 100 |
 | Fields extracted per call | 70+ |
-| QA pass rate | Typically 90–99% |
-| Avg QA score | 85–99 / 100 |
+| **QA Score** pass rate (HIGH+MEDIUM — extraction was well-formed; *not* the Data Quality Gate, see below) | Typically 90–99% |
+| Avg QA Score | 85–99 / 100 |
 | Pipeline runtime | ~8 min (5 × 20 batches, 2s inter-call delay) |
 | Extraction cost (Claude Haiku) | ~$0.76 / 100 calls (~$0.0076/call) |
 | Extraction cost (Gemini free tier) | ~$0.00 / 100 calls (free-tier eligible) |
@@ -157,7 +159,18 @@ Every component exists because production autonomous systems need it.
 
 ## Proven at scale — the data-quality story, told honestly
 
-A 100-pt QA score only tells you the extraction was *structurally* well-formed — every field populated, every enum valid. It doesn't tell you whether the model's own phase-by-phase time math actually adds up, whether the input transcript was complete, or whether the stated call length matches the source recording. Most AI call-analytics tools never check. This one does, on every call, with three deterministic (non-LLM) checks that gate aggregation — see [`qa_audit.check_data_quality()`](qa_audit.py).
+**Two separate checks decide whether a call counts, and they answer different questions:**
+
+| | QA Score | Data Quality Gate |
+|---|---|---|
+| **Question it answers** | Did the LLM extract this call's 70+ fields correctly? | Can this call's *time data* be trusted for AHT and cost-lever attribution? |
+| **Scale** | 0–100, weighted rubric | Pass / fail, 3 deterministic checks |
+| **What it checks** | Field completeness, enum validity, cross-field consistency, plausibility | Phase-time reconciliation, timestamp ground-truth vs. the source recording, transcript completeness |
+| **Can it be gamed by a well-formed extraction?** | — | No — a call can score 100/100 on the left and still fail here |
+
+They're kept separate on purpose. A 100-pt QA score only tells you the extraction was *structurally* well-formed — every field populated, every enum valid. It doesn't tell you whether the model's own phase-by-phase time math actually adds up, whether the input transcript was complete, or whether the stated call length matches the source recording. Most AI call-analytics tools never check that second thing. This one does, on every call, with three deterministic (non-LLM) checks — see [`qa_audit.check_data_quality()`](qa_audit.py).
+
+**Why the Data Quality Gate exists — it protects the product's core value proposition.** Every cost-lever dollar figure this product produces (Cost to Serve / Cost to Sell / Cost to Retain, and the enterprise cost-to-serve projection) is computed by [`aggregator.py::_phase_pnl()`](pipeline/aggregator.py) as a direct proportion of each call's phase-duration fields. If a call's phase times don't reconcile and it isn't excluded, its minutes get misattributed across those buckets and every downstream dollar figure is wrong by the same proportion — silently, since a well-formed (high-QA-Score) extraction wouldn't flag it. The product's success is defined as *near-accurate representation of AHT segmented by cost lever* — this gate is the mechanism that makes that claim defensible instead of asserted.
 
 **This is the project's success criterion, stated plainly:** of every call this pipeline has processed, **172 pass every QA and data-integrity check — that's the number the product stands behind.** The other 45 don't get silently averaged in; each is excluded with one of three specific, logged reasons. That's not a defect to explain away — it's what strict validation looks like when it's actually enforced in code instead of asserted in a slide. The failure modes below are exactly the constraints any team will hit processing real, messy transcripts at volume; naming them here is what lets an enterprise buyer plan mitigations *before* they show up in a production AHT number, not after.
 

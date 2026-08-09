@@ -340,7 +340,9 @@ Each agent is a **stateless class** with a single `run(state: dict) -> dict` met
 
 ### Agent 3 — QualityAgent (`pipeline/agents/quality_agent.py`)
 
-**Responsibilities:** Inline 100-point QA scoring; record all exclusion decisions.
+**Responsibilities:** Runs TWO independent, named checks per call — the **QA Score** and the **Data Quality Gate** — and records every exclusion decision. Do not conflate the two; they answer different questions and a call can pass one while failing the other.
+
+#### Check 1 — QA Score (0–100): "was the extraction done correctly?"
 
 | Dimension | Points | What is checked |
 |-----------|--------|-----------------|
@@ -355,13 +357,17 @@ Each agent is a **stateless class** with a single `run(state: dict) -> dict` met
 
 **Dynamic routing:** If `QualityGate` fires (pass rate < 40%), `_quality_gate_failed` is set in `qa_report` and the graph routes directly to ExportAgent.
 
-**Data quality gate (separate from the 100-pt score):** three deterministic, non-LLM checks (`qa_audit.check_data_quality()`) run per call and gate aggregation the same way a `LOW` QA grade does — a record can score 100/100 on the rubric above and still be excluded here:
+#### Check 2 — Data Quality Gate (pass/fail): "can this call's time data be trusted?"
+
+Three deterministic, non-LLM checks (`qa_audit.check_data_quality()`) that gate aggregation the same way a `LOW` QA Score does — **a record can score 100/100 on Check 1 above and still be excluded here**, because this isn't grading the extraction, it's verifying the underlying minutes:
 
 | Check | What it verifies |
 |-------|-------------------|
 | Phase reconciliation | Sum of the 6 sequential phase durations (welcome → closing) reconciles to `total_duration_seconds`, within tolerance. The 2 overlay fields (upsell, relationship-building) describe concurrent activity, not additive time, and are excluded from the sum. |
 | Timestamp ground truth | `total_duration_seconds` cross-checked against `_raw_duration_seconds`, the actual first-to-last-turn span from the source dataset's own timestamps. |
 | Transcript completeness | LLM-graded `transcript_truncated` field, corroborated by a free heuristic (`looks_truncated_heuristic()`, evidence-only, never gates alone). |
+
+**Why this gate exists, concretely:** `pipeline/aggregator.py::_phase_pnl()` allocates the entire Cost-to-Serve (P1-P4) / Cost-to-Sell (P5) / Cost-to-Retain (cross-cutting) monthly-cost split — the dashboard's hero cost panel — in direct proportion to `phase_avg_seconds`, computed only from records in `qa_passed_results`. An unreconciled call let through would misattribute its minutes across those three buckets and skew every downstream dollar figure by the same proportion; the QA Score alone cannot detect this because the extraction itself is well-formed. The product's stated success criterion — a near-accurate representation of AHT segmented by cost lever — depends on this gate, not on Check 1.
 
 Records failing any check get `_dq_gate_passed=False` and are excluded from `qa_passed_results` alongside `LOW`-grade records. Dataset-level `data_quality_pass_rate_pct` and a `data_quality_failure_breakdown` (`{check_name: count}`) roll into `qa_report["summary"]`; on the 217 real calls processed to date, 172 (79.3%) pass — 45 excluded (`phase_reconciliation` ×33, `transcript_truncation` ×15, `timestamp_ground_truth` ×1). Below `QUALITY_WARN_RATE`, an `aht_disclaimer` string is computed and rendered as a live banner in the dashboard (`.data-disclaimer`, `dashboard/app.py`); the same funnel and breakdown power a dedicated "Data Quality Gate" panel in the dashboard's QA & Pipeline Health tab.
 

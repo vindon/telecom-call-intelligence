@@ -263,6 +263,13 @@ def _phase_pnl(phase_avg_seconds: dict, baseline_monthly_cost: float) -> dict:
     Allocate the monthly cost baseline across Serve/Sell/Retain in proportion
     to average phase duration — a time-based P&L, distinct from the
     issue-category-based cost_levers above.
+
+    This is the reason the Data Quality Gate exists (qa_audit.py): every
+    dollar figure here is a direct proportion of phase_avg_seconds, and
+    `results` upstream (AggregationAgent) is already restricted to records
+    that passed the gate's phase-reconciliation check — an unreconciled
+    call's phase durations would silently misattribute cost between the
+    three buckets below.
     """
     total = sum(phase_avg_seconds.values()) or 1
     out = {}

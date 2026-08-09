@@ -3,12 +3,51 @@ qa_audit.py
 -----------
 QA audit engine for pipeline outputs.
 
-Scoring model (100 points per call)
--------------------------------------
-  Completeness  30 pts — required fields are non-null and non-empty
-  Enum validity 25 pts — string fields match the allowed value set
-  Consistency   25 pts — cross-field logical rules hold
-  Plausibility  20 pts — numeric ranges and derived relationships are sane
+This module implements TWO independent checks. They are named and scoped
+differently on purpose, and both must pass for a call to feed AHT/cost-lever
+KPIs — see "Why two checks" below for why conflating them would be a real bug.
+
+1. QA SCORE (0-100, `audit_record()` / `score_*` functions below)
+   ------------------------------------------------------------------
+   Question answered: "Did the LLM extract this call's 70+ fields correctly?"
+   A structural/semantic grade of the EXTRACTION ITSELF — not the call, not
+   the timing. Four weighted dimensions:
+     Completeness  30 pts — required fields are non-null and non-empty
+     Enum validity 25 pts — string fields match the allowed value set
+     Consistency   25 pts — cross-field logical rules hold (e.g. FCR ≠ escalation)
+     Plausibility  20 pts — numeric ranges and derived relationships are sane
+   Grade bands: HIGH ≥85 · MEDIUM 60-84 · LOW <60 (excluded from aggregation).
+   A call can score 100/100 here and still fail check #2 below — a
+   well-formed extraction is not the same thing as trustworthy time data.
+
+2. DATA QUALITY GATE (pass/fail, `check_data_quality()`)
+   ------------------------------------------------------------------
+   Question answered: "Can this call's TIME data be trusted to compute AHT
+   and the Serve/Sell/Retain cost-lever P&L?" Three deterministic, non-LLM
+   checks — see `check_phase_reconciliation()`, `check_timestamp_ground_truth()`,
+   `check_transcript_completeness()` below. This is the check that matters
+   for the product's core value proposition: `pipeline/aggregator.py`'s
+   `_phase_pnl()` allocates the entire monthly cost baseline across
+   Cost-to-Serve (P1-P4) / Cost-to-Sell (P5) / Cost-to-Retain (cross-cutting)
+   IN DIRECT PROPORTION to each call's average phase-duration fields. If a
+   call's phase durations don't reconcile to its total call length, that
+   call's minutes are misattributed across those three buckets, and every
+   dollar figure downstream of it (the hero "$482K/mo Cost to Serve" number,
+   the enterprise cost-to-serve projection, etc.) is wrong by the same
+   proportion — silently, because the QA score alone would never catch it.
+   That's why this is a separate, stricter, pass/fail gate rather than a
+   4th dimension folded into the 100-pt score: a data-integrity fact about
+   whether the underlying minutes can be trusted, not a quality nuance.
+
+Why two checks, not one
+------------------------
+`AggregationAgent` (and therefore every cost-lever number in this product)
+only ever sees records that pass BOTH: QA grade != LOW, AND the data quality
+gate. Records failing either are excluded from aggregation and logged with
+the specific reason — never silently averaged in. See
+`pipeline/agents/quality_agent.py` for where both checks are combined per call,
+and `pipeline/aggregator.py::_phase_pnl()` for the exact cost-lever computation
+this gate protects.
 
 Aggregate report is written to:
   outputs/qa_report_{ts}.json

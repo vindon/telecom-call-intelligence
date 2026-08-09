@@ -4,8 +4,14 @@ AggregationAgent  —  Agent 4 of 6
 Computes all executive KPIs, distributions, and cost-lever estimates
 from the QA-passed extraction results.
 
-Receives qa_passed_results from QualityAgent (LOW-grade records excluded).
-Falls back to the full analysis_results if QA was skipped.
+Receives qa_passed_results from QualityAgent — records excluded for either
+reason: LOW QA score (extraction was poorly formed) OR failed the data
+quality gate (phase/timestamp/completeness — extraction was well-formed but
+the call's time data can't be trusted). Both exclusions matter here because
+cost-lever allocation (_phase_pnl in aggregator.py) is computed directly from
+phase-duration fields — see qa_audit.py's module docstring for why the two
+checks are kept separate. Falls back to the full analysis_results if QA was
+skipped.
 
 Outputs injected into PipelineState:
   aggregated_metrics — full KPI dict (see aggregator.py for schema)

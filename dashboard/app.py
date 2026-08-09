@@ -1543,7 +1543,9 @@ def main():
         '</div>'
         f'<div class="data-footnote">* Dataset avg AHT = {aht_secs}s. '
         f'Enterprise calls typically 600–1,100s — multiply $ figures by your AHT ÷ {aht_secs} '
-        f'for a live deployment estimate.</div>'
+        f'for a live deployment estimate. Serve/Sell/Retain split is computed only from calls that '
+        f'passed the Data Quality Gate (see QA & Pipeline Health tab) — phase-time data on excluded '
+        f'calls never touches this allocation.</div>'
         '</div>'
     )
     _right_panel = (
@@ -2321,6 +2323,19 @@ def main():
         qa_summary = data.get("qa_summary", {})
         if qa_summary:
             _sec("Data Quality Gate — The Honest Numbers")
+            st.markdown(
+                "<div style='display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;'>"
+                "<div style='flex:1;min-width:260px;background:#F8FAFC;border-radius:10px;padding:14px 18px;'>"
+                "<div style='font-size:0.68rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:4px;'>Check 1 — QA Score (0–100 / call)</div>"
+                "<div style='font-size:0.82rem;color:#334155;line-height:1.5;'>Did the LLM extract this call's 70+ fields correctly? See the KPI Scorecard below — a call can score 100/100 here and still fail Check 2.</div>"
+                "</div>"
+                "<div style='flex:1;min-width:260px;background:#F8FAFC;border-radius:10px;padding:14px 18px;border-left:3px solid #DC2626;'>"
+                "<div style='font-size:0.68rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:4px;'>Check 2 — Data Quality Gate (pass/fail / call)</div>"
+                "<div style='font-size:0.82rem;color:#334155;line-height:1.5;'>Can this call's <b>time data</b> be trusted? This is what the panel below measures — it's what protects the Cost to Serve/Sell/Retain split on the Cost to Serve tab.</div>"
+                "</div>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
             st.markdown(
                 "<div style='font-size:0.88rem;color:#64748B;line-height:1.65;margin-bottom:18px;'>"
                 "<b>172 of 217 calls passing every check is this project's stated success criterion</b> — not a "
