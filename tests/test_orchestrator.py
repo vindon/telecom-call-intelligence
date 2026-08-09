@@ -1,10 +1,21 @@
 """
-Tests for pipeline/orchestrator.py — BatchTask, WorkPlanner, AgentHealthMonitor.
-Orchestrator._run_task() (which spawns subprocesses) is covered by integration tests only.
+Tests for pipeline/orchestrator.py — BatchTask, WorkPlanner, AgentHealthMonitor,
+and the strict human-intervention failure policy (halt-on-first-failure).
+Orchestrator._run_task() itself (which spawns real subprocesses) is exercised
+here only via monkeypatching — real subprocess spawning is integration-tested
+manually (see smoke_test.py --live), not in the unit suite.
 """
 
+import json
 
-from pipeline.orchestrator import AgentHealthMonitor, BatchTask, WorkPlanner
+import pipeline.orchestrator as orchestrator_module
+from pipeline.orchestrator import (
+    AgentHealthMonitor,
+    BatchTask,
+    Orchestrator,
+    WorkPlanner,
+    clear_halt_sentinel,
+)
 
 # ── BatchTask ─────────────────────────────────────────────────────────
 
@@ -21,33 +32,9 @@ class TestBatchTask:
         task = self._task(offset=0, n_calls=20, seed=42)
         assert task.checkpoint_key == "offset0_n20_seed42"
 
-    def test_can_retry_when_failed_and_under_limit(self):
-        task = self._task(status="failed", attempts=1, max_retries=2)
-        assert task.can_retry is True
-
-    def test_can_retry_when_zero_attempts(self):
-        task = self._task(status="failed", attempts=0, max_retries=2)
-        assert task.can_retry is True
-
-    def test_cannot_retry_at_max_retries(self):
-        task = self._task(status="failed", attempts=2, max_retries=2)
-        assert task.can_retry is False
-
-    def test_cannot_retry_when_done(self):
-        task = self._task(status="done", attempts=0, max_retries=2)
-        assert task.can_retry is False
-
-    def test_cannot_retry_when_pending(self):
-        task = self._task(status="pending", attempts=0, max_retries=2)
-        assert task.can_retry is False
-
     def test_default_status_is_pending(self):
         task = self._task()
         assert task.status == "pending"
-
-    def test_default_attempts_is_zero(self):
-        task = self._task()
-        assert task.attempts == 0
 
 
 # ── WorkPlanner ───────────────────────────────────────────────────────
@@ -89,10 +76,6 @@ class TestWorkPlanner:
         tasks = WorkPlanner.plan(total_calls=40, batch_size=20, delay=3.5)
         assert all(t.delay == 3.5 for t in tasks)
 
-    def test_plan_max_retries_propagated(self):
-        tasks = WorkPlanner.plan(total_calls=40, batch_size=20, max_retries=5)
-        assert all(t.max_retries == 5 for t in tasks)
-
     def test_plan_100_calls_5_batches(self):
         tasks = WorkPlanner.plan(total_calls=100, batch_size=20)
         assert len(tasks) == 5
@@ -109,6 +92,122 @@ class TestWorkPlanner:
         est_20  = WorkPlanner.estimate_duration(tasks_20,  avg_call_s=10.0)
         est_100 = WorkPlanner.estimate_duration(tasks_100, avg_call_s=10.0)
         assert est_100 > est_20
+
+
+# ── Strict human-intervention failure policy ────────────────────────────
+# The first task failure must halt the entire run immediately — no
+# auto-retry, no proceeding to the next batch — and write a sentinel that
+# blocks every subsequent orchestration run until a human clears it. This
+# replaced an auto-retry loop that, in production on 2026-08-09, silently
+# retried a hung batch twice before a human noticed the wasted spend.
+
+class TestStrictFailurePolicy:
+    def _patch_sentinels(self, monkeypatch, tmp_path):
+        for name in ("_HALT_SENTINEL", "_QUOTA_SENTINEL", "_NVIDIA_SENTINEL"):
+            monkeypatch.setattr(orchestrator_module, name, tmp_path / f"{name}.json")
+
+    def test_halts_on_first_failure_no_further_tasks_run(self, monkeypatch, tmp_path):
+        self._patch_sentinels(monkeypatch, tmp_path)
+        orch = Orchestrator(total_calls=60, batch_size=20, rate_limit_rpm=999)
+        ran: list[int] = []
+
+        def fake_run_task(task):
+            ran.append(task.task_id)
+            task.status    = "failed"
+            task.error_msg = "simulated failure"
+
+        monkeypatch.setattr(orch, "_run_task", fake_run_task)
+        report = orch.run()
+
+        assert ran == [1]  # tasks 2 and 3 never started
+        assert report["execution_summary"]["tasks_done"] == 0
+        assert report["execution_summary"]["tasks_failed"] == 1
+        assert orchestrator_module._HALT_SENTINEL.exists()
+
+    def test_halt_sentinel_records_failure_details(self, monkeypatch, tmp_path):
+        self._patch_sentinels(monkeypatch, tmp_path)
+        orch = Orchestrator(total_calls=20, batch_size=20, rate_limit_rpm=999)
+
+        def fake_run_task(task):
+            task.status    = "failed"
+            task.error_msg = "timeout (600s)"
+            task.exit_code = -1
+
+        monkeypatch.setattr(orch, "_run_task", fake_run_task)
+        orch.run()
+
+        halt = json.loads(orchestrator_module._HALT_SENTINEL.read_text())
+        assert halt["task_id"] == 1
+        assert halt["offset"] == 0
+        assert halt["error"] == "timeout (600s)"
+        assert "human-intervention" in halt["reason"]
+
+    def test_halt_sentinel_blocks_next_run(self, monkeypatch, tmp_path):
+        self._patch_sentinels(monkeypatch, tmp_path)
+        orchestrator_module._HALT_SENTINEL.write_text(json.dumps({
+            "halted_at": "2026-01-01T00:00:00", "task_id": 1, "offset": 0, "n_calls": 20,
+            "error": "timeout", "reason": "test", "tasks_completed_before_halt": [],
+        }))
+        orch = Orchestrator(total_calls=20, batch_size=20, rate_limit_rpm=999)
+        called: list[int] = []
+        monkeypatch.setattr(orch, "_run_task", lambda task: called.append(task.task_id))
+
+        report = orch.run()
+
+        assert called == []  # run() must refuse to start any task while halted
+        assert report["halted_pending_review"] is True
+
+    def test_successful_run_does_not_write_halt_sentinel(self, monkeypatch, tmp_path):
+        self._patch_sentinels(monkeypatch, tmp_path)
+        orch = Orchestrator(total_calls=20, batch_size=20, rate_limit_rpm=999)
+        monkeypatch.setattr(orch, "_run_task", lambda task: setattr(task, "status", "done"))
+        orch.run()
+        assert not orchestrator_module._HALT_SENTINEL.exists()
+
+    def test_clear_halt_sentinel_removes_file(self, monkeypatch, tmp_path):
+        self._patch_sentinels(monkeypatch, tmp_path)
+        orchestrator_module._HALT_SENTINEL.write_text("{}")
+        assert clear_halt_sentinel() is True
+        assert not orchestrator_module._HALT_SENTINEL.exists()
+
+    def test_clear_halt_sentinel_noop_when_absent(self, monkeypatch, tmp_path):
+        self._patch_sentinels(monkeypatch, tmp_path)
+        assert clear_halt_sentinel() is False
+
+    def test_timeout_records_health_failure(self, monkeypatch, tmp_path):
+        """A hung batch (subprocess.TimeoutExpired) must count against agent
+        health the same way an exit-code failure does — this was silently
+        skipped before (only the exit!=0 branch called health.record())."""
+        self._patch_sentinels(monkeypatch, tmp_path)
+        orch = Orchestrator(total_calls=20, batch_size=20, rate_limit_rpm=999)
+
+        def fake_subprocess_run(*args, **kwargs):
+            import subprocess
+            raise subprocess.TimeoutExpired(cmd="run_pipeline.py", timeout=600)
+
+        monkeypatch.setattr(orchestrator_module.subprocess, "run", fake_subprocess_run)
+        orch._run_task(orch.tasks[0])
+
+        assert orch.tasks[0].status == "failed"
+        assert orch.tasks[0].error_msg == "timeout (600s)"
+        health = orch.health.summary()
+        assert health["ExtractionAgent"]["success_rate_pct"] == 0.0
+        assert health["ExtractionAgent"]["calls"] == 1
+
+    def test_unexpected_exception_records_health_failure(self, monkeypatch, tmp_path):
+        self._patch_sentinels(monkeypatch, tmp_path)
+        orch = Orchestrator(total_calls=20, batch_size=20, rate_limit_rpm=999)
+
+        def fake_subprocess_run(*args, **kwargs):
+            raise OSError("simulated crash")
+
+        monkeypatch.setattr(orchestrator_module.subprocess, "run", fake_subprocess_run)
+        orch._run_task(orch.tasks[0])
+
+        assert orch.tasks[0].status == "failed"
+        health = orch.health.summary()
+        assert health["ExtractionAgent"]["success_rate_pct"] == 0.0
+        assert health["ExtractionAgent"]["calls"] == 1
 
 
 # ── AgentHealthMonitor ────────────────────────────────────────────────

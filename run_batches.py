@@ -3,9 +3,11 @@ run_batches.py
 --------------
 Entry point for multi-batch orchestration of the Telecom Call Intelligence pipeline.
 
-Delegates all batch scheduling, health monitoring, and retry logic to
-pipeline.orchestrator.Orchestrator. After all batches complete, optionally
-merges outputs and runs a QA audit across the combined dataset.
+Delegates all batch scheduling, health monitoring, and the strict failure
+policy to pipeline.orchestrator.Orchestrator: the first batch failure halts
+the entire run and requires explicit human review before any further batch
+runs are allowed (see --acknowledge-halt). After all batches complete,
+optionally merges outputs and runs a QA audit across the combined dataset.
 
 Default config  : 5 batches × 20 calls = 100 total calls
 
@@ -17,7 +19,8 @@ Usage
   python run_batches.py --seed 99             # Reproducible alternate sample
   python run_batches.py --delay 2.5           # Slower API pacing
   python run_batches.py --skip-merge          # Batches only, no post-processing
-  python run_batches.py --retries 3           # Up to 3 retry attempts per batch
+  python run_batches.py --start-offset 200    # Fresh sample, skips offsets already used
+  python run_batches.py --acknowledge-halt    # Clear a prior halt and proceed (after review)
 """
 
 import argparse
@@ -32,11 +35,10 @@ load_dotenv()
 from pipeline.config import (  # noqa: E402
     DEFAULT_BATCH_SIZE,
     DEFAULT_DELAY_S,
-    DEFAULT_MAX_RETRIES,
     DEFAULT_RATE_LIMIT_RPM,
     DEFAULT_SEED,
 )
-from pipeline.orchestrator import Orchestrator  # noqa: E402
+from pipeline.orchestrator import Orchestrator, clear_halt_sentinel  # noqa: E402
 
 
 def _run_subprocess(cmd: list[str], label: str) -> bool:
@@ -70,12 +72,20 @@ def main() -> None:
         help="Random seed for reproducible transcript sampling (default: 42).",
     )
     parser.add_argument(
+        "--start-offset", type=int, default=0,
+        help="Offset of the first batch (default: 0). Batches always start at 0 "
+             "otherwise, so re-running with the same seed reprocesses the same "
+             "conversations — pass a value beyond any previous run's "
+             "offset+n_calls to guarantee a fresh, non-overlapping sample.",
+    )
+    parser.add_argument(
         "--delay", type=float, default=DEFAULT_DELAY_S,
         help="Seconds between LLM API calls within each batch (default: 2.0).",
     )
     parser.add_argument(
-        "--retries", type=int, default=DEFAULT_MAX_RETRIES,
-        help="Max retry attempts per failed batch (default: 2).",
+        "--acknowledge-halt", action="store_true",
+        help="Clear a prior run's halt-for-human-review sentinel and proceed. "
+             "Required after any batch failure — review outputs/pipeline.log first.",
     )
     parser.add_argument(
         "--rpm", type=int, default=DEFAULT_RATE_LIMIT_RPM,
@@ -87,6 +97,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.acknowledge_halt:
+        if clear_halt_sentinel():
+            print("  ✓ Prior halt acknowledged and cleared — proceeding.\n")
+        else:
+            print("  (No halt sentinel present — nothing to acknowledge.)\n")
+
     total_calls = args.batches * args.n
 
     orch = Orchestrator(
@@ -95,10 +111,13 @@ def main() -> None:
         seed           = args.seed,
         delay          = args.delay,
         rate_limit_rpm = args.rpm,
-        max_retries    = args.retries,
+        start_offset   = args.start_offset,
     )
 
     report = orch.run()
+
+    if report.get("halted_pending_review"):
+        sys.exit(1)
 
     # Abort post-processing if nothing succeeded
     if report["execution_summary"]["tasks_done"] == 0:

@@ -13,16 +13,25 @@ Dataset : talkmap/telecom-conversation-corpus  (MIT License)
 Schema  : conversation_id | speaker (agent/client) | date_time (ISO 8601) | text
 Size    : 3.73M turns  ·  ~200K conversations
 
-Streaming strategy (HuggingFace path)
---------------------------------------
-We never download the full dataset. Instead we stream rows until we have
-collected (offset + n) × 6 unique conversation IDs (6× buffer handles the
-uneven turn distribution), then randomly sample exactly n IDs from the
-slice starting at `offset`. This guarantees:
+Sampling strategy
+-----------------
+_select_ids() shuffles the full conversation-ID universe once (deterministic
+per seed), then takes a disjoint `[offset*6, (offset+n)*6)` slice — the 6x
+buffer absorbs conversations later dropped by _build_transcripts()'s
+turn-count filter. This guarantees:
 
-  • No conversation appears in more than one batch
+  • No conversation appears in more than one batch, for any two offsets that
+    differ by a multiple of n (batch 1 → offset=0, batch 2 → offset=n, etc.)
   • Each batch is reproducible with the same (offset, n, seed)
-  • Memory stays bounded regardless of total dataset size
+  • Memory stays bounded regardless of total dataset size (HuggingFace path
+    streams only enough rows to build its own offset+n window; see
+    _select_ids()'s docstring for that path's narrower disjointness guarantee)
+
+An earlier version sampled from `all_ids_ordered[offset:offset+n*6]` with a
+reseeded RNG per call — that window overlaps ~83% with any offset shifted by
+n, and random.sample() with a fixed seed against overlapping-but-shifted
+lists reliably repicks the same underlying IDs. Confirmed in production: a
+10-batch run had only 136/200 truly unique conversations before this fix.
 
 Timestamp note
 --------------
@@ -89,6 +98,39 @@ def _build_transcripts(df_sel: pd.DataFrame, selected_ids: list[str]) -> list[di
     return transcripts
 
 
+def _select_ids(all_ids_ordered: list[str], n: int, seed: int, offset: int, source: str) -> list[str]:
+    """
+    Deterministically select n conversation IDs for this (seed, offset) batch,
+    guaranteed disjoint from any other batch whose offset differs by a
+    multiple of n (the documented non-overlapping-batches contract).
+
+    Previous approach sampled `random.sample(all_ids_ordered[offset:offset+n*_BUFFER_X], n)`
+    with a reseeded RNG per call — two batches whose offsets differ by n have
+    ~(_BUFFER_X-1)/_BUFFER_X of their candidate window in common, and
+    random.sample() with the same seed against overlapping-but-shifted lists
+    picks largely the same underlying IDs (confirmed: batches 2-10 of a fresh
+    10-batch run were only 40-90% unique against earlier batches in the same
+    run). Fix: shuffle the FULL id list once per seed, then take a disjoint
+    slice per offset — offset counts in units of n, buffered by _BUFFER_X on
+    both the start and end bound so no two non-overlapping offsets can ever
+    draw from the same region of the shuffled list.
+    """
+    shuffled = all_ids_ordered.copy()
+    random.Random(seed).shuffle(shuffled)
+
+    start = offset * _BUFFER_X
+    end   = (offset + n) * _BUFFER_X
+    window = shuffled[start:end]
+
+    if len(window) < n:
+        log.warning(
+            "%s shuffled window has only %d conv IDs (wanted ≥%d). Returning all available.",
+            source, len(window), n,
+        )
+
+    return window[:n]
+
+
 # ── Local CSV path ────────────────────────────────────────────────────
 
 def _load_from_csv(n: int, seed: int, offset: int) -> list[dict]:
@@ -102,16 +144,7 @@ def _load_from_csv(n: int, seed: int, offset: int) -> list[dict]:
     log.info("CSV loaded: %d turns across %d conversations", len(df), df["conversation_id"].nunique())
 
     all_ids_ordered = sorted(df["conversation_id"].dropna().unique().tolist())
-    slice_ids = all_ids_ordered[offset: offset + n * _BUFFER_X]
-
-    if len(slice_ids) < n:
-        log.warning(
-            "CSV slice has only %d conv IDs (wanted ≥%d). Returning all available.",
-            len(slice_ids), n,
-        )
-
-    random.seed(seed)
-    selected_ids = random.sample(slice_ids, min(n, len(slice_ids)))
+    selected_ids = _select_ids(all_ids_ordered, n, seed, offset, source="CSV")
 
     df_sel = df[df["conversation_id"].isin(selected_ids)].copy()
     df_sel["date_time"] = pd.to_datetime(df_sel["date_time"], format="mixed", errors="coerce")
@@ -158,15 +191,14 @@ def _load_from_huggingface(n: int, seed: int, offset: int) -> list[dict]:
 
     df = pd.DataFrame(rows)
 
-    # Sort all unique IDs for a stable global ordering, then apply offset
+    # Sort all unique IDs for a stable global ordering, then apply offset.
+    # Note: unlike the CSV path, this universe is scoped to just the
+    # target_unique IDs streamed for THIS call — still correct for the
+    # common case (all batches in a run share the same n, so only offset
+    # varies), but not a rigorous disjointness guarantee across runs with
+    # different n. See _select_ids() docstring for the underlying fix.
     all_ids_ordered = sorted(df["conversation_id"].unique().tolist())
-    slice_ids = all_ids_ordered[offset: offset + n * _BUFFER_X]
-
-    if len(slice_ids) < n:
-        log.warning("Slice has only %d conv IDs (wanted ≥%d). Returning all available.", len(slice_ids), n)
-
-    random.seed(seed)
-    selected_ids = random.sample(slice_ids, min(n, len(slice_ids)))
+    selected_ids = _select_ids(all_ids_ordered, n, seed, offset, source="HuggingFace stream")
 
     df_sel = df[df["conversation_id"].isin(selected_ids)].copy()
     df_sel["date_time"] = pd.to_datetime(df_sel["date_time"], format="mixed", errors="coerce")

@@ -58,7 +58,14 @@ def _embed_gemini(texts: list[str]) -> np.ndarray:
     if not api_key:
         raise OSError("GEMINI_API_KEY not set — cannot use Gemini embedding backend")
 
-    client = genai.Client(api_key=api_key)
+    from google.genai import types as genai_types
+
+    from pipeline.config import EXTRACTION_API_TIMEOUT_S
+
+    client = genai.Client(
+        api_key=api_key,
+        http_options=genai_types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
+    )
     vectors = []
     for text in texts:
         response = client.models.embed_content(

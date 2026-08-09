@@ -33,6 +33,8 @@ outputs/agent_memory.json
 outputs/vector_memory/
 outputs/.checkpoint_*.jsonl
 outputs/.react_quota_exhausted
+outputs/.nvidia_unavailable
+outputs/.halted_for_human_review.json
 outputs/pipeline.log
 
 # ── OS ────────────────────────────────────────────────────────────────

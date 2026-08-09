@@ -29,6 +29,11 @@ from google.genai import types
 from tqdm import tqdm
 
 from pipeline.config import (
+    EXTRACTION_API_TIMEOUT_S,
+    MAX_RESPONSE_BYTES,
+    PROMPT_PATH,
+)
+from pipeline.config import (
     EXTRACTION_MODEL as MODEL,
 )
 from pipeline.config import (
@@ -36,10 +41,6 @@ from pipeline.config import (
 )
 from pipeline.config import (
     MAX_OUTPUT_TOKENS as MAX_TOKENS,
-)
-from pipeline.config import (
-    MAX_RESPONSE_BYTES,
-    PROMPT_PATH,
 )
 from pipeline.config import (
     OUTPUT_DIR as CHECKPOINT_DIR,
@@ -417,12 +418,20 @@ def analyze_batch(
         if not api_key:
             raise OSError("ANTHROPIC_API_KEY not set. Check your .env file.")
         import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
+        # max_retries=1 (not the SDK default of 2): analyze_transcript() already
+        # retries with its own backoff on top of this, and the two layers
+        # compounding is what let a single stuck provider approach the
+        # orchestrator's 600s subprocess timeout — see config.py's comment
+        # on EXTRACTION_API_TIMEOUT_S.
+        client = anthropic.Anthropic(api_key=api_key, timeout=EXTRACTION_API_TIMEOUT_S, max_retries=1)
     else:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise OSError("GEMINI_API_KEY not set. Check your .env file.")
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
+        )
 
     system_prompt = load_system_prompt()
 

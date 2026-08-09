@@ -29,6 +29,7 @@ load_dotenv()
 
 from pipeline.analyzer import _USE_CLAUDE, analyze_transcript, load_system_prompt  # noqa: E402
 from pipeline.config import (  # noqa: E402
+    EXTRACTION_API_TIMEOUT_S,
     EXTRACTION_MODEL,
     MAX_OUTPUT_TOKENS,
     OUTPUT_DIR,
@@ -37,20 +38,28 @@ from pipeline.security import INPUT_SANITIZER, OUTPUT_SANITIZER  # noqa: E402
 
 # Initialise the correct LLM client based on EXTRACTION_MODEL.
 # Changing EXTRACTION_MODEL in config.py automatically switches the API client here.
+# Explicit timeout — without one, a slow/unresponsive provider hangs the
+# request for the SDK's 600s default instead of failing fast.
 _extraction_client = None
 _client_provider   = "unknown"
 
 if _USE_CLAUDE:
     try:
         import anthropic
-        _extraction_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
+        _extraction_client = anthropic.Anthropic(
+            api_key=os.getenv("ANTHROPIC_API_KEY", ""), timeout=EXTRACTION_API_TIMEOUT_S, max_retries=1,
+        )
         _client_provider   = "Anthropic (Claude)"
     except Exception:
         _extraction_client = None
 else:
     try:
         from google import genai
-        _extraction_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
+        from google.genai import types as genai_types
+        _extraction_client = genai.Client(
+            api_key=os.getenv("GEMINI_API_KEY", ""),
+            http_options=genai_types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
+        )
         _client_provider   = "Google AI Studio"
     except Exception:
         _extraction_client = None

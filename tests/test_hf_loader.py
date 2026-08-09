@@ -94,10 +94,13 @@ class TestLoadFromCsv:
         run2 = load_telecom_transcripts(n=2, seed=7, offset=0)
         assert [t["call_id"] for t in run1] == [t["call_id"] for t in run2]
 
-    def test_offset_beyond_data_returns_remainder(self, local_csv):
+    def test_offset_beyond_data_returns_nothing(self, local_csv):
+        # offset is scaled by _BUFFER_X on both bounds (see _select_ids) so
+        # that non-overlapping offsets stay disjoint even after shuffling —
+        # with only 3 conversations total, any offset beyond the first
+        # logical batch has nothing left to slice into.
         out = load_telecom_transcripts(n=5, seed=42, offset=2)
-        # Only 1 conversation remains after skipping the first 2 of 3
-        assert len(out) == 1
+        assert out == []
 
     def test_dispatches_to_huggingface_when_csv_absent(self, tmp_path, monkeypatch):
         monkeypatch.setattr(hf_loader, "LOCAL_CSV_PATH", tmp_path / "missing.csv")
@@ -110,3 +113,50 @@ class TestLoadFromCsv:
         monkeypatch.setattr(hf_loader, "_load_from_huggingface", fake_hf)
         load_telecom_transcripts(n=3, seed=1, offset=10)
         assert called == {"n": 3, "seed": 1, "offset": 10}
+
+
+# ── Non-overlapping offsets (regression: production bug, see hf_loader.py
+# module docstring — a 10-batch run only returned 136/200 unique conversations
+# before _select_ids() replaced the overlapping-window sampling) ──────────
+
+@pytest.fixture
+def large_local_csv(tmp_path, monkeypatch):
+    """700 synthetic conversations — enough for 5 non-overlapping
+    offset*_BUFFER_X windows (_BUFFER_X=6) at n=20: the largest offset
+    tested (80) needs (80+20)*6=600 IDs available."""
+    rows: list[dict] = []
+    for i in range(700):
+        rows.extend(_turns(f"conv-{i:04d}", 4))
+    df = pd.DataFrame(rows)
+    df["date_time"] = df["date_time"].astype(str)
+    csv_path = tmp_path / "telecom_large.csv"
+    df.to_csv(csv_path, index=False)
+    monkeypatch.setattr(hf_loader, "LOCAL_CSV_PATH", csv_path)
+    return csv_path
+
+
+class TestNonOverlappingOffsets:
+    def test_consecutive_offsets_are_disjoint(self, large_local_csv):
+        batch1 = load_telecom_transcripts(n=20, seed=42, offset=0)
+        batch2 = load_telecom_transcripts(n=20, seed=42, offset=20)
+        ids1 = {t["call_id"] for t in batch1}
+        ids2 = {t["call_id"] for t in batch2}
+        assert len(ids1) == 20
+        assert len(ids2) == 20
+        assert ids1.isdisjoint(ids2)
+
+    def test_ten_batch_run_has_zero_duplicate_ids(self, large_local_csv):
+        # Mirrors the actual production scenario: run_batches.py issuing
+        # offsets 0, 20, 40, ... for a multi-batch run.
+        seen: set[str] = set()
+        for i in range(5):  # 5*20=100 conversations, well within the 150 available
+            batch = load_telecom_transcripts(n=20, seed=42, offset=i * 20)
+            ids = {t["call_id"] for t in batch}
+            assert ids.isdisjoint(seen), f"batch offset={i * 20} overlapped an earlier batch"
+            seen |= ids
+        assert len(seen) == 100
+
+    def test_same_offset_is_reproducible(self, large_local_csv):
+        run1 = load_telecom_transcripts(n=20, seed=42, offset=40)
+        run2 = load_telecom_transcripts(n=20, seed=42, offset=40)
+        assert [t["call_id"] for t in run1] == [t["call_id"] for t in run2]

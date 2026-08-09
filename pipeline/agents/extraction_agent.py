@@ -38,7 +38,7 @@ from pipeline.analyzer import (
     load_system_prompt,
     score_field_coverage,
 )
-from pipeline.config import REACT_MAX_ITERATIONS, REACT_QUALITY_THRESHOLD
+from pipeline.config import EXTRACTION_API_TIMEOUT_S, REACT_MAX_ITERATIONS, REACT_QUALITY_THRESHOLD
 from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, BUDGET_GUARD
 from pipeline.logger import get_logger
@@ -180,13 +180,17 @@ class ExtractionAgent:
                 api_key = os.environ.get("ANTHROPIC_API_KEY")
                 if not api_key:
                     return results, {"n_improved": 0, "n_gap_fills": 0, "avg_coverage_before": 0}
-                client = anthropic.Anthropic(api_key=api_key)
+                client = anthropic.Anthropic(api_key=api_key, timeout=EXTRACTION_API_TIMEOUT_S, max_retries=1)
             else:
                 from google import genai
+                from google.genai import types as genai_types
                 api_key = os.environ.get("GEMINI_API_KEY")
                 if not api_key:
                     return results, {"n_improved": 0, "n_gap_fills": 0, "avg_coverage_before": 0}
-                client = genai.Client(api_key=api_key)
+                client = genai.Client(
+                    api_key=api_key,
+                    http_options=genai_types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
+                )
             system_prompt = load_system_prompt()
         except Exception as exc:
             log.warning("[%s] ReAct loop unavailable: %s", self.name, exc)

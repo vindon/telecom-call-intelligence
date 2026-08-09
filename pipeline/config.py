@@ -36,6 +36,16 @@ INSIGHTS_TEMPERATURE   = 0.3   # slightly creative for strategic recommendations
 MAX_RETRIES_PER_CALL = 3
 RETRY_DELAYS_S       = (30, 60, 120)   # exponential backoff on 429
 
+# No Anthropic/OpenAI/Gemini client in this codebase used to set an explicit
+# timeout, so every one defaulted to its SDK's 600s read timeout — the same
+# order of magnitude as Orchestrator's 600s per-batch subprocess timeout.
+# A slow/unresponsive provider (observed: NVIDIA NIM) could hang right up to
+# that limit, causing the whole batch subprocess to be killed and retried
+# from scratch — discarding already-successful extraction work. Every LLM
+# client construction must pass one of these explicitly.
+EXTRACTION_API_TIMEOUT_S = 60   # Claude Haiku / Gemini — observed calls take 15-25s
+INSIGHTS_API_TIMEOUT_S   = 45   # NVIDIA NIM / Claude fallback — fail fast into the next tier
+
 # ── Batching ───────────────────────────────────────────────────────────
 # With gemini-2.5-flash-lite free tier (20 RPD), use DEFAULT_BATCH_SIZE=20
 # and one batch per day. Switch to 2.0-flash-lite for multi-batch runs.
@@ -44,7 +54,9 @@ DEFAULT_BATCH_SIZE     = 20
 DEFAULT_SEED           = 42
 DEFAULT_DELAY_S        = 2.0
 DEFAULT_RATE_LIMIT_RPM = 15
-DEFAULT_MAX_RETRIES    = 2
+# No DEFAULT_MAX_RETRIES: Orchestrator halts on the first batch failure and
+# requires explicit human review (run_batches.py --acknowledge-halt) instead
+# of auto-retrying — see pipeline/orchestrator.py's strict failure policy.
 
 # ── Paths ──────────────────────────────────────────────────────────────
 OUTPUT_DIR  = Path("outputs")
