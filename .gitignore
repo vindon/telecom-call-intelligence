@@ -25,6 +25,7 @@ outputs/full_results_*.json
 outputs/run_manifest_*.json
 outputs/merge_manifest_*.json
 outputs/qa_report_*.json
+outputs/retroactive_dq_report_*.json
 outputs/insights_*.json
 outputs/decisions_*.json
 outputs/audit_log_*.json
