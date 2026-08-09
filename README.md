@@ -333,23 +333,24 @@ telecom-call-intelligence/
 │   └── logger.py               ← Structured logging (INFO→stdout, DEBUG→file)
 │
 ├── tests/                      ← 404 unit tests (zero API calls, < 7 seconds)
+│   ├── test_agents/             ← per-agent unit tests (data, extraction, quality, aggregation, insights, export)
 │   ├── test_config.py
-│   ├── test_decision_log.py    ← 24 decision traceability tests
+│   ├── test_decision_log.py    ← decision traceability tests
 │   ├── test_governance.py
+│   ├── test_hf_loader.py       ← offset-disjointness / sampling regression tests
 │   ├── test_memory.py
-│   ├── test_orchestrator.py
+│   ├── test_orchestrator.py    ← strict halt-on-failure policy tests
+│   ├── test_qa_audit_phase_reconciliation.py  ← sequential vs. overlay phase reconciliation tests
 │   ├── test_tools.py
 │   ├── test_graph.py
-│   └── test_security.py        ← 51 security tests
+│   └── test_security.py        ← security module tests
 │
-├── dashboard/app.py            ← Streamlit executive dashboard (6 sections)
+├── dashboard/app.py            ← Streamlit executive dashboard (4 tabs: Cost to Serve, Automation Strategy, QA & Pipeline Health, Live Pipeline Demo)
 ├── demo/
 │   ├── app.py                  ← Standalone live demo (FastAPI) — transcript input → 6-agent pipeline → dashboard
 │   └── index.html              ← Self-contained demo UI (no build step)
 ├── docs/
-│   ├── executive_deck.html     ← BCG-style 12-slide cost intelligence deck
-│   ├── cost_to_serve_briefing.html ← Cost-to-serve deep-dive briefing
-│   └── results_deck.html       ← Pipeline results presentation
+│   └── executive_deck.html     ← BCG-style 13-slide cost intelligence deck — the single source of truth for economics/success-metrics narrative
 ├── api/main.py                 ← FastAPI wrapper (/health, /summary, /analyze)
 ├── prompts/system_prompt.txt   ← 70-field extraction schema + CoT instructions
 │
