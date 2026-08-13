@@ -545,7 +545,9 @@ telecom-call-intelligence/
 │   ├── orchestrator.py        ← WorkPlanner, AgentHealthMonitor, strict halt-on-failure policy
 │   ├── governance.py          ← BudgetGuard, QualityGate, PIIScanner, AuditLog
 │   ├── memory.py              ← AgentMemory — flat JSON cross-run store
-│   ├── tools.py               ← ToolRegistry — JSON-schema tool definitions
+│   ├── vector_memory.py       ← VectorMemoryStore — semantic KPI-similarity memory
+│   ├── llm_clients.py         ← Single seam for Anthropic/Gemini/NVIDIA client construction
+│   ├── circuit_breaker.py     ← Shared provider-unavailability breaker (Gemini quota, NVIDIA timeout)
 │   ├── analyzer.py            ← Claude/Gemini client (CoT, ReAct, checkpoint, backoff)
 │   ├── aggregator.py          ← KPI computation + cost-lever estimates + issue_breakdown (category × segment × resolution-method cross-tab)
 │   ├── hf_loader.py           ← CSV loader + HuggingFace streaming + offset batching
@@ -562,7 +564,8 @@ telecom-call-intelligence/
 │   ├── test_memory.py
 │   ├── test_orchestrator.py    ← strict halt-on-failure policy tests
 │   ├── test_qa_audit_phase_reconciliation.py  ← sequential vs. overlay phase reconciliation regression tests
-│   ├── test_tools.py
+│   ├── test_llm_clients.py
+│   ├── test_circuit_breaker.py
 │   ├── test_graph.py
 │   └── test_security.py        ← security module tests
 ├── dashboard/app.py           ← Streamlit executive dashboard (4 tabs: Cost to Serve, Automation Strategy, QA & Pipeline Health, Live Pipeline Demo — light theme)

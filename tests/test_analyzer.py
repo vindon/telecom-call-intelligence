@@ -21,14 +21,14 @@ from pipeline.analyzer import (
     load_checkpoint,
     score_field_coverage,
 )
+from pipeline.circuit_breaker import CircuitBreaker
 
 
 @pytest.fixture(autouse=True)
 def isolate_analyzer(tmp_path, monkeypatch):
-    """Redirect checkpoint/sentinel I/O to a temp dir and reset the quota flag."""
+    """Redirect checkpoint/sentinel I/O to a temp dir and reset the quota breaker."""
     monkeypatch.setattr(analyzer, "CHECKPOINT_DIR", tmp_path)
-    monkeypatch.setattr(analyzer, "_QUOTA_SENTINEL", tmp_path / ".react_quota_exhausted")
-    monkeypatch.setattr(analyzer, "_react_quota_exhausted", False)
+    monkeypatch.setattr(analyzer, "_gemini_quota_breaker", CircuitBreaker(tmp_path / ".react_quota_exhausted"))
     monkeypatch.setattr(analyzer.time, "sleep", lambda s: None)
 
 
@@ -176,7 +176,7 @@ class TestGapFillTranscript:
         assert gap_fill_transcript(None, "sp", make_transcript(), first_pass) is first_pass
 
     def test_quota_circuit_breaker_skips(self, monkeypatch, make_transcript, make_record):
-        monkeypatch.setattr(analyzer, "_react_quota_exhausted", True)
+        analyzer._gemini_quota_breaker.tripped = True
         first_pass = make_record(fcr_indicator=None)
         assert gap_fill_transcript(None, "sp", make_transcript(), first_pass) is first_pass
 
@@ -252,8 +252,8 @@ class TestGapFillTranscript:
         first_pass = make_record(fcr_indicator=None)
         result = gap_fill_transcript(FakeClient(), "sp", make_transcript(), first_pass)
         assert result is first_pass
-        assert analyzer._QUOTA_SENTINEL.exists()
-        assert analyzer._react_quota_exhausted is True
+        assert analyzer._gemini_quota_breaker.sentinel_path.exists()
+        assert analyzer._gemini_quota_breaker.tripped is True
 
     def test_claude_429_does_not_write_sentinel(self, monkeypatch, make_transcript, make_record):
         def rate_limited(client, sp, msg, max_tokens):
@@ -265,5 +265,5 @@ class TestGapFillTranscript:
         result = gap_fill_transcript(None, "sp", make_transcript(), first_pass)
         assert result is first_pass
         # Claude 429 is a transient per-minute limit, not a daily quota
-        assert not analyzer._QUOTA_SENTINEL.exists()
-        assert analyzer._react_quota_exhausted is False
+        assert not analyzer._gemini_quota_breaker.sentinel_path.exists()
+        assert analyzer._gemini_quota_breaker.tripped is False

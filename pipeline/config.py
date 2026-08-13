@@ -65,6 +65,13 @@ PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "system_prompt.txt"
 HF_DATASET      = "talkmap/telecom-conversation-corpus"
 LOCAL_CSV_PATH  = Path("telecom_200k.csv")   # auto-detected; falls back to HF if absent
 
+# Circuit-breaker sentinels — persist provider-unavailability across the
+# per-batch subprocess boundary (see pipeline/circuit_breaker.py). Single
+# source of truth: analyzer.py, insights_agent.py, and orchestrator.py all
+# import these rather than each reconstructing the same path independently.
+GEMINI_QUOTA_SENTINEL       = OUTPUT_DIR / ".react_quota_exhausted"
+NVIDIA_UNAVAILABLE_SENTINEL = OUTPUT_DIR / ".nvidia_unavailable"
+
 # ── Governance ─────────────────────────────────────────────────────────
 # Budget hard-stop per run.
 # Claude Haiku pricing ($0.80 in / $4.00 out per MTok):

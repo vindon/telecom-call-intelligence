@@ -8,7 +8,7 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph-4A90D9)
 ![Claude](https://img.shields.io/badge/Claude-Haiku%204.5-CC785C?logo=anthropic&logoColor=white)
 ![NVIDIA](https://img.shields.io/badge/NVIDIA-NIM%20LLaMA--3.3--70B-76B900?logo=nvidia&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-404%20passing-22C55E)
+![Tests](https://img.shields.io/badge/Tests-399%20passing-22C55E)
 ![License](https://img.shields.io/badge/License-Proprietary-DC2626)
 
 ---
@@ -121,7 +121,7 @@ Every component exists because production autonomous systems need it.
 | **Dynamic routing** | LangGraph conditional edge after QualityAgent | Catastrophic extraction failure routes to safe export; the pipeline never silently fails |
 | **Checkpoint/resume** | Every API call persisted to `outputs/.checkpoint_{key}.jsonl` immediately | Kill a 100-call job at call 73 — restart and it resumes from 74 with zero duplicated API spend |
 | **Process isolation** | `run_batches.py` → `Orchestrator` → N subprocesses | A crashed batch cannot corrupt other batches; the first failure halts the entire run and requires explicit human review (`--acknowledge-halt`) — no silent auto-retry |
-| **404 unit tests** | Security, governance, decision log, memory, orchestrator, tools, config, graph — all tested without API calls | CI completes in under 7 seconds; tests gate every push to main |
+| **399 unit tests** | Security, governance, decision log, memory, orchestrator, LLM clients, circuit breaker, config, graph — all tested without API calls | CI completes in under 7 seconds; tests gate every push to main |
 
 ---
 
@@ -152,7 +152,7 @@ Pipeline mechanics for a typical single run — cost, runtime, extraction reliab
 | Extraction cost (Gemini free tier) | ~$0.00 / 100 calls (free-tier eligible) |
 | Deliberation passes | 3 per insights run |
 | Decision records per run | 15–60 traceable decisions |
-| Test suite | 404 tests · < 7 seconds |
+| Test suite | 399 tests · < 7 seconds |
 | Checkpoint overhead | Zero — resume is instantaneous |
 
 ---
@@ -237,7 +237,7 @@ make dashboard            # executive dashboard at localhost:8501
 ## Developer commands
 
 ```bash
-make test          # 404 unit tests — no API calls required (< 7 seconds)
+make test          # 399 unit tests — no API calls required (< 7 seconds)
 make lint          # ruff linter across all source files
 make check         # lint + type-check + test (full pre-push gate)
 make test-cov      # tests with HTML coverage report
@@ -325,14 +325,16 @@ telecom-call-intelligence/
 │   ├── orchestrator.py         ← WorkPlanner, AgentHealthMonitor, strict halt-on-failure policy
 │   ├── governance.py           ← BudgetGuard, QualityGate, PIIScanner, AuditLog
 │   ├── memory.py               ← Persistent cross-run flat JSON agent memory
-│   ├── tools.py                ← Formal tool registry with JSON schemas
+│   ├── vector_memory.py        ← Semantic KPI-similarity memory (embeds each run)
+│   ├── llm_clients.py          ← Single seam for Anthropic/Gemini/NVIDIA client construction
+│   ├── circuit_breaker.py      ← Shared provider-unavailability breaker
 │   ├── analyzer.py             ← LLM client (Claude/Gemini, CoT, ReAct, checkpoint)
 │   ├── aggregator.py           ← KPI computation + cost-lever estimates
 │   ├── hf_loader.py            ← CSV/HuggingFace streaming + offset batching
 │   ├── token_tracker.py        ← Model-aware token cost accounting
 │   └── logger.py               ← Structured logging (INFO→stdout, DEBUG→file)
 │
-├── tests/                      ← 404 unit tests (zero API calls, < 7 seconds)
+├── tests/                      ← 399 unit tests (zero API calls, < 7 seconds)
 │   ├── test_agents/             ← per-agent unit tests (data, extraction, quality, aggregation, insights, export)
 │   ├── test_config.py
 │   ├── test_decision_log.py    ← decision traceability tests
@@ -341,7 +343,8 @@ telecom-call-intelligence/
 │   ├── test_memory.py
 │   ├── test_orchestrator.py    ← strict halt-on-failure policy tests
 │   ├── test_qa_audit_phase_reconciliation.py  ← sequential vs. overlay phase reconciliation tests
-│   ├── test_tools.py
+│   ├── test_llm_clients.py
+│   ├── test_circuit_breaker.py
 │   ├── test_graph.py
 │   └── test_security.py        ← security module tests
 │

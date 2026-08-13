@@ -27,7 +27,6 @@ Outputs injected into PipelineState
   react_stats       — dict with coverage improvement telemetry
 """
 
-import os
 import time
 from typing import Any
 
@@ -41,6 +40,7 @@ from pipeline.analyzer import (
 from pipeline.config import EXTRACTION_API_TIMEOUT_S, REACT_MAX_ITERATIONS, REACT_QUALITY_THRESHOLD
 from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG, BUDGET_GUARD
+from pipeline.llm_clients import get_anthropic_client, get_gemini_client
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
 from pipeline.security import INPUT_SANITIZER, SCOPE_GUARD
@@ -175,22 +175,11 @@ class ExtractionAgent:
         client: Any
         try:
             from pipeline.analyzer import _USE_CLAUDE
-            if _USE_CLAUDE:
-                import anthropic
-                api_key = os.environ.get("ANTHROPIC_API_KEY")
-                if not api_key:
-                    return results, {"n_improved": 0, "n_gap_fills": 0, "avg_coverage_before": 0}
-                client = anthropic.Anthropic(api_key=api_key, timeout=EXTRACTION_API_TIMEOUT_S, max_retries=1)
-            else:
-                from google import genai
-                from google.genai import types as genai_types
-                api_key = os.environ.get("GEMINI_API_KEY")
-                if not api_key:
-                    return results, {"n_improved": 0, "n_gap_fills": 0, "avg_coverage_before": 0}
-                client = genai.Client(
-                    api_key=api_key,
-                    http_options=genai_types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
-                )
+            client = (
+                get_anthropic_client(EXTRACTION_API_TIMEOUT_S)
+                if _USE_CLAUDE
+                else get_gemini_client(EXTRACTION_API_TIMEOUT_S)
+            )
             system_prompt = load_system_prompt()
         except Exception as exc:
             log.warning("[%s] ReAct loop unavailable: %s", self.name, exc)
@@ -206,7 +195,7 @@ class ExtractionAgent:
 
         for result in results:
             # Check module-level circuit breaker — quota already exhausted
-            if _analyzer_mod._react_quota_exhausted:
+            if _analyzer_mod._gemini_quota_breaker.tripped:
                 improved_results.extend(results[len(improved_results):])
                 break
             call_id = result.get("call_id")

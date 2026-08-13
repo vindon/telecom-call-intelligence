@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import os
 
+from pipeline.circuit_breaker import CircuitBreaker
 from pipeline.config import (
     CLAUDE_INSIGHTS_MODEL,
     DELIBERATION_ENABLED,
@@ -35,27 +36,26 @@ from pipeline.config import (
     INSIGHTS_MODEL,
     INSIGHTS_TEMPERATURE,
     MAX_OUTPUT_TOKENS,
-    NVIDIA_BASE_URL,
-    OUTPUT_DIR,
+    NVIDIA_UNAVAILABLE_SENTINEL,
     VECTOR_MEMORY_ENABLED,
 )
 from pipeline.decision_log import DecisionLogger
 from pipeline.governance import AUDIT_LOG
+from pipeline.llm_clients import get_anthropic_client, get_nvidia_client
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
 from pipeline.security import OUTPUT_SANITIZER, SECRET_GUARD
 
 log = get_logger(__name__)
 
-# Circuit breaker for NVIDIA NIM outages — mirrors analyzer.py's
-# _react_quota_exhausted/_QUOTA_SENTINEL pattern for Gemini. Each batch is a
-# fresh subprocess, so the flag alone wouldn't survive between batches; the
-# sentinel file makes the "NVIDIA is down" fact persist for the rest of this
-# run once observed, instead of every subsequent batch re-paying the full
+# Circuit breaker for NVIDIA NIM outages — shares pipeline.circuit_breaker
+# with analyzer.py's Gemini-quota breaker. Each batch is a fresh subprocess,
+# so an in-memory flag alone wouldn't survive between batches; the sentinel
+# file makes the "NVIDIA is down" fact persist for the rest of this run once
+# observed, instead of every subsequent batch re-paying the full
 # INSIGHTS_API_TIMEOUT_S finding that out again. Orchestrator clears it at
 # the start of a new top-level run (see orchestrator.py).
-_NVIDIA_SENTINEL = OUTPUT_DIR / ".nvidia_unavailable"
-_nvidia_unavailable: bool = _NVIDIA_SENTINEL.exists()
+_nvidia_breaker = CircuitBreaker(NVIDIA_UNAVAILABLE_SENTINEL)
 
 
 # ── Prompt templates ──────────────────────────────────────────────────
@@ -480,8 +480,6 @@ class InsightsAgent:
         self, prompt: str, temperature: float = 0.3, usage_acc: list | None = None
     ) -> dict | None:
         """Call NVIDIA NIM API (OpenAI-compatible). Returns parsed dict or None."""
-        global _nvidia_unavailable
-
         api_key = os.environ.get("NVIDIA_API_KEY")
         if not api_key:
             return None
@@ -489,21 +487,13 @@ class InsightsAgent:
         # Circuit breaker: once NVIDIA has timed out once this run, skip
         # straight to Claude instead of re-paying INSIGHTS_API_TIMEOUT_S on
         # every subsequent pass/batch for a provider that's already known down.
-        if _nvidia_unavailable:
+        if _nvidia_breaker.tripped:
             return None
 
         try:
             import openai
-            from openai import OpenAI
 
-            # max_retries=1 (not the SDK default of 2): with a 3-tier fallback
-            # (NVIDIA -> Claude -> rule-based) already providing resilience,
-            # SDK-level retries just compound the worst-case hang time instead
-            # of adding real robustness — see config.py's INSIGHTS_API_TIMEOUT_S.
-            client = OpenAI(
-                base_url=NVIDIA_BASE_URL, api_key=api_key,
-                timeout=INSIGHTS_API_TIMEOUT_S, max_retries=1,
-            )
+            client = get_nvidia_client(INSIGHTS_API_TIMEOUT_S)
             response = client.chat.completions.create(
                 model=INSIGHTS_MODEL,
                 messages=[{"role": "user", "content": prompt}],
@@ -530,9 +520,7 @@ class InsightsAgent:
             # per-call issue — trip the breaker so remaining passes/batches in
             # this run skip straight to Claude. Sentinel persists across the
             # per-batch subprocess boundary; Orchestrator clears it on a new run.
-            _nvidia_unavailable = True
-            OUTPUT_DIR.mkdir(exist_ok=True)
-            _NVIDIA_SENTINEL.touch()
+            _nvidia_breaker.trip()
             log.warning(
                 "[%s] NVIDIA timed out after %ds — marking unavailable for the "
                 "rest of this run; remaining passes/batches go straight to Claude",
@@ -554,9 +542,7 @@ class InsightsAgent:
         if not api_key:
             return None
         try:
-            import anthropic
-
-            client = anthropic.Anthropic(api_key=api_key, timeout=INSIGHTS_API_TIMEOUT_S, max_retries=1)
+            client = get_anthropic_client(INSIGHTS_API_TIMEOUT_S)
             response = client.messages.create(
                 model=CLAUDE_INSIGHTS_MODEL,
                 max_tokens=MAX_OUTPUT_TOKENS,

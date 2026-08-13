@@ -9,6 +9,7 @@ import pytest
 import pipeline.agents.extraction_agent as ext_mod
 import pipeline.analyzer as analyzer
 from pipeline.agents.extraction_agent import ExtractionAgent
+from pipeline.circuit_breaker import CircuitBreaker
 from pipeline.governance import BudgetGuard
 from pipeline.memory import AgentMemory
 
@@ -16,7 +17,7 @@ from pipeline.memory import AgentMemory
 @pytest.fixture(autouse=True)
 def isolate(monkeypatch, tmp_path):
     monkeypatch.setattr(ext_mod, "MEMORY", AgentMemory(path=tmp_path / "memory.json"))
-    monkeypatch.setattr(analyzer, "_react_quota_exhausted", False)
+    monkeypatch.setattr(analyzer, "_gemini_quota_breaker", CircuitBreaker(tmp_path / ".react_quota_exhausted"))
 
 
 def _state(transcripts: list[dict]) -> dict:

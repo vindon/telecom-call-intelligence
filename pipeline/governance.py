@@ -247,24 +247,22 @@ class AuditLog:
     def _now(self) -> str:
         return datetime.now(UTC).isoformat()
 
-    def record_agent_start(self, agent: str, inputs: dict) -> None:
+    def _append(self, event_type: str, agent: str, data: dict) -> None:
         self._entries.append(AuditEntry(
             timestamp  = self._now(),
-            event_type = "agent_start",
+            event_type = event_type,
             agent      = agent,
-            data       = {"input_keys": list(inputs.keys())},
+            data       = data,
         ))
 
+    def record_agent_start(self, agent: str, inputs: dict) -> None:
+        self._append("agent_start", agent, {"input_keys": list(inputs.keys())})
+
     def record_agent_end(self, agent: str, outputs: dict, elapsed_s: float) -> None:
-        self._entries.append(AuditEntry(
-            timestamp  = self._now(),
-            event_type = "agent_end",
-            agent      = agent,
-            data       = {
-                "output_keys": list(outputs.keys()),
-                "elapsed_s":   round(elapsed_s, 3),
-            },
-        ))
+        self._append("agent_end", agent, {
+            "output_keys": list(outputs.keys()),
+            "elapsed_s":   round(elapsed_s, 3),
+        })
 
     def record_tool_call(
         self,
@@ -275,18 +273,13 @@ class AuditLog:
         elapsed_s: float,
         error:     str = "",
     ) -> None:
-        self._entries.append(AuditEntry(
-            timestamp  = self._now(),
-            event_type = "tool_call",
-            agent      = agent,
-            data       = {
-                "tool":      tool,
-                "input_keys": inputs,
-                "success":   success,
-                "elapsed_s": elapsed_s,
-                "error":     error,
-            },
-        ))
+        self._append("tool_call", agent, {
+            "tool":       tool,
+            "input_keys": inputs,
+            "success":    success,
+            "elapsed_s":  elapsed_s,
+            "error":      error,
+        })
 
     def record_governance(
         self,
@@ -294,28 +287,13 @@ class AuditLog:
         passed:  bool,
         details: dict,
     ) -> None:
-        self._entries.append(AuditEntry(
-            timestamp  = self._now(),
-            event_type = "governance_check",
-            agent      = "Governance",
-            data       = {"check": check, "passed": passed, **details},
-        ))
+        self._append("governance_check", "Governance", {"check": check, "passed": passed, **details})
 
     def record_pii(self, call_id: str, pii_types: list[str]) -> None:
-        self._entries.append(AuditEntry(
-            timestamp  = self._now(),
-            event_type = "pii_detection",
-            agent      = "PIIScanner",
-            data       = {"call_id": call_id[:12], "pii_types": pii_types},
-        ))
+        self._append("pii_detection", "PIIScanner", {"call_id": call_id[:12], "pii_types": pii_types})
 
     def record_error(self, agent: str, error: str, context: dict = None) -> None:
-        self._entries.append(AuditEntry(
-            timestamp  = self._now(),
-            event_type = "error",
-            agent      = agent,
-            data       = {"error": error[:500], "context": context or {}},
-        ))
+        self._append("error", agent, {"error": error[:500], "context": context or {}})
 
     def export(self, output_dir: Path = OUTPUT_DIR) -> Path:
         """Write the audit log to disk and return the path."""

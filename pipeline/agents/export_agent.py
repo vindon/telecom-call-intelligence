@@ -21,11 +21,12 @@ from datetime import datetime
 
 import pandas as pd
 
-from pipeline.config import OUTPUT_DIR, QUALITY_WARN_RATE
+from pipeline.config import OUTPUT_DIR, QUALITY_WARN_RATE, VECTOR_MEMORY_ENABLED
 from pipeline.decision_log import DecisionLogger, summarize_decisions
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
+from pipeline.vector_memory import VECTOR_STORE
 
 log = get_logger(__name__)
 
@@ -218,6 +219,34 @@ class ExportAgent:
             "insights_source":       insights.get("source", "unknown"),
         })
         MEMORY.save()
+
+        # Semantic vector memory — embeds this run's KPI profile so future
+        # runs' InsightsAgent can retrieve it via VECTOR_STORE.query()/format_context()
+        # (see pipeline/agents/insights_agent.py::_get_rich_context). Skipped on the
+        # emergency path (no KPIs to embed) and never allowed to fail the export.
+        if VECTOR_MEMORY_ENABLED and not emergency_run:
+            try:
+                kpi_text = (
+                    f"FCR {kpis.get('fcr_rate_pct', 0)}% "
+                    f"AHT {kpis.get('avg_handle_time_minutes', 0)} min "
+                    f"escalation {kpis.get('escalation_rate_pct', 0)}% "
+                    f"AI-resolvable {kpis.get('agentic_ai_resolvable_pct', 0)}%"
+                )
+                VECTOR_STORE.load()
+                VECTOR_STORE.add_run(
+                    run_id=ts,
+                    kpi_text=kpi_text,
+                    metadata={
+                        "fcr_rate_pct":            kpis.get("fcr_rate_pct", 0),
+                        "aht_minutes":             kpis.get("avg_handle_time_minutes", 0),
+                        "qa_avg_score":            qa_report.get("summary", {}).get("avg_score", 0),
+                        "total_cost_usd":          usage.get("total_cost_usd", 0),
+                        "model":                   usage.get("model", "unknown"),
+                    },
+                )
+                VECTOR_STORE.save()
+            except Exception as exc:
+                log.warning("[%s] Vector memory write failed (%s) — run not embedded", self.name, exc)
 
         AUDIT_LOG.record_agent_end(
             self.name, {"files_written": len(export_paths)},

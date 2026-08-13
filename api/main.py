@@ -15,7 +15,6 @@ The /analyze endpoint calls analyze_transcript() directly — no LangGraph
 orchestration — so it avoids the full batch pipeline overhead for one-shot use.
 """
 
-import os
 import time
 import uuid
 from pathlib import Path
@@ -34,35 +33,23 @@ from pipeline.config import (  # noqa: E402
     MAX_OUTPUT_TOKENS,
     OUTPUT_DIR,
 )
+from pipeline.llm_clients import get_anthropic_client, get_gemini_client  # noqa: E402
 from pipeline.security import INPUT_SANITIZER, OUTPUT_SANITIZER  # noqa: E402
 
 # Initialise the correct LLM client based on EXTRACTION_MODEL.
 # Changing EXTRACTION_MODEL in config.py automatically switches the API client here.
-# Explicit timeout — without one, a slow/unresponsive provider hangs the
-# request for the SDK's 600s default instead of failing fast.
 _extraction_client = None
 _client_provider   = "unknown"
 
-if _USE_CLAUDE:
-    try:
-        import anthropic
-        _extraction_client = anthropic.Anthropic(
-            api_key=os.getenv("ANTHROPIC_API_KEY", ""), timeout=EXTRACTION_API_TIMEOUT_S, max_retries=1,
-        )
+try:
+    if _USE_CLAUDE:
+        _extraction_client = get_anthropic_client(EXTRACTION_API_TIMEOUT_S)
         _client_provider   = "Anthropic (Claude)"
-    except Exception:
-        _extraction_client = None
-else:
-    try:
-        from google import genai
-        from google.genai import types as genai_types
-        _extraction_client = genai.Client(
-            api_key=os.getenv("GEMINI_API_KEY", ""),
-            http_options=genai_types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
-        )
+    else:
+        _extraction_client = get_gemini_client(EXTRACTION_API_TIMEOUT_S)
         _client_provider   = "Google AI Studio"
-    except Exception:
-        _extraction_client = None
+except Exception:
+    _extraction_client = None
 
 _system_prompt: str | None = None
 _start_time = time.time()

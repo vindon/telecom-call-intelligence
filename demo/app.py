@@ -34,6 +34,7 @@ from pipeline.analyzer import (  # noqa: E402
     score_field_coverage,
 )
 from pipeline.config import EXTRACTION_API_TIMEOUT_S  # noqa: E402
+from pipeline.llm_clients import get_anthropic_client, get_gemini_client  # noqa: E402
 from pipeline.security import INPUT_SANITIZER, OUTPUT_SANITIZER  # noqa: E402
 
 _DEMO_DIR = Path(__file__).parent
@@ -42,29 +43,16 @@ _MOCK_ONLY = os.getenv("DEMO_MOCK_ONLY", "").lower() in ("1", "true", "yes")
 _client = None
 _provider = "Claude Haiku"
 
-# Explicit timeout — without one, a slow/unresponsive provider hangs the
-# live demo request for the SDK's 600s default instead of failing fast.
 if not _MOCK_ONLY:
-    if _USE_CLAUDE:
-        try:
-            import anthropic
-            _client = anthropic.Anthropic(
-                api_key=os.getenv("ANTHROPIC_API_KEY", ""), timeout=EXTRACTION_API_TIMEOUT_S, max_retries=1,
-            )
+    try:
+        if _USE_CLAUDE:
+            _client = get_anthropic_client(EXTRACTION_API_TIMEOUT_S)
             _provider = "Claude Haiku"
-        except Exception:
-            _client = None
-    else:
-        try:
-            from google import genai
-            from google.genai import types as genai_types
-            _client = genai.Client(
-                api_key=os.getenv("GEMINI_API_KEY", ""),
-                http_options=genai_types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
-            )
+        else:
+            _client = get_gemini_client(EXTRACTION_API_TIMEOUT_S)
             _provider = "Gemini"
-        except Exception:
-            _client = None
+    except Exception:
+        _client = None
 
 _system_prompt: str | None = None
 

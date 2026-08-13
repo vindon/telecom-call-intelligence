@@ -18,18 +18,18 @@ Production features
 """
 
 import json
-import os
 import re
 import time
 from pathlib import Path
 from typing import Any
 
-from google import genai
 from google.genai import types
 from tqdm import tqdm
 
+from pipeline.circuit_breaker import CircuitBreaker
 from pipeline.config import (
     EXTRACTION_API_TIMEOUT_S,
+    GEMINI_QUOTA_SENTINEL,
     MAX_RESPONSE_BYTES,
     PROMPT_PATH,
 )
@@ -45,6 +45,7 @@ from pipeline.config import (
 from pipeline.config import (
     OUTPUT_DIR as CHECKPOINT_DIR,
 )
+from pipeline.llm_clients import get_anthropic_client, get_gemini_client
 from pipeline.logger import get_logger
 from pipeline.security import (
     CLAUDE_RATE_LIMITER,
@@ -58,14 +59,11 @@ _USE_CLAUDE = MODEL.startswith("claude")
 
 log = get_logger(__name__)
 
-# Sentinel file persists the Gemini daily-quota exhaustion flag across
-# subprocess boundaries (run_batches.py spawns one process per batch).
-# Without this, each new subprocess resets the flag and burns more quota.
-_QUOTA_SENTINEL = CHECKPOINT_DIR / ".react_quota_exhausted"
-
 # Tripped on first Gemini 429 (daily quota); persisted via sentinel file so
-# subsequent batch subprocesses inherit the exhausted state immediately.
-_react_quota_exhausted: bool = _QUOTA_SENTINEL.exists()
+# subsequent batch subprocesses (run_batches.py spawns one process per
+# batch) inherit the exhausted state immediately instead of burning more
+# quota rediscovering it.
+_gemini_quota_breaker = CircuitBreaker(GEMINI_QUOTA_SENTINEL)
 
 
 # ── System prompt ─────────────────────────────────────────────────────
@@ -313,11 +311,9 @@ def gap_fill_transcript(
     first pass and make a targeted second call to fill them in.
     Returns a merged dict (first_pass values preserved where retry returns null).
     """
-    global _react_quota_exhausted
-
     # Circuit breaker: once quota is exhausted for the day, skip all retries
     # so remaining batches can complete their primary extraction.
-    if _react_quota_exhausted:
+    if _gemini_quota_breaker.tripped:
         return first_pass
 
     missing = [f for f in _CRITICAL_FIELDS if _is_missing(first_pass.get(f))]
@@ -378,9 +374,7 @@ def gap_fill_transcript(
         if "429" in exc_str or "rate_limit" in exc_str.lower():
             if not _USE_CLAUDE:
                 # Gemini 429 = daily quota exhausted — circuit break across all batches
-                _react_quota_exhausted = True
-                CHECKPOINT_DIR.mkdir(exist_ok=True)
-                _QUOTA_SENTINEL.touch()
+                _gemini_quota_breaker.trip()
                 log.warning("[ReAct] Gemini quota exhausted — sentinel written; gap-fill disabled for all remaining batches.")
             else:
                 # Claude 429 = transient per-minute limit — CLAUDE_RATE_LIMITER already backs off
@@ -412,26 +406,11 @@ def analyze_batch(
     Returns:
         List of result dicts including _prompt_tokens / _completion_tokens / _total_tokens.
     """
-    client: Any
-    if _USE_CLAUDE:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise OSError("ANTHROPIC_API_KEY not set. Check your .env file.")
-        import anthropic
-        # max_retries=1 (not the SDK default of 2): analyze_transcript() already
-        # retries with its own backoff on top of this, and the two layers
-        # compounding is what let a single stuck provider approach the
-        # orchestrator's 600s subprocess timeout — see config.py's comment
-        # on EXTRACTION_API_TIMEOUT_S.
-        client = anthropic.Anthropic(api_key=api_key, timeout=EXTRACTION_API_TIMEOUT_S, max_retries=1)
-    else:
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise OSError("GEMINI_API_KEY not set. Check your .env file.")
-        client = genai.Client(
-            api_key=api_key,
-            http_options=types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
-        )
+    client: Any = (
+        get_anthropic_client(EXTRACTION_API_TIMEOUT_S)
+        if _USE_CLAUDE
+        else get_gemini_client(EXTRACTION_API_TIMEOUT_S)
+    )
 
     system_prompt = load_system_prompt()
 

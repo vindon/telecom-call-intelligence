@@ -35,7 +35,6 @@ Usage
 from __future__ import annotations
 
 import json
-import os
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -52,20 +51,10 @@ log = get_logger(__name__)
 
 def _embed_gemini(texts: list[str]) -> np.ndarray:
     """Embed a list of texts using Gemini text-embedding-004 (768-dim)."""
-    from google import genai
-
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise OSError("GEMINI_API_KEY not set — cannot use Gemini embedding backend")
-
-    from google.genai import types as genai_types
-
     from pipeline.config import EXTRACTION_API_TIMEOUT_S
+    from pipeline.llm_clients import get_gemini_client
 
-    client = genai.Client(
-        api_key=api_key,
-        http_options=genai_types.HttpOptions(timeout=EXTRACTION_API_TIMEOUT_S * 1000),
-    )
+    client = get_gemini_client(EXTRACTION_API_TIMEOUT_S)
     vectors = []
     for text in texts:
         response = client.models.embed_content(

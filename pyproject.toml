@@ -22,7 +22,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*"        = ["F811"]   # redefined fixtures OK in test files
-"pipeline/tools.py" = ["F401"]   # tool funcs imported for side effects
 
 [tool.ruff.format]
 quote-style = "double"

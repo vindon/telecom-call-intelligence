@@ -12,12 +12,16 @@ import pytest
 import pipeline.agents.export_agent as exp_mod
 from pipeline.agents.export_agent import ExportAgent
 from pipeline.memory import AgentMemory
+from pipeline.vector_memory import VectorMemoryStore
 
 
 @pytest.fixture(autouse=True)
 def isolate(monkeypatch, tmp_path):
     monkeypatch.setattr(exp_mod, "OUTPUT_DIR", tmp_path)
     monkeypatch.setattr(exp_mod, "MEMORY", AgentMemory(path=tmp_path / "memory.json"))
+    monkeypatch.setattr(exp_mod, "VECTOR_STORE", VectorMemoryStore(tmp_path / "vector_memory"))
+    # Force the TF-IDF fallback — no real embedding API call in tests.
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     return tmp_path
 
 
@@ -84,6 +88,19 @@ class TestFullExport:
         types = [r["decision_type"] for r in decisions["records"]]
         assert "export_scope" in types
 
+    def test_run_recorded_in_vector_memory(self, isolate, make_record):
+        ExportAgent().run(_full_state(make_record))
+        assert exp_mod.VECTOR_STORE.size == 1
+        results = exp_mod.VECTOR_STORE.query("FCR 75% AHT 7.0 min", top_k=1)
+        assert results[0]["fcr_rate_pct"] == 75.0
+
+    def test_vector_memory_write_failure_does_not_break_export(self, isolate, make_record, monkeypatch):
+        monkeypatch.setattr(
+            exp_mod.VECTOR_STORE, "save", lambda: (_ for _ in ()).throw(OSError("disk full"))
+        )
+        out = ExportAgent().run(_full_state(make_record))
+        assert Path(out["export_paths"]["csv"]).exists()
+
 
 class TestEmergencyExport:
     def test_summary_json_preserved_on_quality_gate_failure(self, isolate, make_record):
@@ -113,3 +130,9 @@ class TestEmergencyExport:
         assert "AggregationAgent" not in manifest["agents_executed"]
         assert "InsightsAgent" not in manifest["agents_executed"]
         assert "ExportAgent" in manifest["agents_executed"]
+
+    def test_vector_memory_skipped_on_emergency_path(self, isolate, make_record):
+        state = _full_state(make_record)
+        state["aggregated_metrics"] = {}
+        ExportAgent().run(state)
+        assert exp_mod.VECTOR_STORE.size == 0

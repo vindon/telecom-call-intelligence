@@ -89,9 +89,8 @@ See `CLAUDE.md` for the full checklist. In brief:
 2. Instrument with `DecisionLogger` (see `CLAUDE.md`) — mandatory for all agents
 3. Export from `pipeline/agents/__init__.py`
 4. Wire the node and edges in `pipeline/graph.py`; update `PipelineState`
-5. Register any tools in `pipeline/tools.py`
-6. Write tests in `tests/` including `DecisionLogger` assertions
-7. Update `ARCHITECTURE.md` and `CHANGELOG.md`
+5. Write tests in `tests/` including `DecisionLogger` assertions
+6. Update `ARCHITECTURE.md` and `CHANGELOG.md`
 
 ---
 

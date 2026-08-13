@@ -43,7 +43,9 @@ Key files:
 - `pipeline/security.py` — InputSanitizer, OutputSanitizer, AgentScopeGuard, SecretGuard, RateLimiter
 - `pipeline/token_tracker.py` — model-aware token accounting; `cost_usd(prompt, completion)` dispatches by `EXTRACTION_MODEL`
 - `pipeline/memory.py` — persistent cross-run agent memory (`outputs/agent_memory.json`)
-- `pipeline/tools.py` — formal JSON-schema tool registry (5 tools)
+- `pipeline/vector_memory.py` — semantic cross-run memory (embeds each run's KPI profile; written by ExportAgent, queried by InsightsAgent)
+- `pipeline/llm_clients.py` — single seam for constructing Anthropic/Gemini/NVIDIA clients (timeout/max_retries policy lives here, not at each call site)
+- `pipeline/circuit_breaker.py` — shared provider-unavailability breaker (Gemini quota exhaustion, NVIDIA timeout)
 - `pipeline/agents/` — one file per agent
 
 ---
@@ -52,7 +54,7 @@ Key files:
 
 ```bash
 make install-dev    # install all deps (prod + dev)
-make test           # run 404-test suite
+make test           # run 399-test suite
 make test-fast      # skip @slow and @integration tests
 make lint           # ruff linter
 make check          # lint + type-check + test (full gate)
@@ -151,9 +153,8 @@ Records failing any check get `_dq_gate_passed=False` and are excluded from aggr
 3. Export from `pipeline/agents/__init__.py`
 4. Add a singleton in `pipeline/graph.py` and wire the node
 5. Add tests in `tests/test_agents/test_your_agent.py`
-6. Register any tools in `pipeline/tools.py`
-7. Update `PipelineState` TypedDict with any new state keys
-8. Update `ARCHITECTURE.md` and `CHANGELOG.md`
+6. Update `PipelineState` TypedDict with any new state keys
+7. Update `ARCHITECTURE.md` and `CHANGELOG.md`
 
 ---
 
@@ -174,11 +175,11 @@ Records failing any check get `_dq_gate_passed=False` and are excluded from aggr
 ## Running Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -v              # all 404 tests
+.venv/bin/python -m pytest tests/ -v              # all 399 tests
 .venv/bin/python -m pytest tests/ -m "not slow"   # skip API tests
 ```
 
-Expected: **404 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
+Expected: **399 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
 
 ---
 

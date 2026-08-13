@@ -1,6 +1,6 @@
 ---
 name: new-agent
-description: Scaffold a new pipeline agent — creates the agent file, wires it into graph.py, adds a test file, and reminds about tools.py and ARCHITECTURE.md
+description: Scaffold a new pipeline agent — creates the agent file, wires it into graph.py, adds a test file, and reminds about ARCHITECTURE.md
 ---
 
 The user wants to add a new agent to the LangGraph pipeline.
@@ -10,7 +10,7 @@ Start by asking the user three questions if not already provided:
 2. What does it do? (one sentence — used for the class docstring and ARCHITECTURE.md entry)
 3. What state keys does it consume from `PipelineState`, and what new keys does it produce?
 
-Then follow the 7-step checklist from CLAUDE.md exactly:
+Then follow the 6-step checklist from CLAUDE.md exactly:
 
 **Step 1** — Create `pipeline/agents/{name}_agent.py`:
 - Stateless class with a `run(state: dict) -> dict` method
@@ -31,11 +31,9 @@ Then follow the 7-step checklist from CLAUDE.md exactly:
 - Mark any test that makes a real API call (Claude or NVIDIA NIM) with `@pytest.mark.slow`
 - Do NOT mock `BudgetGuard`, `QualityGate`, `PIIScanner`, or `AuditLog` — they are fast pure Python
 
-**Step 5** — Register tools in `pipeline/tools.py` if the agent uses any new formal tools
+**Step 5** — Add new state keys to `PipelineState` TypedDict in `pipeline/graph.py`
 
-**Step 6** — Add new state keys to `PipelineState` TypedDict in `pipeline/graph.py`
-
-**Step 7** — Update `ARCHITECTURE.md`:
+**Step 6** — Update `ARCHITECTURE.md`:
 - Add the new node to the architecture diagram
 - Add a one-line description in the node table
 

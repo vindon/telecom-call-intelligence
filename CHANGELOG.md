@@ -6,6 +6,23 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.6.0] — 2026-08-13
+
+### Fixed — Architecture audit: dead code, duplicated seams, broken interface promise
+
+A deep-module architecture review (`mattpocock-skills:codebase-design`) of `pipeline/` surfaced six findings, all fixed:
+
+- **`vector_memory.VECTOR_STORE.add_run()` was never called.** The module's own docstring claimed "Called by ExportAgent at the end of each pipeline run" — it wasn't. `ExportAgent` now embeds each run's KPI profile (FCR/AHT/escalation/AI-resolvable) into the vector store after every non-emergency export, guarded by `VECTOR_MEMORY_ENABLED` and never allowed to fail the export itself. Until this fix, `InsightsAgent`'s semantic nearest-run retrieval (`_get_rich_context()`) was querying a store that no run had ever written to.
+- **`MEMORY_PATH` was defined twice** (`config.py` and `memory.py`, separately-valued constants that happened to agree). `memory.py` now imports it from `config.py`.
+- **Anthropic/Gemini/NVIDIA client construction was duplicated across 6 sites** (`analyzer.py`, `agents/extraction_agent.py`, `agents/insights_agent.py`, `vector_memory.py`, `api/main.py`, `demo/app.py`), each independently re-applying the `timeout=`/`max_retries=1` policy from CLAUDE.md's spend-control rule. New `pipeline/llm_clients.py` (`get_anthropic_client()`/`get_gemini_client()`/`get_nvidia_client()`) is now the single seam; every call site delegates to it.
+- **The Gemini-quota and NVIDIA-unavailable circuit breakers were the same logic reimplemented twice** (module-level bool + sentinel file, tripped via `global` on a timeout/quota error). New `pipeline/circuit_breaker.CircuitBreaker` is shared by both; `GEMINI_QUOTA_SENTINEL`/`NVIDIA_UNAVAILABLE_SENTINEL` moved into `config.py` as the single source for paths `orchestrator.py` also needed (it was independently reconstructing the same two paths a third time to clear them at run start).
+- **`governance.AuditLog`'s 6 `record_*` methods each repeated the same `AuditEntry(timestamp=self._now(), ...); self._entries.append(...)` boilerplate.** Extracted a private `_append()` helper; public methods and every call site unchanged (each method still enforces its own truncation/shape invariant — e.g. `record_pii` truncating `call_id` to 12 chars — so this was a boilerplate fix, not an interface collapse).
+- **`pipeline/tools.py`'s `ToolRegistry` was dead code.** Zero call sites invoked `REGISTRY` — every agent called the underlying modules directly. Its tool implementations had also drifted from the agents' real behavior (`_export_results` wrote one file; the real `ExportAgent` writes seven), so wiring agents through it would have meant duplicating agent logic a second time rather than removing duplication. Deleted, along with `tests/test_tools.py` and the now-unneeded `pipeline/tools.py` ruff per-file-ignore.
+
+Net: 399 tests (was 404 — +15 new across `test_export_agent.py`/`test_llm_clients.py`/`test_circuit_breaker.py`, −20 for the removed `test_tools.py`).
+
+---
+
 ## [4.5.0] — 2026-08-09
 
 ### Added — Data Quality Gate (phase reconciliation, timestamp ground truth, transcript completeness)
