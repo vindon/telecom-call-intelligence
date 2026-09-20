@@ -1,542 +1,161 @@
 {
   "meta": {
-    "total_calls_analyzed": 172,
-    "analysis_timestamp": "2026-08-09T17:58:24.071028",
+    "total_calls_analyzed": 2,
+    "analysis_timestamp": "2026-09-20T15:09:51.870774",
     "dataset": "talkmap/telecom-conversation-corpus",
     "model": "claude-haiku-4-5-20251001",
     "inference_provider": "Anthropic (Claude)",
     "cost_benchmark_note": "Cost estimates use $6.00/call industry benchmark. Replace with actual ACD data for production."
   },
   "kpis": {
-    "total_calls_analyzed": 172,
-    "avg_handle_time_seconds": 160.7,
-    "avg_handle_time_minutes": 2.7,
-    "fcr_rate_pct": 64.5,
-    "avoidable_call_rate_pct": 59.3,
-    "self_serve_deflection_pct": 59.3,
-    "agentic_ai_resolvable_pct": 44.2,
-    "proactive_outreach_pct": 25.0,
-    "all_issues_resolved_pct": 69.2,
-    "escalation_rate_pct": 23.3,
-    "upsell_attempted_pct": 34.9,
-    "upsell_conversion_pct": 91.7,
-    "sentiment_improved_pct": 87.8,
-    "agent_tool_struggle_pct": 1.7,
-    "multi_issue_call_pct": 5.2,
-    "avg_issues_per_call": 1.1,
-    "avg_hold_time_seconds": 0.2,
-    "avg_hold_count": 0.1,
-    "avg_empathy_statements": 1.9,
-    "prevent_pct": 25.0,
-    "automate_pct": 45.3,
-    "human_required_pct": 29.7,
-    "automate_self_serve_pct": 43.6,
-    "automate_agentic_pct": 1.7
+    "total_calls_analyzed": 2,
+    "avg_handle_time_seconds": 208.5,
+    "avg_handle_time_minutes": 3.5,
+    "fcr_rate_pct": 100.0,
+    "avoidable_call_rate_pct": 50.0,
+    "self_serve_deflection_pct": 50.0,
+    "agentic_ai_resolvable_pct": 50.0,
+    "proactive_outreach_pct": 0.0,
+    "all_issues_resolved_pct": 100.0,
+    "escalation_rate_pct": 0.0,
+    "upsell_attempted_pct": 50.0,
+    "upsell_conversion_pct": 100.0,
+    "sentiment_improved_pct": 100.0,
+    "agent_tool_struggle_pct": 0.0,
+    "multi_issue_call_pct": 0.0,
+    "avg_issues_per_call": 1.0,
+    "avg_hold_time_seconds": 0.0,
+    "avg_hold_count": 0.0,
+    "avg_empathy_statements": 2.0,
+    "prevent_pct": 0.0,
+    "automate_pct": 50.0,
+    "human_required_pct": 50.0,
+    "automate_self_serve_pct": 50.0,
+    "automate_agentic_pct": 0.0
   },
   "phase_avg_seconds": {
-    "Welcome & Auth": 24.6,
-    "Discovery": 43.7,
-    "Diagnosis": 33.3,
-    "Resolution": 36.4,
-    "Hold": 0.2,
-    "Upsell": 13.1,
-    "Closing": 20.4
+    "Welcome & Auth": 17.5,
+    "Discovery": 76.0,
+    "Diagnosis": 77.0,
+    "Resolution": 19.0,
+    "Hold": 0.0,
+    "Upsell": 12.5,
+    "Closing": 19.0
   },
   "phase_drilldown": {
     "Discovery": [
       {
-        "intent": "complaint",
-        "avg_seconds": 65.0,
-        "calls": 3,
-        "stall_pct": 33.3
-      },
-      {
-        "intent": "plan",
-        "avg_seconds": 48.6,
-        "calls": 17,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "information",
-        "avg_seconds": 47.9,
-        "calls": 28,
-        "stall_pct": 7.1
-      },
-      {
         "intent": "technical",
-        "avg_seconds": 44.2,
-        "calls": 61,
-        "stall_pct": 6.6
-      },
-      {
-        "intent": "insurance",
-        "avg_seconds": 43.0,
-        "calls": 3,
-        "stall_pct": 0.0
+        "avg_seconds": 76.0,
+        "calls": 2,
+        "stall_pct": 50.0
       }
     ],
     "Diagnosis": [
       {
         "intent": "technical",
-        "avg_seconds": 42.0,
-        "calls": 61,
-        "stall_pct": 16.4
-      },
-      {
-        "intent": "device",
-        "avg_seconds": 39.0,
-        "calls": 38,
-        "stall_pct": 15.8
-      },
-      {
-        "intent": "account",
-        "avg_seconds": 29.4,
-        "calls": 9,
+        "avg_seconds": 77.0,
+        "calls": 2,
         "stall_pct": 0.0
-      },
-      {
-        "intent": "billing",
-        "avg_seconds": 25.9,
-        "calls": 10,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "information",
-        "avg_seconds": 25.1,
-        "calls": 28,
-        "stall_pct": 3.6
       }
     ],
     "Resolution": [
       {
-        "intent": "plan",
-        "avg_seconds": 54.4,
-        "calls": 17,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "information",
-        "avg_seconds": 45.4,
-        "calls": 28,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "device",
-        "avg_seconds": 39.5,
-        "calls": 38,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "billing",
-        "avg_seconds": 31.8,
-        "calls": 10,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "insurance",
-        "avg_seconds": 31.7,
-        "calls": 3,
+        "intent": "technical",
+        "avg_seconds": 19.0,
+        "calls": 2,
         "stall_pct": 0.0
       }
     ],
     "Upsell": [
       {
-        "intent": "plan",
-        "avg_seconds": 42.9,
-        "calls": 17,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "information",
-        "avg_seconds": 28.4,
-        "calls": 28,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "insurance",
-        "avg_seconds": 16.3,
-        "calls": 3,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "account",
-        "avg_seconds": 9.0,
-        "calls": 9,
-        "stall_pct": 0.0
-      },
-      {
-        "intent": "device",
-        "avg_seconds": 6.8,
-        "calls": 38,
+        "intent": "technical",
+        "avg_seconds": 12.5,
+        "calls": 2,
         "stall_pct": 0.0
       }
     ]
   },
   "distributions": {
     "issue_category": {
-      "technical": 63,
-      "device": 39,
-      "information": 30,
-      "plan": 18,
-      "billing": 13,
-      "account": 11,
-      "complaint": 4,
-      "insurance": 3,
-      "other": 1
+      "technical": 2
     },
     "cost_driver": {
-      "information_only": 29.1,
-      "technical": 19.8,
-      "plan_change": 19.2,
-      "device": 18.6,
-      "complaint": 7.0,
-      "billing": 5.2,
-      "account": 1.2
+      "device": 50.0,
+      "information_only": 50.0
     },
     "agent_skill": {
       "adequate": 50.0,
-      "proficient": 48.3,
-      "needs_improvement": 1.7
+      "proficient": 50.0
     },
     "customer_sentiment_start": {
-      "neutral": 52.3,
-      "frustrated": 41.3,
-      "distressed": 2.3,
-      "negative": 1.2,
-      "concerned": 1.2,
-      "positive": 0.6,
-      "irritated": 0.6,
-      "disappointed": 0.6
+      "frustrated": 50.0,
+      "neutral": 50.0
     },
     "customer_sentiment_end": {
-      "positive": 74.4,
-      "neutral": 19.2,
-      "frustrated": 2.3,
-      "distressed": 1.7,
-      "satisfied": 1.2,
-      "resigned": 0.6,
-      "dismissive": 0.6
+      "positive": 100.0
     },
     "handle_time_efficiency": {
-      "efficient": 82.0,
-      "average": 16.9,
-      "inefficient": 1.2
+      "efficient": 100.0
     },
     "self_serve_channel": {
-      "app|website": 40.5,
-      "app": 39.6,
-      "website": 8.1,
-      "none": 8.1,
-      "website|app": 1.8,
-      "website|app|chatbot": 0.9,
-      "app|website|chatbot": 0.9
+      "app|website": 100.0
     },
     "repeat_call_risk": {
-      "low": 69.8,
-      "medium": 15.7,
-      "high": 14.5
+      "low": 100.0
     },
     "agent_disproportionate_phase": {
-      "diagnosis": 43.6,
-      "discovery": 23.1,
-      "welcome": 12.8,
-      "closing": 10.3,
-      "resolution": 5.1,
-      "none": 5.1
+      "discovery": 100.0
     },
     "upsell_outcome": {
-      "not_attempted": 65.1,
-      "accepted": 32.0,
-      "declined": 2.9
+      "accepted": 50.0,
+      "not_attempted": 50.0
     },
     "resolution_method_issue1": {
-      "agent_action": 53.5,
-      "escalated": 22.4,
-      "self_serve_guidance": 14.1,
-      "workaround": 7.6,
-      "unresolved": 1.8,
-      "workaround|escalated": 0.6
+      "workaround": 50.0,
+      "agent_action": 50.0
     },
     "account_type": {
-      "postpaid": 65.1,
-      "unknown": 30.2,
-      "business": 3.5,
-      "prepaid": 1.2
+      "postpaid": 50.0,
+      "unknown": 50.0
     }
   },
   "cost_levers": {
     "cost_per_call_usd": 6.0,
     "monthly_volume_estimate": 100000,
     "baseline_monthly_cost_usd": 600000,
-    "self_serve_savings_usd": 222360,
-    "agentic_ai_savings_usd": 7140,
-    "proactive_care_savings_usd": 90000,
-    "total_savings_opportunity_usd": 319500,
-    "savings_pct_of_baseline": 53.2,
-    "serve_time_pct": 80.4,
-    "serve_cost_usd": 482400,
-    "sell_time_pct": 7.6,
-    "sell_cost_usd": 45600,
-    "retain_time_pct": 12.0,
-    "retain_cost_usd": 72000
+    "self_serve_savings_usd": 255000,
+    "agentic_ai_savings_usd": 0,
+    "proactive_care_savings_usd": 0,
+    "total_savings_opportunity_usd": 255000,
+    "savings_pct_of_baseline": 42.5,
+    "serve_time_pct": 85.7,
+    "serve_cost_usd": 514200,
+    "sell_time_pct": 5.7,
+    "sell_cost_usd": 34200,
+    "retain_time_pct": 8.6,
+    "retain_cost_usd": 51600
   },
   "issue_breakdown": {
     "categories": [
       {
         "category": "technical",
-        "count": 61,
-        "pct": 35.5,
-        "dollars": 212791,
+        "count": 2,
+        "pct": 100.0,
+        "dollars": 600000,
         "segments": {
-          "prevent": {
-            "count": 15,
-            "pct": 24.6,
-            "methods": {
-              "agent_action": 7,
-              "escalated": 4,
-              "workaround": 3,
-              "self_serve_guidance": 1
-            }
-          },
           "automate_self_serve": {
-            "count": 19,
-            "pct": 31.1,
-            "methods": {
-              "agent_action": 9,
-              "self_serve_guidance": 5,
-              "escalated": 2,
-              "workaround": 2,
-              "workaround|escalated": 1
-            }
-          },
-          "automate_agentic": {
             "count": 1,
-            "pct": 1.6,
+            "pct": 50.0,
             "methods": {
               "agent_action": 1
             }
           },
           "human": {
-            "count": 26,
-            "pct": 42.6,
+            "count": 1,
+            "pct": 50.0,
             "methods": {
-              "escalated": 17,
-              "agent_action": 5,
-              "workaround": 4
-            }
-          }
-        }
-      },
-      {
-        "category": "device",
-        "count": 38,
-        "pct": 22.1,
-        "dollars": 132558,
-        "segments": {
-          "prevent": {
-            "count": 4,
-            "pct": 10.5,
-            "methods": {
-              "agent_action": 2,
-              "workaround": 2
-            }
-          },
-          "automate_self_serve": {
-            "count": 15,
-            "pct": 39.5,
-            "methods": {
-              "self_serve_guidance": 7,
-              "agent_action": 6,
-              "escalated": 1,
               "workaround": 1
-            }
-          },
-          "automate_agentic": {
-            "count": 2,
-            "pct": 5.3,
-            "methods": {
-              "agent_action": 2
-            }
-          },
-          "human": {
-            "count": 17,
-            "pct": 44.7,
-            "methods": {
-              "escalated": 8,
-              "agent_action": 8,
-              "unresolved": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "information",
-        "count": 28,
-        "pct": 16.3,
-        "dollars": 97674,
-        "segments": {
-          "prevent": {
-            "count": 6,
-            "pct": 21.4,
-            "methods": {
-              "agent_action": 5,
-              "self_serve_guidance": 1
-            }
-          },
-          "automate_self_serve": {
-            "count": 21,
-            "pct": 75.0,
-            "methods": {
-              "agent_action": 12,
-              "self_serve_guidance": 8,
-              "escalated": 1
-            }
-          },
-          "human": {
-            "count": 1,
-            "pct": 3.6,
-            "methods": {
-              "agent_action": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "plan",
-        "count": 17,
-        "pct": 9.9,
-        "dollars": 59302,
-        "segments": {
-          "prevent": {
-            "count": 9,
-            "pct": 52.9,
-            "methods": {
-              "agent_action": 8,
-              "workaround": 1
-            }
-          },
-          "automate_self_serve": {
-            "count": 8,
-            "pct": 47.1,
-            "methods": {
-              "agent_action": 8
-            }
-          }
-        }
-      },
-      {
-        "category": "billing",
-        "count": 10,
-        "pct": 5.8,
-        "dollars": 34884,
-        "segments": {
-          "prevent": {
-            "count": 7,
-            "pct": 70.0,
-            "methods": {
-              "agent_action": 7
-            }
-          },
-          "automate_self_serve": {
-            "count": 3,
-            "pct": 30.0,
-            "methods": {
-              "escalated": 1,
-              "self_serve_guidance": 1,
-              "agent_action": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "account",
-        "count": 9,
-        "pct": 5.2,
-        "dollars": 31395,
-        "segments": {
-          "prevent": {
-            "count": 1,
-            "pct": 11.1,
-            "methods": {
-              "escalated": 1
-            }
-          },
-          "automate_self_serve": {
-            "count": 6,
-            "pct": 66.7,
-            "methods": {
-              "agent_action": 3,
-              "escalated": 1,
-              "unresolved": 1,
-              "self_serve_guidance": 1
-            }
-          },
-          "human": {
-            "count": 2,
-            "pct": 22.2,
-            "methods": {
-              "unresolved": 1,
-              "agent_action": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "complaint",
-        "count": 3,
-        "pct": 1.7,
-        "dollars": 10465,
-        "segments": {
-          "prevent": {
-            "count": 1,
-            "pct": 33.3,
-            "methods": {
-              "agent_action": 1
-            }
-          },
-          "human": {
-            "count": 2,
-            "pct": 66.7,
-            "methods": {
-              "agent_action": 1,
-              "escalated": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "insurance",
-        "count": 3,
-        "pct": 1.7,
-        "dollars": 10465,
-        "segments": {
-          "automate_self_serve": {
-            "count": 2,
-            "pct": 66.7,
-            "methods": {
-              "agent_action": 2
-            }
-          },
-          "human": {
-            "count": 1,
-            "pct": 33.3,
-            "methods": {
-              "agent_action": 1
-            }
-          }
-        }
-      },
-      {
-        "category": "other",
-        "count": 1,
-        "pct": 0.6,
-        "dollars": 3488,
-        "segments": {
-          "human": {
-            "count": 1,
-            "pct": 100.0,
-            "methods": {
-              "escalated": 1
             }
           }
         }
@@ -544,65 +163,16 @@
     ],
     "build_queue": [
       {
-        "category": "information",
+        "category": "technical",
         "segment": "automate",
-        "count": 21,
-        "pct": 75.0,
-        "dollars": 73256,
-        "category_count": 28,
-        "self_serve_count": 21,
+        "count": 1,
+        "pct": 50.0,
+        "dollars": 300000,
+        "category_count": 2,
+        "self_serve_count": 1,
         "agentic_count": 0,
         "methods": {
-          "agent_action": 12,
-          "self_serve_guidance": 8,
-          "escalated": 1
-        }
-      },
-      {
-        "category": "technical",
-        "segment": "automate",
-        "count": 20,
-        "pct": 32.8,
-        "dollars": 69767,
-        "category_count": 61,
-        "self_serve_count": 19,
-        "agentic_count": 1,
-        "methods": {
-          "agent_action": 10,
-          "self_serve_guidance": 5,
-          "escalated": 2,
-          "workaround": 2,
-          "workaround|escalated": 1
-        }
-      },
-      {
-        "category": "device",
-        "segment": "automate",
-        "count": 17,
-        "pct": 44.7,
-        "dollars": 59302,
-        "category_count": 38,
-        "self_serve_count": 15,
-        "agentic_count": 2,
-        "methods": {
-          "self_serve_guidance": 7,
-          "agent_action": 8,
-          "escalated": 1,
-          "workaround": 1
-        }
-      },
-      {
-        "category": "technical",
-        "segment": "prevent",
-        "count": 15,
-        "pct": 24.6,
-        "dollars": 52326,
-        "category_count": 61,
-        "methods": {
-          "agent_action": 7,
-          "escalated": 4,
-          "workaround": 3,
-          "self_serve_guidance": 1
+          "agent_action": 1
         }
       }
     ]
@@ -610,33 +180,176 @@
   "token_usage": {
     "model": "claude-haiku-4-5-20251001",
     "provider": "Anthropic (Claude)",
-    "calls_with_usage": 172,
+    "calls_with_usage": 2,
     "calls_missing_usage": 0,
-    "total_prompt_tokens": 436703,
-    "total_completion_tokens": 371051,
+    "total_prompt_tokens": 2078,
+    "total_completion_tokens": 4640,
     "total_cache_creation_tokens": 5613,
-    "total_cache_read_tokens": 613773,
-    "total_tokens": 1427140,
-    "avg_prompt_tokens_per_call": 2539.0,
-    "avg_completion_tokens_per_call": 2157.0,
-    "avg_total_tokens_per_call": 8297.0,
-    "total_cost_usd": 2.3646,
-    "avg_cost_per_call_usd": 0.013747,
-    "cache_read_savings_usd": 0.5524,
+    "total_cache_read_tokens": 5613,
+    "total_tokens": 17944,
+    "avg_prompt_tokens_per_call": 1039.0,
+    "avg_completion_tokens_per_call": 2320.0,
+    "avg_total_tokens_per_call": 8972.0,
+    "total_cost_usd": 0.0371,
+    "avg_cost_per_call_usd": 0.018533,
+    "cache_read_savings_usd": 0.0051,
     "price_input_per_mtok_usd": 1.0,
     "price_output_per_mtok_usd": 5.0,
-    "pricing_note": "claude-haiku-4-5-20251001 \u00b7 Paid tier pricing \u2014 no free tier for Claude Haiku. At 100K calls/mo avg 8,297 tokens/call, monthly inference cost \u2248 $1,374.74 USD."
+    "pricing_note": "claude-haiku-4-5-20251001 \u00b7 Paid tier pricing \u2014 no free tier for Claude Haiku. At 100K calls/mo avg 8,972 tokens/call, monthly inference cost \u2248 $1,853.26 USD."
   },
   "qa_summary": {
-    "data_quality_pass_rate_pct": 79.3,
-    "data_quality_n_failed": 45,
+    "avg_score": 98.6,
+    "pass_rate_pct": 100.0,
+    "grade_HIGH": 3,
+    "grade_MEDIUM": 0,
+    "grade_LOW": 0,
+    "pct_HIGH": 100.0,
+    "pct_MEDIUM": 0.0,
+    "pct_LOW": 0.0,
+    "data_quality_pass_rate_pct": 66.7,
+    "data_quality_n_failed": 1,
     "data_quality_failure_breakdown": {
-      "phase_reconciliation": 33,
-      "timestamp_ground_truth": 1,
-      "transcript_truncation": 15
+      "phase_reconciliation": 1
+    }
+  },
+  "agent_insights": {
+    "executive_summary": "Current contact center achieves exceptional FCR (100%) and zero escalations, but 50% of inbound calls are avoidable and 50% are AI-resolvable, indicating a reactive operational model. Device-related issues represent the largest cost driver. Deploying proactive device health monitoring and agentic AI for routine issues could recover $180K\u2013$210K monthly (based on 50% call volume reduction \u00d7 $18\u2013$22 cost-per-contact delta), contingent on validation across a larger sample size (current n=2).",
+    "top_recommendations": [
+      {
+        "priority": 1,
+        "title": "Deploy Proactive Device Health Monitoring to Eliminate Avoidable Calls",
+        "insight": "50% of calls are avoidable (KPI: Avoidable Call Rate = 50%), and device issues are the documented cost driver. Proactive monitoring prevents customer-initiated contact by detecting and notifying customers of issues before they escalate. This directly reduces inbound volume without degrading FCR (currently 100%).",
+        "estimated_impact": "Assuming 40\u201350% of avoidable calls are preventable via proactive intervention: (inbound volume \u00d7 50% avoidable \u00d7 45% prevention rate) \u00d7 $18\u2013$22 cost-per-contact = $90K\u2013$110K monthly savings. Requires validation on full call cohort (n>30) to confirm device issue prevalence and prevention feasibility."
+      },
+      {
+        "priority": 2,
+        "title": "Implement Agentic AI for 50% AI-Resolvable Call Segment",
+        "insight": "50% of calls are AI-resolvable (KPI: AI-Resolvable = 50%), indicating a substantial automation opportunity. Current AHT of 3.5 min suggests agent handling; AI-driven resolution typically costs 60\u201370% less per contact ($5\u2013$8 vs. $18\u2013$22 agent cost). Deployment preserves FCR (100%) while reducing operational cost.",
+        "estimated_impact": "Volume \u00d7 50% AI-resolvable \u00d7 ($18\u2013$22 agent cost \u2212 $5\u2013$8 AI cost) = $65K\u2013$85K monthly savings. Requires specification of: (a) current fully-loaded cost-per-agent-contact, (b) AI platform cost-per-interaction, (c) agent redeployment plan to avoid headcount reduction risk."
+      },
+      {
+        "priority": 3,
+        "title": "Build Device-Specific Self-Service Portal and Knowledge Base",
+        "insight": "Device issues are the primary cost driver (stated in initial analysis). High FCR (100%) indicates agents possess strong device troubleshooting knowledge. Codifying this into self-service content reduces avoidable calls (currently 50%) by enabling customer resolution before contact. Directly addresses the 50% avoidable call rate.",
+        "estimated_impact": "Assuming 25\u201335% of avoidable calls can be deflected to self-service: (inbound volume \u00d7 50% avoidable \u00d7 30% deflection rate) \u00d7 $18\u2013$22 cost-per-contact = $54K\u2013$66K monthly savings. Success contingent on device taxonomy completeness and self-service UX testing with target user segment."
+      },
+      {
+        "priority": 4,
+        "title": "Establish Root-Cause Analysis Process for Device Issues to Identify Systemic Defects",
+        "insight": "Device issues dominate cost driver profile, but no data shows whether these are customer-induced, design defects, or manufacturing issues. Understanding root cause enables upstream prevention (product design, QA, supply chain) rather than reactive contact center handling. Supports both Rec #1 (proactive monitoring) and Rec #3 (self-service content).",
+        "estimated_impact": "If 20\u201330% of device issues stem from preventable defects, coordinating with product/supply teams could eliminate 10\u201315% of total inbound volume over 6\u20139 months. Estimated savings: (inbound volume \u00d7 12.5% reduction) \u00d7 $18\u2013$22 cost-per-contact = $45K\u2013$55K monthly. Requires cross-functional governance and 90-day pilot."
+      },
+      {
+        "priority": 5,
+        "title": "Validate KPI Findings on Expanded Sample Before Full-Scale Deployment",
+        "insight": "Current analysis is based on n=2 calls. FCR at 100%, AHT at 3.5 min, and the 50% avoidable/AI-resolvable split may not be statistically representative. Quota exhaustion history (10x) suggests cost volatility. Board approval of $180K\u2013$210K savings requires confidence interval validation.",
+        "estimated_impact": "Conduct 30-day audit of 100\u2013150 calls to confirm: (a) avoidable call rate distribution, (b) AI-resolvable rate by issue type, (c) device issue prevalence and cost impact, (d) FCR stability across cohorts. Refine savings estimates with actual cost-per-contact data. Delays deployment 4\u20136 weeks but reduces execution risk by 70\u201380%."
+      }
+    ],
+    "quick_wins": [
+      "Extract and publish device troubleshooting scripts from top 10 agent interactions into a searchable FAQ within 2 weeks; measure self-service deflection rate weekly.",
+      "Implement automated device health check notifications (via SMS/email) for known high-failure device models; pilot with 5% of customer base to validate prevention rate before full rollout.",
+      "Audit the 10x quota exhaustion history: identify cost drivers (overtime, external vendors, repeat contacts) and implement daily spend alerts to prevent recurrence during pilot phase."
+    ],
+    "risk_flags": [
+      "Sample size fragility (n=2): 100% FCR and 50% avoidable/AI-resolvable rates may not generalize. A single outlier call could shift metrics by 50%. Recommend n\u2265100 validation before board commitment to $180K\u2013$210K savings.",
+      "Cost-per-contact assumptions unvalidated: Savings calculations assume $18\u2013$22 agent cost and $5\u2013$8 AI cost, but actual fully-loaded contact center cost (including overhead, benefits, infrastructure) and AI platform pricing are not disclosed. Savings could be 30\u201340% lower if assumptions are optimistic. Require finance sign-off on cost model before deployment."
+    ],
+    "source": "llm_deliberated",
+    "critique": "adequate",
+    "deliberation_passes": 3,
+    "token_usage": {
+      "total_prompt_tokens": 2969,
+      "total_completion_tokens": 3940,
+      "calls": 3,
+      "by_pass": [
+        {
+          "provider": "anthropic",
+          "model": "claude-haiku-4-5-20251001",
+          "prompt_tokens": 593,
+          "completion_tokens": 1395
+        },
+        {
+          "provider": "anthropic",
+          "model": "claude-haiku-4-5-20251001",
+          "prompt_tokens": 1085,
+          "completion_tokens": 1009
+        },
+        {
+          "provider": "anthropic",
+          "model": "claude-haiku-4-5-20251001",
+          "prompt_tokens": 1291,
+          "completion_tokens": 1536
+        }
+      ]
+    }
+  },
+  "decision_summary": {
+    "total_decisions": 11,
+    "by_agent": {
+      "DataIngestionAgent": 1,
+      "ExtractionAgent": 1,
+      "QualityAgent": 3,
+      "AggregationAgent": 2,
+      "InsightsAgent": 2,
+      "ApprovalGate": 1,
+      "ExportAgent": 1
     },
-    "n_low_qa_grade": 0,
-    "n_trusted_for_aggregation": 172,
-    "n_merged_total": 217
-  }
+    "by_type": {
+      "pii_redaction": 1,
+      "react_gap_fill_outcome": 1,
+      "phase_reconciliation_failure": 1,
+      "data_quality_gate_outcome": 1,
+      "quality_gate_outcome": 1,
+      "aggregation_scope": 1,
+      "cost_model_applied": 1,
+      "provider_selected": 1,
+      "deliberation_outcome": 1,
+      "approval_decision": 1,
+      "export_scope": 1
+    },
+    "notable_decisions": [
+      {
+        "record_id": "2d043b8a",
+        "agent": "QualityAgent",
+        "decision_type": "phase_reconciliation_failure",
+        "decision": "Data quality gate failed for 74600ffebfa04af4: phase_reconciliation",
+        "call_id": "74600ffebfa04af4",
+        "confidence": "high"
+      },
+      {
+        "record_id": "955ee05d",
+        "agent": "QualityAgent",
+        "decision_type": "data_quality_gate_outcome",
+        "decision": "Data quality pass rate: 66.7% (1/3 failed)",
+        "call_id": null,
+        "confidence": "high"
+      },
+      {
+        "record_id": "16d095f4",
+        "agent": "QualityAgent",
+        "decision_type": "quality_gate_outcome",
+        "decision": "Quality gate PASSED: verdict=PASS, avg=98.6",
+        "call_id": null,
+        "confidence": "high"
+      },
+      {
+        "record_id": "7169728c",
+        "agent": "InsightsAgent",
+        "decision_type": "provider_selected",
+        "decision": "Insights provider: NVIDIA NIM (3-pass deliberation)",
+        "call_id": null,
+        "confidence": "high"
+      },
+      {
+        "record_id": "349e188c",
+        "agent": "ApprovalGate",
+        "decision_type": "approval_decision",
+        "decision": "Auto-approved (REQUIRE_HUMAN_APPROVAL=False)",
+        "call_id": null,
+        "confidence": "high"
+      }
+    ]
+  },
+  "aht_disclaimer": "Data quality gate passed only 66.7% of analyzed calls (1 excluded for phase/timestamp/completeness failures) \u2014 AHT and phase-level cost economics in this run are less reliable than usual and should not drive staffing or cost decisions without review."
 }

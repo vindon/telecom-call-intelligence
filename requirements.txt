@@ -13,6 +13,14 @@ langgraph>=0.2.0
 langchain-core>=0.3.0
 langsmith>=0.1.0
 
+# Langfuse observability (pipeline/tracing.py) — optional, no-op without
+# LANGFUSE_PUBLIC_KEY/SECRET_KEY set. Auto-instruments Claude (Anthropic)
+# and Gemini (google-genai); NVIDIA NIM is covered by langfuse's own
+# OpenAI-SDK wrapper (no extra package — see llm_clients.get_nvidia_client()).
+langfuse>=3.0.0
+opentelemetry-instrumentation-anthropic>=0.40.0
+openinference-instrumentation-google-genai>=0.1.0
+
 # HuggingFace dataset loading
 datasets>=2.20.0
 huggingface-hub>=0.23.0

@@ -48,7 +48,7 @@ def get_gemini_client(timeout_s: float) -> Any:
 
     return genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=timeout_s * 1000),
+        http_options=types.HttpOptions(timeout=int(timeout_s * 1000)),
     )
 
 
@@ -58,10 +58,22 @@ def get_nvidia_client(timeout_s: float) -> Any:
     max_retries=1: with a 3-tier fallback (NVIDIA -> Claude -> rule-based)
     already providing resilience, SDK-level retries just compound the
     worst-case hang time instead of adding real robustness.
+
+    When Langfuse tracing is enabled (pipeline/tracing.py), this constructs
+    `langfuse.openai.OpenAI` instead of `openai.OpenAI` — a genuine drop-in
+    subclass that auto-captures every call as a Langfuse generation. Only the
+    import changes; base_url/timeout/max_retries behave identically since
+    it's still the same underlying OpenAI SDK class.
     """
     api_key = os.environ.get("NVIDIA_API_KEY")
     if not api_key:
         raise OSError("NVIDIA_API_KEY not set. Check your .env file.")
-    from openai import OpenAI
+
+    from pipeline.tracing import TRACING_ENABLED
+
+    if TRACING_ENABLED:
+        from langfuse.openai import OpenAI
+    else:
+        from openai import OpenAI
 
     return OpenAI(base_url=NVIDIA_BASE_URL, api_key=api_key, timeout=timeout_s, max_retries=1)

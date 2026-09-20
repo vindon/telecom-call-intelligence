@@ -13,6 +13,8 @@ from pipeline.analyzer import (
     _CRITICAL_FIELDS,
     _build_gap_fill_message,
     _build_user_message,
+    _call_gemini,
+    _call_model,
     _is_missing,
     _parse_json_text,
     analyze_transcript,
@@ -28,11 +30,14 @@ from pipeline.circuit_breaker import CircuitBreaker
 def isolate_analyzer(tmp_path, monkeypatch):
     """Redirect checkpoint/sentinel I/O to a temp dir and reset the quota breaker."""
     monkeypatch.setattr(analyzer, "CHECKPOINT_DIR", tmp_path)
-    monkeypatch.setattr(analyzer, "_gemini_quota_breaker", CircuitBreaker(tmp_path / ".react_quota_exhausted"))
+    monkeypatch.setattr(
+        analyzer, "_gemini_quota_breaker", CircuitBreaker(tmp_path / ".react_quota_exhausted")
+    )
     monkeypatch.setattr(analyzer.time, "sleep", lambda s: None)
 
 
 # ── JSON parsing ──────────────────────────────────────────────────────
+
 
 class TestParseJsonText:
     def test_plain_json(self):
@@ -50,6 +55,7 @@ class TestParseJsonText:
 
 
 # ── Prompt builders ───────────────────────────────────────────────────
+
 
 class TestPromptBuilders:
     def test_user_message_contains_metadata_and_transcript(self, make_transcript):
@@ -72,6 +78,7 @@ class TestPromptBuilders:
 
 
 # ── Field coverage (ReAct Observe step) ───────────────────────────────
+
 
 class TestScoreFieldCoverage:
     def test_empty_result_scores_zero(self):
@@ -98,6 +105,7 @@ class TestScoreFieldCoverage:
 
 # ── Checkpoint I/O ────────────────────────────────────────────────────
 
+
 class TestCheckpointIO:
     def test_round_trip(self):
         analyzer._append_checkpoint("key1", {"call_id": "a", "x": 1})
@@ -119,12 +127,14 @@ class TestCheckpointIO:
 
 # ── analyze_transcript (stubbed Claude) ───────────────────────────────
 
+
 class TestAnalyzeTranscript:
     def test_success_injects_token_accounting(self, monkeypatch, make_transcript, make_record):
         payload = {k: v for k, v in make_record().items() if not k.startswith("_")}
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
-            analyzer, "_call_claude",
+            analyzer,
+            "_call_claude",
             lambda client, sp, msg, max_tokens: (json.dumps(payload), 1200, 800, 0, 0),
         )
         result = analyze_transcript(client=None, system_prompt="sp", transcript=make_transcript())
@@ -135,13 +145,16 @@ class TestAnalyzeTranscript:
         assert result["_total_tokens"] == 2000
         assert result["call_id"] == payload["call_id"]
 
-    def test_success_with_cache_hit_injects_cache_accounting(self, monkeypatch, make_transcript, make_record):
+    def test_success_with_cache_hit_injects_cache_accounting(
+        self, monkeypatch, make_transcript, make_record
+    ):
         # Regression: cache tokens must be captured, not silently dropped —
         # dropping them would undercount both total_tokens and real spend.
         payload = {k: v for k, v in make_record().items() if not k.startswith("_")}
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
-            analyzer, "_call_claude",
+            analyzer,
+            "_call_claude",
             lambda client, sp, msg, max_tokens: (json.dumps(payload), 600, 2145, 0, 4675),
         )
         result = analyze_transcript(client=None, system_prompt="sp", transcript=make_transcript())
@@ -153,7 +166,8 @@ class TestAnalyzeTranscript:
     def test_persistent_json_error_returns_none(self, monkeypatch, make_transcript):
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
-            analyzer, "_call_claude",
+            analyzer,
+            "_call_claude",
             lambda client, sp, msg, max_tokens: ("not json at all", 10, 10, 0, 0),
         )
         assert analyze_transcript(None, "sp", make_transcript(), max_retries=2) is None
@@ -166,8 +180,109 @@ class TestAnalyzeTranscript:
         monkeypatch.setattr(analyzer, "_call_claude", boom)
         assert analyze_transcript(None, "sp", make_transcript(), max_retries=2) is None
 
+    def test_gemini_success_injects_token_accounting(
+        self, monkeypatch, make_transcript, make_record
+    ):
+        # Regression coverage for the Gemini success path — previously
+        # untested (only the Gemini 429 error path had a test), which is
+        # exactly the risk _call_model()'s dedup refactor needed to close.
+        payload = {k: v for k, v in make_record().items() if not k.startswith("_")}
+        monkeypatch.setattr(analyzer, "_USE_CLAUDE", False)
+        monkeypatch.setattr(
+            analyzer,
+            "_call_gemini",
+            lambda client, sp, msg, max_tokens: (json.dumps(payload), 500, 300, 0, 0),
+        )
+        result = analyze_transcript(client=None, system_prompt="sp", transcript=make_transcript())
+        assert result["_prompt_tokens"] == 500
+        assert result["_completion_tokens"] == 300
+        assert result["_cache_creation_tokens"] == 0
+        assert result["_cache_read_tokens"] == 0
+        assert result["_total_tokens"] == 800
+        assert result["call_id"] == payload["call_id"]
+
+
+class TestCallModel:
+    """_call_model() dispatches to the configured provider — see EXTRACTION_MODEL."""
+
+    def test_dispatches_to_claude_when_use_claude(self, monkeypatch):
+        monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
+        monkeypatch.setattr(analyzer, "_call_claude", lambda *a: ("claude", 1, 2, 3, 4))
+        monkeypatch.setattr(
+            analyzer,
+            "_call_gemini",
+            lambda *a: (_ for _ in ()).throw(AssertionError("must not call gemini")),
+        )
+        assert _call_model(None, "sp", "msg", 100) == ("claude", 1, 2, 3, 4)
+
+    def test_dispatches_to_gemini_when_not_use_claude(self, monkeypatch):
+        monkeypatch.setattr(analyzer, "_USE_CLAUDE", False)
+        monkeypatch.setattr(analyzer, "_call_gemini", lambda *a: ("gemini", 5, 6, 0, 0))
+        monkeypatch.setattr(
+            analyzer,
+            "_call_claude",
+            lambda *a: (_ for _ in ()).throw(AssertionError("must not call claude")),
+        )
+        assert _call_model(None, "sp", "msg", 100) == ("gemini", 5, 6, 0, 0)
+
+
+class TestCallGemini:
+    """Direct tests of the Gemini response-parsing logic extracted from the
+    old inline blocks in analyze_transcript()/gap_fill_transcript()."""
+
+    class _FakeUsageMetadata:
+        def __init__(self, prompt_tokens, candidate_tokens):
+            self.prompt_token_count = prompt_tokens
+            self.candidates_token_count = candidate_tokens
+
+    class _FakeResponse:
+        def __init__(self, text, usage_metadata):
+            self.text = text
+            self.usage_metadata = usage_metadata
+
+    class _FakeGeminiClient:
+        def __init__(self, response):
+            self._response = response
+            self.calls: list[dict] = []
+
+        class _Models:
+            def __init__(self, outer):
+                self._outer = outer
+
+            def generate_content(self, **kwargs):
+                self._outer.calls.append(kwargs)
+                return self._outer._response
+
+        @property
+        def models(self):
+            return self._Models(self)
+
+    def test_parses_text_and_usage(self, monkeypatch):
+        monkeypatch.setattr(analyzer.GEMINI_RATE_LIMITER, "acquire", lambda: None)
+        response = self._FakeResponse("hello", self._FakeUsageMetadata(120, 45))
+        client = self._FakeGeminiClient(response)
+
+        text, in_tok, out_tok, cache_create, cache_read = _call_gemini(client, "sp", "msg", 1024)
+
+        assert text == "hello"
+        assert (in_tok, out_tok) == (120, 45)
+        assert (cache_create, cache_read) == (0, 0)  # Gemini has no prompt-cache equivalent
+        assert client.calls[0]["contents"] == "msg"
+        assert client.calls[0]["config"].max_output_tokens == 1024
+
+    def test_missing_usage_metadata_defaults_to_zero(self, monkeypatch):
+        # response.usage_metadata can be None — must not raise AttributeError.
+        monkeypatch.setattr(analyzer.GEMINI_RATE_LIMITER, "acquire", lambda: None)
+        response = self._FakeResponse("hello", None)
+        client = self._FakeGeminiClient(response)
+
+        _, in_tok, out_tok, _, _ = _call_gemini(client, "sp", "msg", 1024)
+
+        assert (in_tok, out_tok) == (0, 0)
+
 
 # ── gap_fill_transcript (ReAct Act step) ──────────────────────────────
+
 
 class TestGapFillTranscript:
     def test_no_missing_fields_skips_llm_call(self, make_transcript, make_record):
@@ -185,13 +300,14 @@ class TestGapFillTranscript:
     ):
         first_pass = make_record(fcr_indicator=None, issue_1_category=None)
         retry_payload = {
-            "fcr_indicator":    True,
+            "fcr_indicator": True,
             "issue_1_category": "technical",
-            "call_summary":     "should NOT overwrite the existing summary",
+            "call_summary": "should NOT overwrite the existing summary",
         }
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
-            analyzer, "_call_claude",
+            analyzer,
+            "_call_claude",
             lambda client, sp, msg, max_tokens: (json.dumps(retry_payload), 100, 50, 0, 0),
         )
         merged = gap_fill_transcript(None, "sp", make_transcript(), first_pass)
@@ -204,8 +320,15 @@ class TestGapFillTranscript:
         first_pass = make_record(fcr_indicator=None, _prompt_tokens=2000, _completion_tokens=1500)
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
-            analyzer, "_call_claude",
-            lambda client, sp, msg, max_tokens: (json.dumps({"fcr_indicator": False}), 100, 50, 0, 0),
+            analyzer,
+            "_call_claude",
+            lambda client, sp, msg, max_tokens: (
+                json.dumps({"fcr_indicator": False}),
+                100,
+                50,
+                0,
+                0,
+            ),
         )
         merged = gap_fill_transcript(None, "sp", make_transcript(), first_pass)
         assert merged["_prompt_tokens"] == 2100
@@ -216,13 +339,23 @@ class TestGapFillTranscript:
         # Regression guard for this session's caching change: gap-fill cache
         # tokens must add onto the first pass's cache totals, not overwrite them.
         first_pass = make_record(
-            fcr_indicator=None, _prompt_tokens=600, _completion_tokens=2145,
-            _cache_creation_tokens=4675, _cache_read_tokens=0,
+            fcr_indicator=None,
+            _prompt_tokens=600,
+            _completion_tokens=2145,
+            _cache_creation_tokens=4675,
+            _cache_read_tokens=0,
         )
         monkeypatch.setattr(analyzer, "_USE_CLAUDE", True)
         monkeypatch.setattr(
-            analyzer, "_call_claude",
-            lambda client, sp, msg, max_tokens: (json.dumps({"fcr_indicator": False}), 100, 50, 0, 4675),
+            analyzer,
+            "_call_claude",
+            lambda client, sp, msg, max_tokens: (
+                json.dumps({"fcr_indicator": False}),
+                100,
+                50,
+                0,
+                4675,
+            ),
         )
         merged = gap_fill_transcript(None, "sp", make_transcript(), first_pass)
         assert merged["_cache_creation_tokens"] == 4675

@@ -55,9 +55,9 @@ class ExtractionAgent:
     name = "ExtractionAgent"
 
     def run(self, state: dict) -> dict:
-        t0             = time.monotonic()
-        transcripts    = state["validated_transcripts"]
-        delay          = state.get("inter_call_delay", 2.0)
+        t0 = time.monotonic()
+        transcripts = state["validated_transcripts"]
+        delay = state.get("inter_call_delay", 2.0)
         checkpoint_key = state.get("checkpoint_key", "")
 
         INPUT_SANITIZER.validate_state_schema(state, ["validated_transcripts"])
@@ -65,12 +65,18 @@ class ExtractionAgent:
 
         AUDIT_LOG.record_agent_start(
             self.name,
-            {"n_transcripts": len(transcripts), "checkpoint_key": checkpoint_key,
-             "react_enabled": True, "react_threshold": REACT_QUALITY_THRESHOLD},
+            {
+                "n_transcripts": len(transcripts),
+                "checkpoint_key": checkpoint_key,
+                "react_enabled": True,
+                "react_threshold": REACT_QUALITY_THRESHOLD,
+            },
         )
         log.info(
             "[%s] Starting ReAct extraction: %d transcripts  checkpoint='%s'",
-            self.name, len(transcripts), checkpoint_key or "none",
+            self.name,
+            len(transcripts),
+            checkpoint_key or "none",
         )
 
         # Local logger keeps the agent stateless — no instance state may
@@ -85,7 +91,7 @@ class ExtractionAgent:
         )
 
         # ── Observe + Reason + Act (ReAct gap-fill loop) ─────────────
-        results, react_stats = self._react_loop(results, transcripts, dl)
+        results, react_stats = self._react_loop(results, transcripts, dl, checkpoint_key)
 
         # Merge ground-truth timestamp + truncation heuristic from the source
         # transcript onto each result — QualityAgent's data-quality gate
@@ -108,28 +114,41 @@ class ExtractionAgent:
         # Cache tokens must be passed separately: pricing them at the full input
         # rate (like a naive prompt_tokens sum would) overstates spend against
         # BudgetGuard by ignoring the ~90% discount a cache hit actually gets.
-        total_prompt         = sum(r.get("_prompt_tokens", 0) for r in results)
-        total_out            = sum(r.get("_completion_tokens", 0) for r in results)
+        total_prompt = sum(r.get("_prompt_tokens", 0) for r in results)
+        total_out = sum(r.get("_completion_tokens", 0) for r in results)
         total_cache_creation = sum(r.get("_cache_creation_tokens", 0) for r in results)
-        total_cache_read     = sum(r.get("_cache_read_tokens", 0) for r in results)
-        est_cost     = _cost_usd(total_prompt, total_out, total_cache_creation, total_cache_read)
+        total_cache_read = sum(r.get("_cache_read_tokens", 0) for r in results)
+        est_cost = _cost_usd(total_prompt, total_out, total_cache_creation, total_cache_read)
         try:
-            BUDGET_GUARD.check(est_cost, context=f"after {len(results)} calls (incl. ReAct retries)")
+            BUDGET_GUARD.check(
+                est_cost, context=f"after {len(results)} calls (incl. ReAct retries)"
+            )
             AUDIT_LOG.record_governance(
-                check="budget", passed=True,
-                details={"est_cost_usd": round(est_cost, 4), "limit_usd": BUDGET_GUARD.max_cost_usd},
+                check="budget",
+                passed=True,
+                details={
+                    "est_cost_usd": round(est_cost, 4),
+                    "limit_usd": BUDGET_GUARD.max_cost_usd,
+                },
             )
         except BUDGET_GUARD.BudgetExceededError as exc:
             AUDIT_LOG.record_governance(
-                check="budget", passed=False,
-                details={"est_cost_usd": round(est_cost, 4), "limit_usd": BUDGET_GUARD.max_cost_usd},
+                check="budget",
+                passed=False,
+                details={
+                    "est_cost_usd": round(est_cost, 4),
+                    "limit_usd": BUDGET_GUARD.max_cost_usd,
+                },
             )
             AUDIT_LOG.record_error(self.name, str(exc))
             raise
 
         log.info(
             "[%s] Extraction complete: %d OK  %d failed  react_improved=%d",
-            self.name, len(results), len(failed), react_stats["n_improved"],
+            self.name,
+            len(results),
+            len(failed),
+            react_stats["n_improved"],
         )
         AUDIT_LOG.record_agent_end(
             self.name,
@@ -152,9 +171,9 @@ class ExtractionAgent:
         return {
             **state,
             "analysis_results": results,
-            "failed_call_ids":  failed,
-            "react_stats":      react_stats,
-            "decision_log":     dl.finalize(),
+            "failed_call_ids": failed,
+            "react_stats": react_stats,
+            "decision_log": dl.finalize(),
         }
 
     def _react_loop(
@@ -162,6 +181,7 @@ class ExtractionAgent:
         results: list[dict],
         transcripts: list[dict],
         dl: DecisionLogger,
+        checkpoint_key: str = "",
     ) -> tuple[list[dict], dict]:
         """
         ReAct observe → reason → act loop.
@@ -175,6 +195,7 @@ class ExtractionAgent:
         client: Any
         try:
             from pipeline.analyzer import _USE_CLAUDE
+
             client = (
                 get_anthropic_client(EXTRACTION_API_TIMEOUT_S)
                 if _USE_CLAUDE
@@ -189,14 +210,14 @@ class ExtractionAgent:
         transcript_map = {t["call_id"]: t for t in transcripts}
 
         improved_results: list[dict] = []
-        n_improved  = 0
+        n_improved = 0
         n_gap_fills = 0
         coverage_before: list[int] = []
 
         for result in results:
             # Check module-level circuit breaker — quota already exhausted
             if _analyzer_mod._gemini_quota_breaker.tripped:
-                improved_results.extend(results[len(improved_results):])
+                improved_results.extend(results[len(improved_results) :])
                 break
             call_id = result.get("call_id")
 
@@ -211,34 +232,47 @@ class ExtractionAgent:
 
             log.info(
                 "[ReAct] call %s: coverage=%d < threshold=%d — triggering gap-fill",
-                str(call_id)[:12], coverage, REACT_QUALITY_THRESHOLD,
+                str(call_id)[:12],
+                coverage,
+                REACT_QUALITY_THRESHOLD,
             )
             dl.log(
                 decision_type="react_trigger",
                 decision=f"Gap-fill triggered for {call_id} (coverage={coverage}%)",
                 reason=f"Field coverage {coverage}% < REACT_QUALITY_THRESHOLD={REACT_QUALITY_THRESHOLD}%; targeted retry will attempt to recover missing critical fields",
-                evidence={"call_id": str(call_id)[:12], "coverage_pct": coverage, "threshold": REACT_QUALITY_THRESHOLD},
-                call_id=str(call_id)[:12], confidence="high",
+                evidence={
+                    "call_id": str(call_id)[:12],
+                    "coverage_pct": coverage,
+                    "threshold": REACT_QUALITY_THRESHOLD,
+                },
+                call_id=str(call_id)[:12],
+                confidence="high",
                 alternatives=["Accept partial extraction (rejected: critical fields missing)"],
             )
             AUDIT_LOG.record_tool_call(
-                tool="gap_fill", agent=self.name,
+                tool="gap_fill",
+                agent=self.name,
                 inputs=["transcript", "first_pass_result"],
-                success=True, elapsed_s=0,
+                success=True,
+                elapsed_s=0,
             )
 
             # ── Act: gap-fill for up to REACT_MAX_ITERATIONS passes ──
             current = result
             for iteration in range(REACT_MAX_ITERATIONS):
                 transcript = transcript_map[call_id]
-                improved = gap_fill_transcript(client, system_prompt, transcript, current)
+                improved = gap_fill_transcript(
+                    client, system_prompt, transcript, current, session_id=checkpoint_key
+                )
                 n_gap_fills += 1
 
                 new_coverage = score_field_coverage(improved)
                 if new_coverage >= REACT_QUALITY_THRESHOLD:
                     log.info(
                         "[ReAct] call %s: coverage restored to %d (iter %d)",
-                        str(call_id)[:12], new_coverage, iteration + 1,
+                        str(call_id)[:12],
+                        new_coverage,
+                        iteration + 1,
                     )
                     current = improved
                     break
@@ -250,10 +284,14 @@ class ExtractionAgent:
 
         avg_before = round(sum(coverage_before) / len(coverage_before)) if coverage_before else 0
         stats = {
-            "n_improved":        n_improved,
-            "n_gap_fills":       n_gap_fills,
+            "n_improved": n_improved,
+            "n_gap_fills": n_gap_fills,
             "avg_coverage_before": avg_before,
         }
-        log.info("[ReAct] Loop complete: %d/%d calls gap-filled, %d improved",
-                 n_gap_fills, len(results), n_improved)
+        log.info(
+            "[ReAct] Loop complete: %d/%d calls gap-filled, %d improved",
+            n_gap_fills,
+            len(results),
+            n_improved,
+        )
         return improved_results, stats
