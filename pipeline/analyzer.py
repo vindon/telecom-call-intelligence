@@ -236,6 +236,18 @@ def _call_gemini(
         ),
     )
     text = response.text
+    if text is None:
+        # response.text is None when Gemini has no simple text part — e.g.
+        # safety filtering blocked the response, or finish_reason isn't
+        # STOP. Raising here (instead of letting None reach
+        # SECRET_GUARD.assert_no_secrets_in_output() / check_response_size(),
+        # which would fail with a confusing TypeError/AttributeError) gives
+        # the retry loop's error log a clear, diagnosable reason.
+        candidates = getattr(response, "candidates", None)
+        finish_reason = (
+            getattr(candidates[0], "finish_reason", "unknown") if candidates else "no_candidates"
+        )
+        raise ValueError(f"Gemini returned no text (finish_reason={finish_reason})")
     in_tok = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
     out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
     return text, in_tok, out_tok, 0, 0
