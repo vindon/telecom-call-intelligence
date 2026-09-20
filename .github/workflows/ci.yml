@@ -75,7 +75,9 @@ jobs:
             pipeline/aggregator.py \
             pipeline/governance.py \
             pipeline/memory.py \
-            pipeline/tools.py \
+            pipeline/llm_clients.py \
+            pipeline/circuit_breaker.py \
+            pipeline/tracing.py \
             pipeline/orchestrator.py \
             pipeline/security.py \
             pipeline/vector_memory.py \
@@ -125,18 +127,6 @@ jobs:
           assert _route_after_quality({'qa_report': {'_quality_gate_failed': True}}) == 'export'
 
           print('LangGraph compile + routing OK')
-          "
-
-      - name: Verify global tool registry is populated
-        run: |
-          python -c "
-          from pipeline.tools import REGISTRY
-          tools = REGISTRY.list()
-          expected = ['fetch_transcripts', 'score_extraction', 'compute_kpis',
-                      'generate_insights', 'export_results']
-          for t in expected:
-              assert t in tools, f'Missing tool: {t}'
-          print(f'Tool registry OK — {len(tools)} tools registered')
           "
 
       - name: Verify config module exports all constants
