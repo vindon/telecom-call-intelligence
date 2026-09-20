@@ -236,9 +236,14 @@ class TestCallGemini:
             self.candidates_token_count = candidate_tokens
 
     class _FakeResponse:
-        def __init__(self, text, usage_metadata):
+        def __init__(self, text, usage_metadata, candidates=None):
             self.text = text
             self.usage_metadata = usage_metadata
+            self.candidates = candidates
+
+    class _FakeCandidate:
+        def __init__(self, finish_reason):
+            self.finish_reason = finish_reason
 
     class _FakeGeminiClient:
         def __init__(self, response):
@@ -279,6 +284,29 @@ class TestCallGemini:
         _, in_tok, out_tok, _, _ = _call_gemini(client, "sp", "msg", 1024)
 
         assert (in_tok, out_tok) == (0, 0)
+
+    def test_none_text_raises_clear_error_instead_of_reaching_downstream_checks(self, monkeypatch):
+        # Regression: response.text is None when Gemini has no simple text
+        # part (e.g. safety filtering). Previously this None flowed straight
+        # into SECRET_GUARD.assert_no_secrets_in_output()/check_response_size()
+        # in analyze_transcript(), which would raise a confusing
+        # TypeError/AttributeError instead of a diagnosable error.
+        monkeypatch.setattr(analyzer.GEMINI_RATE_LIMITER, "acquire", lambda: None)
+        response = self._FakeResponse(
+            None, self._FakeUsageMetadata(50, 0), candidates=[self._FakeCandidate("SAFETY")]
+        )
+        client = self._FakeGeminiClient(response)
+
+        with pytest.raises(ValueError, match="SAFETY"):
+            _call_gemini(client, "sp", "msg", 1024)
+
+    def test_none_text_with_no_candidates_still_raises_clearly(self, monkeypatch):
+        monkeypatch.setattr(analyzer.GEMINI_RATE_LIMITER, "acquire", lambda: None)
+        response = self._FakeResponse(None, None, candidates=[])
+        client = self._FakeGeminiClient(response)
+
+        with pytest.raises(ValueError, match="no_candidates"):
+            _call_gemini(client, "sp", "msg", 1024)
 
 
 # ── gap_fill_transcript (ReAct Act step) ──────────────────────────────
