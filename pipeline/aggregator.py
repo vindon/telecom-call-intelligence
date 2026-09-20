@@ -28,17 +28,18 @@ COST_PER_CALL_USD = 6.00
 
 # Phase columns in display order (label, DataFrame column)
 PHASE_COLS = [
-    ("Welcome & Auth",  "phase_welcome_duration_seconds"),
-    ("Discovery",       "phase_discovery_duration_seconds"),
-    ("Diagnosis",       "phase_diagnosis_duration_seconds"),
-    ("Resolution",      "phase_resolution_duration_seconds"),
-    ("Hold",            "phase_hold_total_seconds"),
-    ("Upsell",          "phase_upsell_duration_seconds"),
-    ("Closing",         "phase_closing_duration_seconds"),
+    ("Welcome & Auth", "phase_welcome_duration_seconds"),
+    ("Discovery", "phase_discovery_duration_seconds"),
+    ("Diagnosis", "phase_diagnosis_duration_seconds"),
+    ("Resolution", "phase_resolution_duration_seconds"),
+    ("Hold", "phase_hold_total_seconds"),
+    ("Upsell", "phase_upsell_duration_seconds"),
+    ("Closing", "phase_closing_duration_seconds"),
 ]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────
+
 
 def _pct(df: pd.DataFrame, col: str, value=True) -> float:
     if col not in df.columns or len(df) == 0:
@@ -56,7 +57,7 @@ def _val_pct(df: pd.DataFrame, col: str) -> dict:
     """Value counts as percentages (descending)."""
     if col not in df.columns or len(df) == 0:
         return {}
-    vc    = df[col].dropna().value_counts()
+    vc = df[col].dropna().value_counts()
     total = vc.sum()
     return {str(k): round(v / total * 100, 1) for k, v in vc.items()}
 
@@ -94,24 +95,25 @@ def _segment_masks(df: pd.DataFrame) -> dict[str, pd.Series]:
     takes priority when both apply) so the two segments sum exactly to
     the automate total.
     """
+
     def _flag(col: str) -> pd.Series:
         if col not in df.columns:
             return pd.Series(False, index=df.index)
         return df[col].eq(True)
 
-    proactive  = _flag("proactive_outreach_applicable")
+    proactive = _flag("proactive_outreach_applicable")
     self_serve = _flag("could_be_self_served")
-    agentic    = _flag("agentic_ai_resolvable")
+    agentic = _flag("agentic_ai_resolvable")
 
-    prevent  = proactive
+    prevent = proactive
     automate = ~prevent & (self_serve | agentic)
-    human    = ~prevent & ~automate
+    human = ~prevent & ~automate
 
     return {
-        "prevent":             prevent,
+        "prevent": prevent,
         "automate_self_serve": automate & self_serve,
-        "automate_agentic":    automate & ~self_serve,
-        "human":               human,
+        "automate_agentic": automate & ~self_serve,
+        "human": human,
     }
 
 
@@ -119,19 +121,22 @@ def _resolution_segments(df: pd.DataFrame, n: int) -> dict:
     """Roll _segment_masks() up into overall percentages (sums to 100%)."""
     if n == 0:
         return {
-            "prevent_pct": 0.0, "automate_pct": 0.0, "human_required_pct": 0.0,
-            "automate_self_serve_pct": 0.0, "automate_agentic_pct": 0.0,
+            "prevent_pct": 0.0,
+            "automate_pct": 0.0,
+            "human_required_pct": 0.0,
+            "automate_self_serve_pct": 0.0,
+            "automate_agentic_pct": 0.0,
         }
 
     masks = _segment_masks(df)
     automate = masks["automate_self_serve"] | masks["automate_agentic"]
 
     return {
-        "prevent_pct":             round(masks["prevent"].sum() / n * 100, 1),
-        "automate_pct":            round(automate.sum() / n * 100, 1),
-        "human_required_pct":      round(masks["human"].sum() / n * 100, 1),
+        "prevent_pct": round(masks["prevent"].sum() / n * 100, 1),
+        "automate_pct": round(automate.sum() / n * 100, 1),
+        "human_required_pct": round(masks["human"].sum() / n * 100, 1),
         "automate_self_serve_pct": round(masks["automate_self_serve"].sum() / n * 100, 1),
-        "automate_agentic_pct":    round(masks["automate_agentic"].sum()    / n * 100, 1),
+        "automate_agentic_pct": round(masks["automate_agentic"].sum() / n * 100, 1),
     }
 
 
@@ -163,7 +168,7 @@ def _category_resolution_breakdown(df: pd.DataFrame, n: int, baseline_monthly_co
     if not valid.any():
         return {"categories": [], "build_queue": []}
 
-    masks   = _segment_masks(df)
+    masks = _segment_masks(df)
     methods = df["issue_1_resolution_method"]
 
     categories: list[dict] = []
@@ -175,44 +180,47 @@ def _category_resolution_breakdown(df: pd.DataFrame, n: int, baseline_monthly_co
 
         segments: dict = {}
         for seg_key in _SEGMENT_KEYS:
-            seg_mask  = in_cat & masks[seg_key]
+            seg_mask = in_cat & masks[seg_key]
             seg_count = int(seg_mask.sum())
             if seg_count == 0:
                 continue
             segments[seg_key] = {
-                "count":   seg_count,
-                "pct":     round(seg_count / c_count * 100, 1),
+                "count": seg_count,
+                "pct": round(seg_count / c_count * 100, 1),
                 "methods": {
-                    str(k): int(v)
-                    for k, v in methods[seg_mask].dropna().value_counts().items()
+                    str(k): int(v) for k, v in methods[seg_mask].dropna().value_counts().items()
                 },
             }
 
-        categories.append({
-            "category": category,
-            "count":    c_count,
-            "pct":      round(c_count / n * 100, 1),
-            "dollars":  round(baseline_monthly_cost * c_count / n),
-            "segments": segments,
-        })
+        categories.append(
+            {
+                "category": category,
+                "count": c_count,
+                "pct": round(c_count / n * 100, 1),
+                "dollars": round(baseline_monthly_cost * c_count / n),
+                "segments": segments,
+            }
+        )
 
         if "prevent" in segments:
             seg = segments["prevent"]
-            build_queue.append({
-                "category":       category,
-                "segment":        "prevent",
-                "count":          seg["count"],
-                "pct":            seg["pct"],
-                "dollars":        round(baseline_monthly_cost * seg["count"] / n),
-                "category_count": c_count,
-                "methods":        seg["methods"],
-            })
+            build_queue.append(
+                {
+                    "category": category,
+                    "segment": "prevent",
+                    "count": seg["count"],
+                    "pct": seg["pct"],
+                    "dollars": round(baseline_monthly_cost * seg["count"] / n),
+                    "category_count": c_count,
+                    "methods": seg["methods"],
+                }
+            )
 
         ss = segments.get("automate_self_serve")
         ai = segments.get("automate_agentic")
         if ss or ai:
-            ss_count   = ss["count"] if ss else 0
-            ai_count   = ai["count"] if ai else 0
+            ss_count = ss["count"] if ss else 0
+            ai_count = ai["count"] if ai else 0
             auto_count = ss_count + ai_count
 
             combined_methods: dict = {}
@@ -222,17 +230,19 @@ def _category_resolution_breakdown(df: pd.DataFrame, n: int, baseline_monthly_co
                 for m, c in seg["methods"].items():
                     combined_methods[m] = combined_methods.get(m, 0) + c
 
-            build_queue.append({
-                "category":        category,
-                "segment":         "automate",
-                "count":           auto_count,
-                "pct":             round(auto_count / c_count * 100, 1),
-                "dollars":         round(baseline_monthly_cost * auto_count / n),
-                "category_count":  c_count,
-                "self_serve_count": ss_count,
-                "agentic_count":    ai_count,
-                "methods":          combined_methods,
-            })
+            build_queue.append(
+                {
+                    "category": category,
+                    "segment": "automate",
+                    "count": auto_count,
+                    "pct": round(auto_count / c_count * 100, 1),
+                    "dollars": round(baseline_monthly_cost * auto_count / n),
+                    "category_count": c_count,
+                    "self_serve_count": ss_count,
+                    "agentic_count": ai_count,
+                    "methods": combined_methods,
+                }
+            )
 
     build_queue.sort(key=lambda item: item["dollars"], reverse=True)
     return {"categories": categories, "build_queue": build_queue[:4]}
@@ -243,18 +253,18 @@ def _category_resolution_breakdown(df: pd.DataFrame, n: int, baseline_monthly_co
 # P5 (Upsell) is revenue-generating = Sell.
 # Hold + Closing is cross-cutting dead time/overhead = Retain.
 _PHASE_PNL_GROUPS = {
-    "serve":  ["Welcome & Auth", "Discovery", "Diagnosis", "Resolution"],
-    "sell":   ["Upsell"],
+    "serve": ["Welcome & Auth", "Discovery", "Diagnosis", "Resolution"],
+    "sell": ["Upsell"],
     "retain": ["Hold", "Closing"],
 }
 
 # Phases worth drilling into for the "which intents drive this phase" view.
 # Welcome/Hold/Closing are overhead phases with little intent-driven variance.
 _DRILLDOWN_PHASE_COLS = {
-    "Discovery":  "phase_discovery_duration_seconds",
-    "Diagnosis":  "phase_diagnosis_duration_seconds",
+    "Discovery": "phase_discovery_duration_seconds",
+    "Diagnosis": "phase_diagnosis_duration_seconds",
     "Resolution": "phase_resolution_duration_seconds",
-    "Upsell":     "phase_upsell_duration_seconds",
+    "Upsell": "phase_upsell_duration_seconds",
 }
 
 
@@ -275,7 +285,7 @@ def _phase_pnl(phase_avg_seconds: dict, baseline_monthly_cost: float) -> dict:
     out = {}
     for bucket, phase_names in _PHASE_PNL_GROUPS.items():
         secs = sum(phase_avg_seconds.get(p, 0.0) for p in phase_names)
-        pct  = round(secs / total * 100, 1)
+        pct = round(secs / total * 100, 1)
         out[f"{bucket}_time_pct"] = pct
         out[f"{bucket}_cost_usd"] = round(baseline_monthly_cost * pct / 100)
     return out
@@ -295,7 +305,7 @@ def _phase_drilldown(df: pd.DataFrame, n: int) -> dict:
     valid = cat.str.lower().isin({"null", "none", "nan", ""}).eq(False)
     disp_col = "agent_disproportionate_time_phase"
 
-    out = {}
+    out: dict[str, list[dict]] = {}
     for phase, col in _DRILLDOWN_PHASE_COLS.items():
         if col not in df.columns:
             out[phase] = []
@@ -310,17 +320,20 @@ def _phase_drilldown(df: pd.DataFrame, n: int) -> dict:
 
         rows = []
         for intent, row in grouped.sort_values("mean", ascending=False).head(5).iterrows():
-            rows.append({
-                "intent":      intent,
-                "avg_seconds": round(float(row["mean"]), 1),
-                "calls":       int(row["count"]),
-                "stall_pct":   round(float(stall.get(intent, 0.0)), 1),
-            })
+            rows.append(
+                {
+                    "intent": intent,
+                    "avg_seconds": round(float(row["mean"]), 1),
+                    "calls": int(row["count"]),
+                    "stall_pct": round(float(stall.get(intent, 0.0)), 1),
+                }
+            )
         out[phase] = rows
     return out
 
 
 # ── Main aggregation ──────────────────────────────────────────────────
+
 
 def aggregate_metrics(results: list[dict]) -> dict:
     """
@@ -336,7 +349,7 @@ def aggregate_metrics(results: list[dict]) -> dict:
         raise ValueError("No results to aggregate.")
 
     df = pd.DataFrame(results)
-    n  = len(df)
+    n = len(df)
 
     # ── Phase averages ────────────────────────────────────────────────
     phase_avg_seconds: dict = {}
@@ -348,7 +361,8 @@ def aggregate_metrics(results: list[dict]) -> dict:
         attempted = df[df["upsell_attempted"].eq(True)]
         upsell_conversion = (
             round((attempted["upsell_outcome"] == "accepted").sum() / len(attempted) * 100, 1)
-            if len(attempted) > 0 else 0.0
+            if len(attempted) > 0
+            else 0.0
         )
     else:
         upsell_conversion = 0.0
@@ -357,28 +371,29 @@ def aggregate_metrics(results: list[dict]) -> dict:
     avg_aht_s = _avg(df, "total_duration_seconds")
 
     kpis = {
-        "total_calls_analyzed":       n,
-        "avg_handle_time_seconds":    avg_aht_s,
-        "avg_handle_time_minutes":    round(avg_aht_s / 60, 1),
-        "fcr_rate_pct":               _pct(df, "fcr_indicator",             True),
-        "avoidable_call_rate_pct":    _pct(df, "avoidable_call",            True),
-        "self_serve_deflection_pct":  _pct(df, "could_be_self_served",      True),
-        "agentic_ai_resolvable_pct":  _pct(df, "agentic_ai_resolvable",     True),
-        "proactive_outreach_pct":     _pct(df, "proactive_outreach_applicable", True),
-        "all_issues_resolved_pct":    _pct(df, "all_issues_resolved",       True),
-        "escalation_rate_pct":        _pct(df, "escalation_required",       True),
-        "upsell_attempted_pct":       _pct(df, "upsell_attempted",          True),
-        "upsell_conversion_pct":      upsell_conversion,
-        "sentiment_improved_pct":     _pct(df, "customer_sentiment_improved", True),
-        "agent_tool_struggle_pct":    _pct(df, "agent_tool_struggle_detected", True),
+        "total_calls_analyzed": n,
+        "avg_handle_time_seconds": avg_aht_s,
+        "avg_handle_time_minutes": round(avg_aht_s / 60, 1),
+        "fcr_rate_pct": _pct(df, "fcr_indicator", True),
+        "avoidable_call_rate_pct": _pct(df, "avoidable_call", True),
+        "self_serve_deflection_pct": _pct(df, "could_be_self_served", True),
+        "agentic_ai_resolvable_pct": _pct(df, "agentic_ai_resolvable", True),
+        "proactive_outreach_pct": _pct(df, "proactive_outreach_applicable", True),
+        "all_issues_resolved_pct": _pct(df, "all_issues_resolved", True),
+        "escalation_rate_pct": _pct(df, "escalation_required", True),
+        "upsell_attempted_pct": _pct(df, "upsell_attempted", True),
+        "upsell_conversion_pct": upsell_conversion,
+        "sentiment_improved_pct": _pct(df, "customer_sentiment_improved", True),
+        "agent_tool_struggle_pct": _pct(df, "agent_tool_struggle_detected", True),
         "multi_issue_call_pct": (
             round((df["total_issues_count"] > 1).sum() / n * 100, 1)
-            if "total_issues_count" in df.columns else 0.0
+            if "total_issues_count" in df.columns
+            else 0.0
         ),
-        "avg_issues_per_call":        _avg(df, "total_issues_count"),
-        "avg_hold_time_seconds":      _avg(df, "phase_hold_total_seconds"),
-        "avg_hold_count":             _avg(df, "hold_count"),
-        "avg_empathy_statements":     _avg(df, "agent_empathy_statements_count"),
+        "avg_issues_per_call": _avg(df, "total_issues_count"),
+        "avg_hold_time_seconds": _avg(df, "phase_hold_total_seconds"),
+        "avg_hold_count": _avg(df, "hold_count"),
+        "avg_empathy_statements": _avg(df, "agent_empathy_statements_count"),
     }
 
     # Mutually-exclusive resolution segmentation (sums to 100%) — see
@@ -388,18 +403,18 @@ def aggregate_metrics(results: list[dict]) -> dict:
 
     # ── Distributions ─────────────────────────────────────────────────
     distributions = {
-        "issue_category":               _issue_category_counts(df),
-        "cost_driver":                  _val_pct(df, "primary_cost_driver"),
-        "agent_skill":                  _val_pct(df, "agent_skill_rating"),
-        "customer_sentiment_start":     _val_pct(df, "customer_sentiment_start"),
-        "customer_sentiment_end":       _val_pct(df, "customer_sentiment_end"),
-        "handle_time_efficiency":       _val_pct(df, "handle_time_efficiency"),
-        "self_serve_channel":           _val_pct(df, "self_serve_channel_applicable"),
-        "repeat_call_risk":             _val_pct(df, "repeat_call_risk"),
+        "issue_category": _issue_category_counts(df),
+        "cost_driver": _val_pct(df, "primary_cost_driver"),
+        "agent_skill": _val_pct(df, "agent_skill_rating"),
+        "customer_sentiment_start": _val_pct(df, "customer_sentiment_start"),
+        "customer_sentiment_end": _val_pct(df, "customer_sentiment_end"),
+        "handle_time_efficiency": _val_pct(df, "handle_time_efficiency"),
+        "self_serve_channel": _val_pct(df, "self_serve_channel_applicable"),
+        "repeat_call_risk": _val_pct(df, "repeat_call_risk"),
         "agent_disproportionate_phase": _val_pct(df, "agent_disproportionate_time_phase"),
-        "upsell_outcome":               _val_pct(df, "upsell_outcome"),
-        "resolution_method_issue1":     _val_pct(df, "issue_1_resolution_method"),
-        "account_type":                 _val_pct(df, "account_type"),
+        "upsell_outcome": _val_pct(df, "upsell_outcome"),
+        "resolution_method_issue1": _val_pct(df, "issue_1_resolution_method"),
+        "account_type": _val_pct(df, "account_type"),
     }
 
     # ── Cost levers ───────────────────────────────────────────────────
@@ -410,21 +425,21 @@ def aggregate_metrics(results: list[dict]) -> dict:
     # Savings are computed from the non-overlapping resolution segments
     # (kpis["automate_self_serve_pct"] etc.), not the marginal *_pct
     # fields — those overlap and would double-count savings.
-    baseline     = MONTHLY_VOLUME * COST_PER_CALL_USD
-    ss_savings   = baseline * (kpis["automate_self_serve_pct"] / 100) * 0.85
-    ai_savings   = baseline * (kpis["automate_agentic_pct"]    / 100) * 0.70
-    pro_savings  = baseline * (kpis["prevent_pct"]             / 100) * 0.60
+    baseline = MONTHLY_VOLUME * COST_PER_CALL_USD
+    ss_savings = baseline * (kpis["automate_self_serve_pct"] / 100) * 0.85
+    ai_savings = baseline * (kpis["automate_agentic_pct"] / 100) * 0.70
+    pro_savings = baseline * (kpis["prevent_pct"] / 100) * 0.60
     total_savings = ss_savings + ai_savings + pro_savings
 
     cost_levers = {
-        "cost_per_call_usd":             COST_PER_CALL_USD,
-        "monthly_volume_estimate":       MONTHLY_VOLUME,
-        "baseline_monthly_cost_usd":     round(baseline),
-        "self_serve_savings_usd":        round(ss_savings),
-        "agentic_ai_savings_usd":        round(ai_savings),
-        "proactive_care_savings_usd":    round(pro_savings),
+        "cost_per_call_usd": COST_PER_CALL_USD,
+        "monthly_volume_estimate": MONTHLY_VOLUME,
+        "baseline_monthly_cost_usd": round(baseline),
+        "self_serve_savings_usd": round(ss_savings),
+        "agentic_ai_savings_usd": round(ai_savings),
+        "proactive_care_savings_usd": round(pro_savings),
         "total_savings_opportunity_usd": round(total_savings),
-        "savings_pct_of_baseline":       round(total_savings / baseline * 100, 1),
+        "savings_pct_of_baseline": round(total_savings / baseline * 100, 1),
     }
 
     # Phase-time-based Cost to Serve/Sell/Retain P&L — a different lens
@@ -436,21 +451,23 @@ def aggregate_metrics(results: list[dict]) -> dict:
 
     return {
         "meta": {
-            "total_calls_analyzed":  n,
-            "analysis_timestamp":    datetime.now().isoformat(),
-            "dataset":               "talkmap/telecom-conversation-corpus",
-            "model":                 EXTRACTION_MODEL,
-            "inference_provider":    "Anthropic (Claude)" if EXTRACTION_MODEL.startswith("claude") else "Google AI Studio",
+            "total_calls_analyzed": n,
+            "analysis_timestamp": datetime.now().isoformat(),
+            "dataset": "talkmap/telecom-conversation-corpus",
+            "model": EXTRACTION_MODEL,
+            "inference_provider": "Anthropic (Claude)"
+            if EXTRACTION_MODEL.startswith("claude")
+            else "Google AI Studio",
             "cost_benchmark_note": (
                 "Cost estimates use $6.00/call industry benchmark. "
                 "Replace with actual ACD data for production."
             ),
         },
-        "kpis":              kpis,
+        "kpis": kpis,
         "phase_avg_seconds": phase_avg_seconds,
-        "phase_drilldown":   _phase_drilldown(df, n),
-        "distributions":     distributions,
-        "cost_levers":       cost_levers,
-        "issue_breakdown":   _category_resolution_breakdown(df, n, baseline),
-        "token_usage":       token_usage,
+        "phase_drilldown": _phase_drilldown(df, n),
+        "distributions": distributions,
+        "cost_levers": cost_levers,
+        "issue_breakdown": _category_resolution_breakdown(df, n, baseline),
+        "token_usage": token_usage,
     }
