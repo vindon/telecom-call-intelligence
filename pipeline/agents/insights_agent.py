@@ -45,6 +45,7 @@ from pipeline.llm_clients import get_anthropic_client, get_nvidia_client
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
 from pipeline.security import OUTPUT_SANITIZER, SECRET_GUARD
+from pipeline.tracing import traced_span
 
 log = get_logger(__name__)
 
@@ -184,50 +185,61 @@ Generate exactly 5 top_recommendations, 3 quick_wins, and 2 risk_flags.
 
 # ── Rule-based fallback ───────────────────────────────────────────────
 
+
 def _rule_based_insights(kpis: dict, qa_summary: dict, n_calls: int) -> dict:
     """Fallback when Gemini is unavailable — derives insights from KPI thresholds."""
-    fcr    = kpis.get("fcr_rate_pct", 0)
-    aht    = kpis.get("avg_handle_time_minutes", 0)
-    avoid  = kpis.get("avoidable_call_rate_pct", 0)
+    fcr = kpis.get("fcr_rate_pct", 0)
+    aht = kpis.get("avg_handle_time_minutes", 0)
+    avoid = kpis.get("avoidable_call_rate_pct", 0)
     ai_pct = kpis.get("agentic_ai_resolvable_pct", 0)
-    esc    = kpis.get("escalation_rate_pct", 0)
+    esc = kpis.get("escalation_rate_pct", 0)
 
     recs = []
     if fcr < 70:
-        recs.append({
-            "priority": 1,
-            "title": "Improve First Call Resolution",
-            "insight": f"FCR of {fcr}% is below the 70-80% industry benchmark.",
-            "estimated_impact": "Each 1% FCR improvement eliminates ~6 repeat calls per 100.",
-        })
+        recs.append(
+            {
+                "priority": 1,
+                "title": "Improve First Call Resolution",
+                "insight": f"FCR of {fcr}% is below the 70-80% industry benchmark.",
+                "estimated_impact": "Each 1% FCR improvement eliminates ~6 repeat calls per 100.",
+            }
+        )
     if avoid > 20:
-        recs.append({
-            "priority": 2,
-            "title": "Reduce Avoidable Call Volume",
-            "insight": f"{avoid}% of calls are avoidable via proactive or self-serve channels.",
-            "estimated_impact": f"Deflecting half saves ~${avoid * 0.005 * n_calls * 6:,.0f}/mo.",
-        })
+        recs.append(
+            {
+                "priority": 2,
+                "title": "Reduce Avoidable Call Volume",
+                "insight": f"{avoid}% of calls are avoidable via proactive or self-serve channels.",
+                "estimated_impact": f"Deflecting half saves ~${avoid * 0.005 * n_calls * 6:,.0f}/mo.",
+            }
+        )
     if ai_pct > 30:
-        recs.append({
-            "priority": 3,
-            "title": "Deploy Agentic AI for High-Volume Intents",
-            "insight": f"{ai_pct}% of calls are fully resolvable by an AI agent.",
-            "estimated_impact": "Automating these calls reduces live-agent load significantly.",
-        })
+        recs.append(
+            {
+                "priority": 3,
+                "title": "Deploy Agentic AI for High-Volume Intents",
+                "insight": f"{ai_pct}% of calls are fully resolvable by an AI agent.",
+                "estimated_impact": "Automating these calls reduces live-agent load significantly.",
+            }
+        )
     if aht > 8:
-        recs.append({
-            "priority": 4,
-            "title": "Reduce Average Handle Time",
-            "insight": f"AHT of {aht:.1f} min is above the 6-8 min benchmark.",
-            "estimated_impact": "Each 1-min AHT reduction ≈ 12.5% cost saving on handle time.",
-        })
+        recs.append(
+            {
+                "priority": 4,
+                "title": "Reduce Average Handle Time",
+                "insight": f"AHT of {aht:.1f} min is above the 6-8 min benchmark.",
+                "estimated_impact": "Each 1-min AHT reduction ≈ 12.5% cost saving on handle time.",
+            }
+        )
     if esc > 15:
-        recs.append({
-            "priority": 5,
-            "title": "Reduce Escalation Rate",
-            "insight": f"Escalation rate of {esc}% adds cost and reduces satisfaction.",
-            "estimated_impact": "Targeted coaching on top escalation triggers reduces rate by 20-30%.",
-        })
+        recs.append(
+            {
+                "priority": 5,
+                "title": "Reduce Escalation Rate",
+                "insight": f"Escalation rate of {esc}% adds cost and reduces satisfaction.",
+                "estimated_impact": "Targeted coaching on top escalation triggers reduces rate by 20-30%.",
+            }
+        )
     _padding = [
         {
             "title": "Implement Continuous KPI Monitoring",
@@ -272,6 +284,7 @@ def _rule_based_insights(kpis: dict, qa_summary: dict, n_calls: int) -> dict:
 
 # ── Agent ─────────────────────────────────────────────────────────────
 
+
 class InsightsAgent:
     """
     Stateless agent — instantiate once and call run() per pipeline invocation.
@@ -285,58 +298,84 @@ class InsightsAgent:
 
     def run(self, state: dict) -> dict:
         import time
-        t0      = time.monotonic()
+
+        t0 = time.monotonic()
         metrics = state.get("aggregated_metrics", {})
-        kpis    = metrics.get("kpis", {})
-        qa_rep  = state.get("qa_report", {})
+        kpis = metrics.get("kpis", {})
+        qa_rep = state.get("qa_report", {})
         n_calls = kpis.get("total_calls_analyzed", len(state.get("analysis_results", [])))
 
-        AUDIT_LOG.record_agent_start(self.name, {"n_calls": n_calls,
-                                                  "deliberation": DELIBERATION_ENABLED})
-        log.info("[%s] Generating insights for %d calls (deliberation=%s)",
-                 self.name, n_calls, DELIBERATION_ENABLED)
+        AUDIT_LOG.record_agent_start(
+            self.name, {"n_calls": n_calls, "deliberation": DELIBERATION_ENABLED}
+        )
+        log.info(
+            "[%s] Generating insights for %d calls (deliberation=%s)",
+            self.name,
+            n_calls,
+            DELIBERATION_ENABLED,
+        )
 
         dl = DecisionLogger(self.name, state)
+        session_id = state.get("checkpoint_key", "")
 
         # Retrieve historical context from both flat memory and vector store
         historical_context = self._get_rich_context(kpis, n_calls)
 
         # ── Deliberation loop or single-pass ─────────────────────────
+        # One trace per pipeline run, covering all Analyze/Critique/Synthesize
+        # passes (see pipeline/tracing.py) — this is "one agent run" in the
+        # Langfuse best-practices sense: receives a task (the KPI set),
+        # reasons across up to 3 passes, and produces one result.
         insights = None
         passes_completed = 0
-        usage_acc: list[dict] = []   # per-pass LLM token usage (NIM + Claude)
+        usage_acc: list[dict] = []  # per-pass LLM token usage (NIM + Claude)
 
-        if DELIBERATION_ENABLED:
-            insights, passes_completed = self._deliberation_loop(
-                kpis, metrics, qa_rep, n_calls, historical_context, usage_acc
+        with traced_span(
+            "generate-insights",
+            input=self._kpi_context(kpis, metrics),
+            session_id=session_id or None,
+            tags=["insights"],
+            metadata={"n_calls": n_calls, "deliberation_enabled": DELIBERATION_ENABLED},
+        ) as span:
+            if DELIBERATION_ENABLED:
+                insights, passes_completed = self._deliberation_loop(
+                    kpis, metrics, qa_rep, n_calls, historical_context, usage_acc, session_id
+                )
+
+            if insights is None:
+                # Single-pass fallback
+                insights = self._single_pass_llm(
+                    kpis, metrics, qa_rep, n_calls, historical_context, usage_acc, session_id
+                )
+                if insights:
+                    passes_completed = 1
+
+            if insights is None:
+                log.warning("[%s] All LLM calls failed — using rule-based fallback", self.name)
+                insights = _rule_based_insights(kpis, qa_rep.get("summary", {}), n_calls)
+
+            insights["deliberation_passes"] = passes_completed
+            insights["token_usage"] = {
+                "total_prompt_tokens": sum(u["prompt_tokens"] for u in usage_acc),
+                "total_completion_tokens": sum(u["completion_tokens"] for u in usage_acc),
+                "calls": len(usage_acc),
+                "by_pass": usage_acc,
+            }
+            insights = OUTPUT_SANITIZER.sanitize_insights(insights)
+            final_source = insights.get("source", "unknown")
+            span.update(
+                output={
+                    "source": final_source,
+                    "passes_completed": passes_completed,
+                    "executive_summary": insights.get("executive_summary"),
+                    "top_recommendations": insights.get("top_recommendations"),
+                }
             )
-
-        if insights is None:
-            # Single-pass fallback
-            insights = self._single_pass_llm(
-                kpis, metrics, qa_rep, n_calls, historical_context, usage_acc
-            )
-            if insights:
-                passes_completed = 1
-
-        if insights is None:
-            log.warning("[%s] All LLM calls failed — using rule-based fallback", self.name)
-            insights = _rule_based_insights(kpis, qa_rep.get("summary", {}), n_calls)
-
-        insights["deliberation_passes"] = passes_completed
-        insights["token_usage"] = {
-            "total_prompt_tokens":     sum(u["prompt_tokens"] for u in usage_acc),
-            "total_completion_tokens": sum(u["completion_tokens"] for u in usage_acc),
-            "calls":                   len(usage_acc),
-            "by_pass":                 usage_acc,
-        }
-        insights = OUTPUT_SANITIZER.sanitize_insights(insights)
-        final_source = insights.get("source", "unknown")
 
         # ── Decision: provider selected ──────────────────────────────
         _provider_map = {
-            "llm_deliberated":  "NVIDIA NIM (3-pass deliberation)",
-            "llm_single_pass":  "NVIDIA NIM or Claude (single-pass fallback)",
+            "llm_deliberated": "NVIDIA NIM (3-pass deliberation)",
+            "llm_single_pass": "NVIDIA NIM or Claude (single-pass fallback)",
             "rule_based_fallback": "Rule-based (all LLM calls failed)",
         }
         dl.log(
@@ -366,18 +405,26 @@ class InsightsAgent:
                 decision_type="deliberation_outcome",
                 decision=f"3-pass deliberation completed: critique_quality={critique_quality}",
                 reason=f"Self-reflection critique graded recommendations as '{critique_quality}'; synthesis pass incorporated feedback to produce final board-ready output",
-                evidence={"passes": passes_completed, "critique_quality": critique_quality, "n_recs": len(insights.get("top_recommendations", []))},
+                evidence={
+                    "passes": passes_completed,
+                    "critique_quality": critique_quality,
+                    "n_recs": len(insights.get("top_recommendations", [])),
+                },
                 confidence="high",
             )
 
         AUDIT_LOG.record_governance(
-            check="insights_source", passed=True,
+            check="insights_source",
+            passed=True,
             details={"source": final_source, "passes": passes_completed},
         )
         AUDIT_LOG.record_agent_end(
             self.name,
-            {"source": final_source, "passes": passes_completed,
-             "n_recs": len(insights.get("top_recommendations", []))},
+            {
+                "source": final_source,
+                "passes": passes_completed,
+                "n_recs": len(insights.get("top_recommendations", [])),
+            },
             elapsed_s=time.monotonic() - t0,
         )
         return {**state, "agent_insights": insights, "decision_log": dl.finalize()}
@@ -392,6 +439,7 @@ class InsightsAgent:
         n_calls: int,
         historical_context: str,
         usage_acc: list | None = None,
+        session_id: str = "",
     ) -> tuple[dict | None, int]:
         """
         Run the 3-pass Analyze→Critique→Synthesize loop.
@@ -405,6 +453,8 @@ class InsightsAgent:
             self._build_analyze_prompt(kpis, metrics, qa_rep, n_calls, historical_context),
             temperature=INSIGHTS_TEMPERATURE,
             usage_acc=usage_acc,
+            pass_name="analyze",
+            session_id=session_id,
         )
         if initial is None:
             return None, 0
@@ -419,6 +469,8 @@ class InsightsAgent:
             ),
             temperature=0.1,  # low temp for consistent grading
             usage_acc=usage_acc,
+            pass_name="critique",
+            session_id=session_id,
         )
         if critique is None:
             log.warning("[%s] Critique pass failed — returning single-pass result", self.name)
@@ -434,12 +486,14 @@ class InsightsAgent:
             ),
             temperature=INSIGHTS_TEMPERATURE,
             usage_acc=usage_acc,
+            pass_name="synthesize",
+            session_id=session_id,
         )
         if final is None:
             log.warning("[%s] Synthesis pass failed — returning post-critique result", self.name)
             return initial, 2
 
-        final["source"]   = "llm_deliberated"
+        final["source"] = "llm_deliberated"
         final["critique"] = critique.get("overall_quality", "unknown")
         log.info("[%s] Deliberation complete: quality=%s", self.name, final["critique"])
         return final, 3
@@ -454,11 +508,14 @@ class InsightsAgent:
         n_calls: int,
         historical_context: str,
         usage_acc: list | None = None,
+        session_id: str = "",
     ) -> dict | None:
         result = self._llm_call(
             self._build_analyze_prompt(kpis, metrics, qa_rep, n_calls, historical_context),
             temperature=INSIGHTS_TEMPERATURE,
             usage_acc=usage_acc,
+            pass_name="single-pass",
+            session_id=session_id,
         )
         if result:
             result["source"] = "llm_single_pass"
@@ -467,14 +524,35 @@ class InsightsAgent:
     # ── Helpers ──────────────────────────────────────────────────────
 
     def _llm_call(
-        self, prompt: str, temperature: float = 0.3, usage_acc: list | None = None
+        self,
+        prompt: str,
+        temperature: float = 0.3,
+        usage_acc: list | None = None,
+        pass_name: str = "insights",
+        session_id: str = "",
     ) -> dict | None:
-        """Call NVIDIA first; fall back to Claude if NVIDIA is unavailable."""
-        result = self._nvidia_call(prompt, temperature, usage_acc)
-        if result is not None:
+        """Call NVIDIA first; fall back to Claude if NVIDIA is unavailable.
+
+        Wrapped in one Langfuse span per deliberation pass — nested inside
+        the parent "generate-insights" trace (see run()) — so the NVIDIA
+        generation and, on fallback, the Claude generation both show up
+        under a clearly named "<pass_name>-pass" step instead of two
+        unlabeled generations at the trace root.
+        """
+        with traced_span(
+            f"{pass_name}-pass",
+            input={"temperature": temperature},
+            session_id=session_id or None,
+            tags=["insights", pass_name],
+        ) as span:
+            result = self._nvidia_call(prompt, temperature, usage_acc)
+            provider = "nvidia_nim"
+            if result is None:
+                log.info("[%s] NVIDIA unavailable — falling back to Claude", self.name)
+                result = self._claude_call(prompt, temperature, usage_acc)
+                provider = "anthropic" if result is not None else "none"
+            span.update(output={"provider": provider, "result": result})
             return result
-        log.info("[%s] NVIDIA unavailable — falling back to Claude", self.name)
-        return self._claude_call(prompt, temperature, usage_acc)
 
     def _nvidia_call(
         self, prompt: str, temperature: float = 0.3, usage_acc: list | None = None
@@ -504,12 +582,14 @@ class InsightsAgent:
             raw = response.choices[0].message.content
             SECRET_GUARD.assert_no_secrets_in_output(raw)
             if usage_acc is not None and response.usage:
-                usage_acc.append({
-                    "provider":          "nvidia_nim",
-                    "model":             INSIGHTS_MODEL,
-                    "prompt_tokens":     response.usage.prompt_tokens or 0,
-                    "completion_tokens": response.usage.completion_tokens or 0,
-                })
+                usage_acc.append(
+                    {
+                        "provider": "nvidia_nim",
+                        "model": INSIGHTS_MODEL,
+                        "prompt_tokens": response.usage.prompt_tokens or 0,
+                        "completion_tokens": response.usage.completion_tokens or 0,
+                    }
+                )
             result = json.loads(raw)
             # Per-pass payloads (critique etc.) have varying schemas — apply the
             # generic sanitizer here; sanitize_insights() runs once on the final dict.
@@ -524,12 +604,15 @@ class InsightsAgent:
             log.warning(
                 "[%s] NVIDIA timed out after %ds — marking unavailable for the "
                 "rest of this run; remaining passes/batches go straight to Claude",
-                self.name, INSIGHTS_API_TIMEOUT_S,
+                self.name,
+                INSIGHTS_API_TIMEOUT_S,
             )
             return None
         except Exception as exc:
             if "429" in str(exc):
-                log.warning("[%s] NVIDIA quota exhausted (429) — model=%s", self.name, INSIGHTS_MODEL)
+                log.warning(
+                    "[%s] NVIDIA quota exhausted (429) — model=%s", self.name, INSIGHTS_MODEL
+                )
             else:
                 log.warning("[%s] NVIDIA call failed (%s): %s", self.name, type(exc).__name__, exc)
             return None
@@ -561,12 +644,14 @@ class InsightsAgent:
                 raw = raw.strip()
             SECRET_GUARD.assert_no_secrets_in_output(raw)
             if usage_acc is not None:
-                usage_acc.append({
-                    "provider":          "anthropic",
-                    "model":             CLAUDE_INSIGHTS_MODEL,
-                    "prompt_tokens":     response.usage.input_tokens,
-                    "completion_tokens": response.usage.output_tokens,
-                })
+                usage_acc.append(
+                    {
+                        "provider": "anthropic",
+                        "model": CLAUDE_INSIGHTS_MODEL,
+                        "prompt_tokens": response.usage.input_tokens,
+                        "completion_tokens": response.usage.output_tokens,
+                    }
+                )
             result = json.loads(raw)
             return OUTPUT_SANITIZER.sanitize_extraction_result(result)
 
@@ -585,40 +670,40 @@ class InsightsAgent:
         n_calls: int,
         historical_context: str,
     ) -> str:
-        cost_dist  = metrics.get("distributions", {}).get("cost_driver", {})
+        cost_dist = metrics.get("distributions", {}).get("cost_driver", {})
         top_driver = max(cost_dist, key=cost_dist.get) if cost_dist else "unknown"
         # historical_context is injected only via the {historical_context}
         # placeholder — never concatenated into the template before .format(),
         # because memory text may contain braces that would break formatting.
         return ANALYZE_PROMPT.format(
-            n_calls               = n_calls,
-            aht_min               = kpis.get("avg_handle_time_minutes", 0),
-            fcr_pct               = kpis.get("fcr_rate_pct", 0),
-            avoidable_pct         = kpis.get("avoidable_call_rate_pct", 0),
-            ai_pct                = kpis.get("agentic_ai_resolvable_pct", 0),
-            escalation_pct        = kpis.get("escalation_rate_pct", 0),
-            repeat_high_pct       = kpis.get("repeat_call_risk_high_pct", 0),
-            sentiment_improved_pct = kpis.get("sentiment_improved_pct", 0),
-            savings_usd           = metrics.get("cost_levers", {}).get(
-                                        "total_savings_opportunity_usd", 0),
-            top_cost_driver       = top_driver,
-            qa_avg_score          = qa_rep.get("summary", {}).get("avg_score", "N/A"),
-            qa_verdict            = qa_rep.get("dataset_verdict", "N/A"),
-            historical_context    = (
+            n_calls=n_calls,
+            aht_min=kpis.get("avg_handle_time_minutes", 0),
+            fcr_pct=kpis.get("fcr_rate_pct", 0),
+            avoidable_pct=kpis.get("avoidable_call_rate_pct", 0),
+            ai_pct=kpis.get("agentic_ai_resolvable_pct", 0),
+            escalation_pct=kpis.get("escalation_rate_pct", 0),
+            repeat_high_pct=kpis.get("repeat_call_risk_high_pct", 0),
+            sentiment_improved_pct=kpis.get("sentiment_improved_pct", 0),
+            savings_usd=metrics.get("cost_levers", {}).get("total_savings_opportunity_usd", 0),
+            top_cost_driver=top_driver,
+            qa_avg_score=qa_rep.get("summary", {}).get("avg_score", "N/A"),
+            qa_verdict=qa_rep.get("dataset_verdict", "N/A"),
+            historical_context=(
                 f"--- Historical Performance Context ---\n{historical_context}"
-                if historical_context else ""
+                if historical_context
+                else ""
             ),
         )
 
     def _kpi_context(self, kpis: dict, metrics: dict) -> dict:
         """Compact dict of KPI values for the critique and synthesize prompts."""
         return {
-            "fcr_pct":        kpis.get("fcr_rate_pct", 0),
-            "aht_min":        kpis.get("avg_handle_time_minutes", 0),
-            "avoidable_pct":  kpis.get("avoidable_call_rate_pct", 0),
-            "ai_pct":         kpis.get("agentic_ai_resolvable_pct", 0),
+            "fcr_pct": kpis.get("fcr_rate_pct", 0),
+            "aht_min": kpis.get("avg_handle_time_minutes", 0),
+            "avoidable_pct": kpis.get("avoidable_call_rate_pct", 0),
+            "ai_pct": kpis.get("agentic_ai_resolvable_pct", 0),
             "escalation_pct": kpis.get("escalation_rate_pct", 0),
-            "savings_usd":    metrics.get("cost_levers", {}).get("total_savings_opportunity_usd", 0),
+            "savings_usd": metrics.get("cost_levers", {}).get("total_savings_opportunity_usd", 0),
         }
 
     def _get_rich_context(self, kpis: dict, n_calls: int) -> str:
@@ -634,6 +719,7 @@ class InsightsAgent:
         # Semantic retrieval from vector memory
         try:
             from pipeline.vector_memory import VECTOR_STORE
+
             if VECTOR_STORE.size > 0:
                 query_text = (
                     f"FCR {kpis.get('fcr_rate_pct', 0)}% "

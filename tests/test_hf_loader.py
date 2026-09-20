@@ -16,9 +16,9 @@ def _turns(conv_id: str, n: int, start: str = "2024-01-01 10:00:00") -> list[dic
     return [
         {
             "conversation_id": conv_id,
-            "speaker":         "agent" if i % 2 == 0 else "client",
-            "date_time":       base + pd.Timedelta(seconds=15 * i),
-            "text":            f"Turn {i} of conversation {conv_id} with enough text to count.",
+            "speaker": "agent" if i % 2 == 0 else "client",
+            "date_time": base + pd.Timedelta(seconds=15 * i),
+            "text": f"Turn {i} of conversation {conv_id} with enough text to count.",
         }
         for i in range(n)
     ]
@@ -31,6 +31,7 @@ def _frame(rows: list[dict]) -> pd.DataFrame:
 
 
 # ── _build_transcripts ────────────────────────────────────────────────
+
 
 class TestBuildTranscripts:
     def test_builds_expected_schema(self):
@@ -71,6 +72,7 @@ class TestBuildTranscripts:
 
 
 # ── Local CSV path ────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def local_csv(tmp_path, monkeypatch):
@@ -118,6 +120,7 @@ class TestLoadFromCsv:
 # ── Non-overlapping offsets (regression: production bug, see hf_loader.py
 # module docstring — a 10-batch run only returned 136/200 unique conversations
 # before _select_ids() replaced the overlapping-window sampling) ──────────
+
 
 @pytest.fixture
 def large_local_csv(tmp_path, monkeypatch):

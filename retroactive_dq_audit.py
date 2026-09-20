@@ -67,6 +67,7 @@ def _file_hash(path: Path) -> str:
 
 # ── Discovery ─────────────────────────────────────────────────────────
 
+
 def discover_runs() -> tuple[list[tuple[Path, Path]], list[Path]]:
     """
     Pair each per-batch full_results_{ts}.json with its run_manifest_{ts}.json.
@@ -84,9 +85,7 @@ def discover_runs() -> tuple[list[tuple[Path, Path]], list[Path]]:
     full_results = sorted(
         p for p in OUTPUT_DIR.glob("full_results_[0-9]*.json") if "combined" not in p.name
     )
-    manifests = {
-        _timestamp_of(p): p for p in OUTPUT_DIR.glob("run_manifest_*.json")
-    }
+    manifests = {_timestamp_of(p): p for p in OUTPUT_DIR.glob("run_manifest_*.json")}
 
     paired: list[tuple[Path, Path]] = []
     matched_ts: set[str] = set()
@@ -102,6 +101,7 @@ def discover_runs() -> tuple[list[tuple[Path, Path]], list[Path]]:
 
 
 # ── Per-run audit ─────────────────────────────────────────────────────
+
 
 def audit_run(full_results_path: Path, manifest_path: Path) -> dict:
     with open(full_results_path, encoding="utf-8") as fh:
@@ -134,16 +134,20 @@ def audit_run(full_results_path: Path, manifest_path: Path) -> dict:
             timestamp_check = {"passed": True, "confidence": "unavailable"}
             heuristic_truncated = None
 
-        call_results.append({
-            "call_id": call_id,
-            "phase_reconciliation": {**phase_check, "confidence": "full"},
-            "timestamp_ground_truth": timestamp_check,
-            "heuristic_truncation_flag": heuristic_truncated,
-        })
+        call_results.append(
+            {
+                "call_id": call_id,
+                "phase_reconciliation": {**phase_check, "confidence": "full"},
+                "timestamp_ground_truth": timestamp_check,
+                "heuristic_truncation_flag": heuristic_truncated,
+            }
+        )
 
     n = len(call_results)
     n_phase_pass = sum(1 for c in call_results if c["phase_reconciliation"]["passed"])
-    ts_checked = [c for c in call_results if c["timestamp_ground_truth"]["confidence"] == "backfilled"]
+    ts_checked = [
+        c for c in call_results if c["timestamp_ground_truth"]["confidence"] == "backfilled"
+    ]
     n_ts_pass = sum(1 for c in ts_checked if c["timestamp_ground_truth"]["passed"])
     n_heuristic_flagged = sum(1 for c in call_results if c["heuristic_truncation_flag"] is True)
 
@@ -169,12 +173,15 @@ def audit_run(full_results_path: Path, manifest_path: Path) -> dict:
         "timestamp_ground_truth_pass_rate_pct": (
             round(n_ts_pass / len(ts_checked) * 100, 1) if ts_checked else None
         ),
-        "heuristic_truncation_flag_rate_pct": round(n_heuristic_flagged / n * 100, 1) if n else None,
+        "heuristic_truncation_flag_rate_pct": round(n_heuristic_flagged / n * 100, 1)
+        if n
+        else None,
         "flagged_calls": flagged,
     }
 
 
 # ── Main ──────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     print("\n" + "═" * 60)
@@ -188,8 +195,10 @@ def main() -> None:
         print("\n  ✗ No full_results_*.json + run_manifest_*.json pairs found.")
         return
 
-    print(f"\n  Found {len(paired)} auditable run(s), "
-          f"{len(unmatched_manifests)} run(s) with no surviving per-call data.\n")
+    print(
+        f"\n  Found {len(paired)} auditable run(s), "
+        f"{len(unmatched_manifests)} run(s) with no surviving per-call data.\n"
+    )
 
     run_reports = [audit_run(fr, mf) for fr, mf in paired]
 
@@ -198,9 +207,7 @@ def main() -> None:
         round(r["phase_reconciliation_pass_rate_pct"] / 100 * r["n_calls"]) for r in run_reports
     )
     ts_runs = [r for r in run_reports if r["timestamp_ground_truth_pass_rate_pct"] is not None]
-    total_ts_checked = sum(
-        r["n_calls"] for r in ts_runs
-    )
+    total_ts_checked = sum(r["n_calls"] for r in ts_runs)
     total_ts_pass = sum(
         round(r["timestamp_ground_truth_pass_rate_pct"] / 100 * r["n_calls"]) for r in ts_runs
     )
@@ -225,10 +232,18 @@ def main() -> None:
 
     print(f"  {'─' * 50}")
     print(f"  Total calls audited          : {overall['total_calls_audited']}")
-    print(f"  Phase reconciliation pass    : {overall['phase_reconciliation_pass_rate_pct']}%  (full strength)")
-    print(f"  Timestamp ground-truth pass  : {overall['timestamp_ground_truth_pass_rate_pct']}%  (backfilled)")
-    print(f"  Heuristic truncation flagged : {overall['heuristic_truncation_flag_rate_pct']}%  (heuristic only, corroborating)")
-    print(f"  Runs with NO per-call data   : {len(unmatched_manifests)}  (cannot be audited — full_results rotated)")
+    print(
+        f"  Phase reconciliation pass    : {overall['phase_reconciliation_pass_rate_pct']}%  (full strength)"
+    )
+    print(
+        f"  Timestamp ground-truth pass  : {overall['timestamp_ground_truth_pass_rate_pct']}%  (backfilled)"
+    )
+    print(
+        f"  Heuristic truncation flagged : {overall['heuristic_truncation_flag_rate_pct']}%  (heuristic only, corroborating)"
+    )
+    print(
+        f"  Runs with NO per-call data   : {len(unmatched_manifests)}  (cannot be audited — full_results rotated)"
+    )
     if unmatched_manifests:
         for p in unmatched_manifests:
             print(f"    - {p.name}")

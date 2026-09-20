@@ -48,7 +48,9 @@ class TestPhaseReconciliation:
 
     def test_boundary_exactly_at_tolerance_passes(self, make_record):
         total = 420
-        tolerance = max(PHASE_RECONCILIATION_TOLERANCE_S, PHASE_RECONCILIATION_TOLERANCE_PCT * total)
+        tolerance = max(
+            PHASE_RECONCILIATION_TOLERANCE_S, PHASE_RECONCILIATION_TOLERANCE_PCT * total
+        )
         record = make_record(phase_resolution_duration_seconds=120 + tolerance)
         result = check_phase_reconciliation(record)
         assert result["passed"] is True
@@ -57,9 +59,12 @@ class TestPhaseReconciliation:
     def test_missing_phase_fields_treated_as_zero(self, make_record):
         record = make_record()
         for field in (
-            "phase_welcome_duration_seconds", "phase_discovery_duration_seconds",
-            "phase_diagnosis_duration_seconds", "phase_resolution_duration_seconds",
-            "phase_hold_total_seconds", "phase_upsell_duration_seconds",
+            "phase_welcome_duration_seconds",
+            "phase_discovery_duration_seconds",
+            "phase_diagnosis_duration_seconds",
+            "phase_resolution_duration_seconds",
+            "phase_hold_total_seconds",
+            "phase_upsell_duration_seconds",
             "phase_closing_duration_seconds",
         ):
             record.pop(field, None)
@@ -108,7 +113,7 @@ class TestPhaseReconciliation:
             phase_resolution_duration_seconds=13,
             phase_hold_total_seconds=0,
             phase_closing_duration_seconds=32,
-            phase_upsell_duration_seconds=33,          # overlaps with diagnosis
+            phase_upsell_duration_seconds=33,  # overlaps with diagnosis
             phase_relationship_building_duration_seconds=15,  # overlaps with another phase
         )
         result = check_phase_reconciliation(record)
@@ -125,7 +130,9 @@ class TestPhaseReconciliation:
 
 class TestOverlayPlausibility:
     def test_overlay_within_total_passes(self, make_record):
-        record = make_record(phase_upsell_duration_seconds=50, phase_relationship_building_duration_seconds=20)
+        record = make_record(
+            phase_upsell_duration_seconds=50, phase_relationship_building_duration_seconds=20
+        )
         result = check_overlay_plausibility(record)
         assert result["passed"] is True
         assert result["violations"] == []
@@ -170,7 +177,9 @@ class TestTimestampGroundTruth:
 
     def test_boundary_exactly_at_tolerance_passes(self, make_record):
         raw = 420
-        tolerance = max(TIMESTAMP_GROUND_TRUTH_TOLERANCE_S, TIMESTAMP_GROUND_TRUTH_TOLERANCE_PCT * raw)
+        tolerance = max(
+            TIMESTAMP_GROUND_TRUTH_TOLERANCE_S, TIMESTAMP_GROUND_TRUTH_TOLERANCE_PCT * raw
+        )
         record = make_record(total_duration_seconds=raw + tolerance)
         record["_raw_duration_seconds"] = raw
         result = check_timestamp_ground_truth(record)
@@ -222,8 +231,13 @@ class TestCheckDataQuality:
         result = check_data_quality(record)
         assert result["passed"] is False
         assert set(result["failures"]) == {
-            "phase_reconciliation", "timestamp_ground_truth", "transcript_truncation",
+            "phase_reconciliation",
+            "timestamp_ground_truth",
+            "transcript_truncation",
         }
         assert set(result["checks"]) == {
-            "phase_reconciliation", "timestamp_ground_truth", "transcript_truncation", "overlay_plausibility",
+            "phase_reconciliation",
+            "timestamp_ground_truth",
+            "transcript_truncation",
+            "overlay_plausibility",
         }

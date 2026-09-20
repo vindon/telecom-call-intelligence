@@ -69,6 +69,13 @@ format:
 type-check:
 	$(MYPY) pipeline/ --ignore-missing-imports
 
+# Runs in pre-commit's own isolated environment, not .venv — installing
+# semgrep alongside project deps downgrades opentelemetry and breaks the
+# Langfuse tracing integration (pipeline/tracing.py). First run installs
+# semgrep into that isolated env and is slower; later runs are cached.
+security-scan:
+	pre-commit run semgrep --all-files
+
 check: lint type-check test
 
 # ── Run pipeline ───────────────────────────────────────────────────────

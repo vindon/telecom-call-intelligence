@@ -17,12 +17,13 @@ from pipeline.memory import AgentMemory
 @pytest.fixture(autouse=True)
 def isolate(monkeypatch, tmp_path):
     monkeypatch.setattr(ext_mod, "MEMORY", AgentMemory(path=tmp_path / "memory.json"))
-    monkeypatch.setattr(analyzer, "_gemini_quota_breaker", CircuitBreaker(tmp_path / ".react_quota_exhausted"))
+    monkeypatch.setattr(
+        analyzer, "_gemini_quota_breaker", CircuitBreaker(tmp_path / ".react_quota_exhausted")
+    )
 
 
 def _state(transcripts: list[dict]) -> dict:
-    return {"validated_transcripts": transcripts, "inter_call_delay": 0.0,
-            "checkpoint_key": ""}
+    return {"validated_transcripts": transcripts, "inter_call_delay": 0.0, "checkpoint_key": ""}
 
 
 class TestExtractionAgent:
@@ -40,9 +41,7 @@ class TestExtractionAgent:
 
     def test_failed_calls_recorded(self, monkeypatch, make_transcript, make_record):
         transcripts = [make_transcript("c1"), make_transcript("c2")]
-        monkeypatch.setattr(
-            ext_mod, "analyze_batch", lambda t, **kw: [make_record(call_id="c1")]
-        )
+        monkeypatch.setattr(ext_mod, "analyze_batch", lambda t, **kw: [make_record(call_id="c1")])
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         out = ExtractionAgent().run(_state(transcripts))
@@ -55,14 +54,17 @@ class TestExtractionAgent:
     ):
         transcripts = [make_transcript("c1")]
         low_coverage = make_record(
-            call_id="c1", fcr_indicator=None, escalation_required=None,
-            customer_sentiment_start=None, customer_sentiment_end=None,
+            call_id="c1",
+            fcr_indicator=None,
+            escalation_required=None,
+            customer_sentiment_start=None,
+            customer_sentiment_end=None,
             all_issues_resolved=None,
         )
         repaired = make_record(call_id="c1")
         monkeypatch.setattr(ext_mod, "analyze_batch", lambda t, **kw: [low_coverage])
         monkeypatch.setattr(
-            ext_mod, "gap_fill_transcript", lambda client, sp, t, fp: repaired
+            ext_mod, "gap_fill_transcript", lambda client, sp, t, fp, **kw: repaired
         )
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-dummy")
 
@@ -75,9 +77,7 @@ class TestExtractionAgent:
 
     def test_react_skips_high_coverage_results(self, monkeypatch, make_transcript, make_record):
         transcripts = [make_transcript("c1")]
-        monkeypatch.setattr(
-            ext_mod, "analyze_batch", lambda t, **kw: [make_record(call_id="c1")]
-        )
+        monkeypatch.setattr(ext_mod, "analyze_batch", lambda t, **kw: [make_record(call_id="c1")])
 
         def explode(*args, **kwargs):
             raise AssertionError("gap-fill must not run at 100% coverage")
@@ -89,9 +89,7 @@ class TestExtractionAgent:
         assert out["react_stats"]["n_gap_fills"] == 0
 
     def test_budget_exceeded_raises(self, monkeypatch, make_transcript, make_record):
-        monkeypatch.setattr(
-            ext_mod, "analyze_batch", lambda t, **kw: [make_record(call_id="c1")]
-        )
+        monkeypatch.setattr(ext_mod, "analyze_batch", lambda t, **kw: [make_record(call_id="c1")])
         monkeypatch.setattr(ext_mod, "_cost_usd", lambda p, c, cc=0, cr=0: 999.0)
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 

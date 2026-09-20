@@ -11,6 +11,7 @@ from pipeline.governance import AuditLog, BudgetGuard, PIIScanner, QualityGate
 
 # ── BudgetGuard ───────────────────────────────────────────────────────
 
+
 class TestBudgetGuard:
     def test_under_budget_passes(self):
         guard = BudgetGuard(max_cost_usd=5.0)
@@ -54,14 +55,15 @@ class TestBudgetGuard:
 
 # ── QualityGate ───────────────────────────────────────────────────────
 
+
 class TestQualityGate:
     def _report(self, pass_rate_pct: float, verdict: str = "PASS", n: int = 20) -> dict:
         return {
-            "dataset_verdict":     verdict,
+            "dataset_verdict": verdict,
             "total_calls_audited": n,
             "summary": {
                 "pass_rate_pct": pass_rate_pct,
-                "avg_score":     pass_rate_pct,  # simplified
+                "avg_score": pass_rate_pct,  # simplified
             },
         }
 
@@ -101,7 +103,9 @@ class TestQualityGate:
     # in production 2026-08-09: ~100% QA pass rate, 15-40% data quality pass
     # rate, and this gate never fired because it only looked at the QA score).
 
-    def _report_with_dq(self, pass_rate_pct: float, dq_pass_rate_pct: float, verdict: str = "PASS", n: int = 20) -> dict:
+    def _report_with_dq(
+        self, pass_rate_pct: float, dq_pass_rate_pct: float, verdict: str = "PASS", n: int = 20
+    ) -> dict:
         report = self._report(pass_rate_pct, verdict, n)
         report["summary"]["data_quality_pass_rate_pct"] = dq_pass_rate_pct
         return report
@@ -113,7 +117,9 @@ class TestQualityGate:
 
     def test_both_metrics_healthy_passes(self):
         gate = QualityGate(min_pass_rate=0.40)
-        gate.check(self._report_with_dq(pass_rate_pct=95.0, dq_pass_rate_pct=80.0))  # must not raise
+        gate.check(
+            self._report_with_dq(pass_rate_pct=95.0, dq_pass_rate_pct=80.0)
+        )  # must not raise
 
     def test_data_quality_at_threshold_passes(self):
         gate = QualityGate(min_pass_rate=0.40)
@@ -128,12 +134,15 @@ class TestQualityGate:
     def test_both_metrics_catastrophic_reports_both_in_error(self):
         gate = QualityGate(min_pass_rate=0.40)
         with pytest.raises(QualityGate.QualityGateError) as exc_info:
-            gate.check(self._report_with_dq(pass_rate_pct=10.0, dq_pass_rate_pct=5.0, verdict="FAIL"))
+            gate.check(
+                self._report_with_dq(pass_rate_pct=10.0, dq_pass_rate_pct=5.0, verdict="FAIL")
+            )
         assert "QA pass rate" in str(exc_info.value)
         assert "data quality pass rate" in str(exc_info.value)
 
 
 # ── PIIScanner ────────────────────────────────────────────────────────
+
 
 class TestPIIScanner:
     @pytest.fixture(autouse=True)
@@ -171,16 +180,14 @@ class TestPIIScanner:
         assert "email" in found
 
     def test_redact_multiple_pii_types(self):
-        text, found = self.scanner.redact(
-            "Email bad@test.com and call 555-123-4567"
-        )
+        text, found = self.scanner.redact("Email bad@test.com and call 555-123-4567")
         assert text.count("[REDACTED]") == 2
         assert "email" in found
         assert "phone_us" in found
 
     def test_scan_transcript_redacts_pii_in_text(self):
         transcript = {
-            "call_id":         "001",
+            "call_id": "001",
             "transcript_text": "Customer said: my email is pii@test.com",
         }
         result = self.scanner.scan_transcript(transcript)
@@ -190,7 +197,7 @@ class TestPIIScanner:
 
     def test_scan_transcript_clean_is_unchanged(self):
         transcript = {
-            "call_id":         "002",
+            "call_id": "002",
             "transcript_text": "Agent: How can I help you today?",
         }
         result = self.scanner.scan_transcript(transcript)
@@ -199,9 +206,9 @@ class TestPIIScanner:
 
     def test_scan_transcript_preserves_other_fields(self):
         transcript = {
-            "call_id":         "003",
+            "call_id": "003",
             "transcript_text": "Call me at 555-000-1234",
-            "n_turns":         4,
+            "n_turns": 4,
         }
         result = self.scanner.scan_transcript(transcript)
         assert result["call_id"] == "003"
@@ -209,6 +216,7 @@ class TestPIIScanner:
 
 
 # ── AuditLog ─────────────────────────────────────────────────────────
+
 
 class TestAuditLog:
     def test_initially_empty(self):

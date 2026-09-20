@@ -31,6 +31,7 @@ log = get_logger(__name__)
 
 # ── 1. Budget Guard ───────────────────────────────────────────────────
 
+
 class BudgetGuard:
     """
     Raises BudgetExceededError if cumulative inference cost exceeds max_cost_usd.
@@ -55,7 +56,10 @@ class BudgetGuard:
         pct = current_cost_usd / self.max_cost_usd * 100 if self.max_cost_usd > 0 else 0
         log.info(
             "[BudgetGuard] Cost: $%.4f / $%.2f (%.1f%%) %s",
-            current_cost_usd, self.max_cost_usd, pct, context,
+            current_cost_usd,
+            self.max_cost_usd,
+            pct,
+            context,
         )
         if current_cost_usd > self.max_cost_usd:
             raise self.BudgetExceededError(
@@ -63,9 +67,7 @@ class BudgetGuard:
                 f"${self.max_cost_usd:.2f}. Adjust --budget or reduce batch size."
             )
         if pct >= 80:
-            log.warning(
-                "[BudgetGuard] Budget at %.1f%% — consider reducing batch size", pct
-            )
+            log.warning("[BudgetGuard] Budget at %.1f%% — consider reducing batch size", pct)
 
     def estimate_remaining_calls(self, current_cost_usd: float, avg_cost_per_call: float) -> int:
         """How many more calls can we afford at the current per-call cost."""
@@ -76,6 +78,7 @@ class BudgetGuard:
 
 
 # ── 2. Quality Gate ───────────────────────────────────────────────────
+
 
 class QualityGate:
     """
@@ -116,37 +119,50 @@ class QualityGate:
         if not qa_report or qa_report.get("dataset_verdict") == "SKIP":
             return  # no results — handled upstream
 
-        summary      = qa_report.get("summary", {})
-        pass_rate    = summary.get("pass_rate_pct", 100) / 100  # convert pct → fraction
-        n_audited    = qa_report.get("total_calls_audited", 0)
-        avg_score    = summary.get("avg_score", 100)
-        dq_pass_rate_pct = summary.get("data_quality_pass_rate_pct")  # None if caller predates this check
+        summary = qa_report.get("summary", {})
+        pass_rate = summary.get("pass_rate_pct", 100) / 100  # convert pct → fraction
+        n_audited = qa_report.get("total_calls_audited", 0)
+        avg_score = summary.get("avg_score", 100)
+        dq_pass_rate_pct = summary.get(
+            "data_quality_pass_rate_pct"
+        )  # None if caller predates this check
 
         log.info(
             "[QualityGate] pass_rate=%.1f%%  avg_score=%.1f  n=%d  threshold=%.0f%%%s",
-            pass_rate * 100, avg_score, n_audited, self.min_pass_rate * 100,
-            f"  data_quality_pass_rate={dq_pass_rate_pct:.1f}%" if dq_pass_rate_pct is not None else "",
+            pass_rate * 100,
+            avg_score,
+            n_audited,
+            self.min_pass_rate * 100,
+            f"  data_quality_pass_rate={dq_pass_rate_pct:.1f}%"
+            if dq_pass_rate_pct is not None
+            else "",
         )
 
         if pass_rate < QUALITY_WARN_RATE:
             log.warning(
                 "[QualityGate] WARNING: pass_rate=%.1f%% is below quality warning threshold %.0f%% "
                 "— aggregation will run on a degraded dataset. Check extraction model and prompt.",
-                pass_rate * 100, QUALITY_WARN_RATE * 100,
+                pass_rate * 100,
+                QUALITY_WARN_RATE * 100,
             )
         if dq_pass_rate_pct is not None and dq_pass_rate_pct / 100 < QUALITY_WARN_RATE:
             log.warning(
                 "[QualityGate] WARNING: data_quality_pass_rate=%.1f%% is below quality warning "
                 "threshold %.0f%% — AHT/phase economics for this run are unreliable even though "
                 "the QA score looks fine.",
-                dq_pass_rate_pct, QUALITY_WARN_RATE * 100,
+                dq_pass_rate_pct,
+                QUALITY_WARN_RATE * 100,
             )
 
         failures = []
         if pass_rate < self.min_pass_rate:
-            failures.append(f"QA pass rate {pass_rate*100:.1f}% < minimum {self.min_pass_rate*100:.0f}%")
+            failures.append(
+                f"QA pass rate {pass_rate * 100:.1f}% < minimum {self.min_pass_rate * 100:.0f}%"
+            )
         if dq_pass_rate_pct is not None and dq_pass_rate_pct / 100 < self.min_pass_rate:
-            failures.append(f"data quality pass rate {dq_pass_rate_pct:.1f}% < minimum {self.min_pass_rate*100:.0f}%")
+            failures.append(
+                f"data quality pass rate {dq_pass_rate_pct:.1f}% < minimum {self.min_pass_rate * 100:.0f}%"
+            )
 
         if failures:
             raise self.QualityGateError(
@@ -159,15 +175,15 @@ class QualityGate:
 # ── 3. PII Scanner ────────────────────────────────────────────────────
 
 _PII_PATTERNS: dict[str, re.Pattern] = {
-    "phone_us":    re.compile(r'\b(?:\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'),
-    "ssn":         re.compile(r'\b\d{3}-\d{2}-\d{4}\b'),
-    "email":       re.compile(r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b'),
-    "credit_card": re.compile(r'\b(?:\d{4}[-\s]?){3}\d{4}\b'),
-    "dob":         re.compile(
-        r'\b(?:born|dob|date of birth)[:\s]+\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b',
+    "phone_us": re.compile(r"\b(?:\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
+    "ssn": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
+    "email": re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"),
+    "credit_card": re.compile(r"\b(?:\d{4}[-\s]?){3}\d{4}\b"),
+    "dob": re.compile(
+        r"\b(?:born|dob|date of birth)[:\s]+\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b",
         re.IGNORECASE,
     ),
-    "account_num": re.compile(r'\baccount\s*(?:number|#|no\.?)[:\s]*\d{6,12}\b', re.IGNORECASE),
+    "account_num": re.compile(r"\baccount\s*(?:number|#|no\.?)[:\s]*\d{6,12}\b", re.IGNORECASE),
 }
 
 _REDACTION_TOKEN = "[REDACTED]"
@@ -194,7 +210,7 @@ class PIIScanner:
         Replace PII patterns with [REDACTED].
         Returns (redacted_text, list_of_types_found).
         """
-        found  = []
+        found = []
         result = text
         for pii_type, pattern in _PII_PATTERNS.items():
             new_text, n = re.subn(pattern, _REDACTION_TOKEN, result)
@@ -224,12 +240,13 @@ class PIIScanner:
 
 # ── 4. Audit Log ──────────────────────────────────────────────────────
 
+
 @dataclass
 class AuditEntry:
-    timestamp:  str
-    event_type: str   # "agent_start" | "agent_end" | "tool_call" | "governance_check" | "error"
-    agent:      str
-    data:       dict  = field(default_factory=dict)
+    timestamp: str
+    event_type: str  # "agent_start" | "agent_end" | "tool_call" | "governance_check" | "error"
+    agent: str
+    data: dict = field(default_factory=dict)
 
 
 class AuditLog:
@@ -248,49 +265,63 @@ class AuditLog:
         return datetime.now(UTC).isoformat()
 
     def _append(self, event_type: str, agent: str, data: dict) -> None:
-        self._entries.append(AuditEntry(
-            timestamp  = self._now(),
-            event_type = event_type,
-            agent      = agent,
-            data       = data,
-        ))
+        self._entries.append(
+            AuditEntry(
+                timestamp=self._now(),
+                event_type=event_type,
+                agent=agent,
+                data=data,
+            )
+        )
 
     def record_agent_start(self, agent: str, inputs: dict) -> None:
         self._append("agent_start", agent, {"input_keys": list(inputs.keys())})
 
     def record_agent_end(self, agent: str, outputs: dict, elapsed_s: float) -> None:
-        self._append("agent_end", agent, {
-            "output_keys": list(outputs.keys()),
-            "elapsed_s":   round(elapsed_s, 3),
-        })
+        self._append(
+            "agent_end",
+            agent,
+            {
+                "output_keys": list(outputs.keys()),
+                "elapsed_s": round(elapsed_s, 3),
+            },
+        )
 
     def record_tool_call(
         self,
-        tool:      str,
-        agent:     str,
-        inputs:    list[str],
-        success:   bool,
+        tool: str,
+        agent: str,
+        inputs: list[str],
+        success: bool,
         elapsed_s: float,
-        error:     str = "",
+        error: str = "",
     ) -> None:
-        self._append("tool_call", agent, {
-            "tool":       tool,
-            "input_keys": inputs,
-            "success":    success,
-            "elapsed_s":  elapsed_s,
-            "error":      error,
-        })
+        self._append(
+            "tool_call",
+            agent,
+            {
+                "tool": tool,
+                "input_keys": inputs,
+                "success": success,
+                "elapsed_s": elapsed_s,
+                "error": error,
+            },
+        )
 
     def record_governance(
         self,
-        check:   str,
-        passed:  bool,
+        check: str,
+        passed: bool,
         details: dict,
     ) -> None:
-        self._append("governance_check", "Governance", {"check": check, "passed": passed, **details})
+        self._append(
+            "governance_check", "Governance", {"check": check, "passed": passed, **details}
+        )
 
     def record_pii(self, call_id: str, pii_types: list[str]) -> None:
-        self._append("pii_detection", "PIIScanner", {"call_id": call_id[:12], "pii_types": pii_types})
+        self._append(
+            "pii_detection", "PIIScanner", {"call_id": call_id[:12], "pii_types": pii_types}
+        )
 
     def record_error(self, agent: str, error: str, context: dict = None) -> None:
         self._append("error", agent, {"error": error[:500], "context": context or {}})
@@ -301,14 +332,14 @@ class AuditLog:
         path = output_dir / f"audit_log_{self._ts}.json"
         payload = {
             "audit_log_version": "1.0",
-            "generated_at":      self._now(),
-            "total_events":      len(self._entries),
+            "generated_at": self._now(),
+            "total_events": len(self._entries),
             "events": [
                 {
-                    "timestamp":  e.timestamp,
+                    "timestamp": e.timestamp,
                     "event_type": e.event_type,
-                    "agent":      e.agent,
-                    "data":       e.data,
+                    "agent": e.agent,
+                    "data": e.data,
                 }
                 for e in self._entries
             ],
@@ -320,21 +351,22 @@ class AuditLog:
 
     def summary(self) -> dict:
         from collections import Counter
-        types  = Counter(e.event_type for e in self._entries)
-        agents = Counter(e.agent      for e in self._entries)
+
+        types = Counter(e.event_type for e in self._entries)
+        agents = Counter(e.agent for e in self._entries)
         errors = [e for e in self._entries if e.event_type == "error"]
         return {
-            "total_events":   len(self._entries),
-            "by_type":        dict(types),
-            "by_agent":       dict(agents),
-            "error_count":    len(errors),
+            "total_events": len(self._entries),
+            "by_type": dict(types),
+            "by_agent": dict(agents),
+            "error_count": len(errors),
         }
 
 
 # ── Module-level singletons ───────────────────────────────────────────
 # Both limits read from pipeline/config.py — change them there, not here.
 
-BUDGET_GUARD  = BudgetGuard(max_cost_usd=BUDGET_USD)
-QUALITY_GATE  = QualityGate(min_pass_rate=MIN_PASS_RATE)
-PII_SCANNER   = PIIScanner()
-AUDIT_LOG     = AuditLog()
+BUDGET_GUARD = BudgetGuard(max_cost_usd=BUDGET_USD)
+QUALITY_GATE = QualityGate(min_pass_rate=MIN_PASS_RATE)
+PII_SCANNER = PIIScanner()
+AUDIT_LOG = AuditLog()

@@ -42,17 +42,17 @@ class ExportAgent:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         AUDIT_LOG.record_agent_start(self.name, {"ts": ts})
 
-        results      = state["analysis_results"]
-        metrics      = dict(state.get("aggregated_metrics", {}))
-        qa_report    = state.get("qa_report", {})
-        insights     = state.get("agent_insights", {})
-        usage        = state.get("token_usage", {})
+        results = state["analysis_results"]
+        metrics = dict(state.get("aggregated_metrics", {}))
+        qa_report = state.get("qa_report", {})
+        insights = state.get("agent_insights", {})
+        usage = state.get("token_usage", {})
         decision_log = state.get("decision_log", [])
 
         dl = DecisionLogger(self.name, state)
 
         # 1 ── Per-call CSV
-        df       = pd.DataFrame(results)
+        df = pd.DataFrame(results)
         csv_path = OUTPUT_DIR / f"call_results_{ts}.csv"
         df.to_csv(csv_path, index=False)
         log.info("[%s] CSV: %d rows → %s", self.name, len(results), csv_path)
@@ -66,32 +66,35 @@ class ExportAgent:
             decision_type="export_scope",
             decision=(
                 "Emergency export: per-call artifacts only, summary.json preserved"
-                if emergency_run else
-                f"Full export: {len(results)} records + summary.json refreshed"
+                if emergency_run
+                else f"Full export: {len(results)} records + summary.json refreshed"
             ),
             reason=(
                 "aggregated_metrics has no KPIs (quality gate failure path) — overwriting "
                 "the dashboard source of truth with empty metrics would blank it"
-                if emergency_run else
-                "Normal pipeline completion — all artifacts written including dashboard summary"
+                if emergency_run
+                else "Normal pipeline completion — all artifacts written including dashboard summary"
             ),
-            evidence={"emergency_run": emergency_run, "n_records": len(results),
-                      "qa_verdict": qa_report.get("dataset_verdict", "N/A")},
+            evidence={
+                "emergency_run": emergency_run,
+                "n_records": len(results),
+                "qa_verdict": qa_report.get("dataset_verdict", "N/A"),
+            },
             confidence="high",
             alternatives=(
                 ["Overwrite summary.json with empty metrics (rejected: blanks dashboard)"]
-                if emergency_run else
-                ["Skip summary refresh (rejected: dashboard would show stale data)"]
+                if emergency_run
+                else ["Skip summary refresh (rejected: dashboard would show stale data)"]
             ),
         )
         decision_log = dl.finalize()  # include the export decision in all artifacts below
 
         summary_path = OUTPUT_DIR / "summary.json"
         if not emergency_run:
-            metrics["token_usage"]       = usage
-            metrics["qa_summary"]        = qa_report.get("summary", {})
-            metrics["agent_insights"]    = insights
-            metrics["decision_summary"]  = summarize_decisions(decision_log)
+            metrics["token_usage"] = usage
+            metrics["qa_summary"] = qa_report.get("summary", {})
+            metrics["agent_insights"] = insights
+            metrics["decision_summary"] = summarize_decisions(decision_log)
 
             # Run-specific AHT/phase-economics disclaimer — computed, not static,
             # so it lives in the actual report the business reads. Surfaced by
@@ -136,12 +139,13 @@ class ExportAgent:
         with open(decisions_path, "w", encoding="utf-8") as fh:
             json.dump(
                 {
-                    "run_timestamp":    ts,
-                    "total_decisions":  len(decision_log),
-                    "summary":          summarize_decisions(decision_log),
-                    "records":          decision_log,
+                    "run_timestamp": ts,
+                    "total_decisions": len(decision_log),
+                    "summary": summarize_decisions(decision_log),
+                    "records": decision_log,
                 },
-                fh, indent=2,
+                fh,
+                indent=2,
             )
         log.info("[%s] Decision log: %d records → %s", self.name, len(decision_log), decisions_path)
 
@@ -152,32 +156,34 @@ class ExportAgent:
         agents_executed.append("ExportAgent")
 
         manifest = {
-            "run_timestamp":      ts,
-            "pipeline_version":   "4.5.0",
-            "agents_executed":    agents_executed,
-            "offset":             state.get("offset", 0),
-            "seed":               state.get("seed", 42),
-            "n_requested":        state.get("n_calls", 0),
-            "n_raw":              len(state.get("raw_transcripts", [])),
-            "n_validated":        len(state.get("validated_transcripts", [])),
-            "n_analyzed":         len(results),
-            "n_qa_passed":        len(state.get("qa_passed_results", results)),
-            "n_failed":           len(state.get("failed_call_ids", [])),
-            "qa_verdict":         qa_report.get("dataset_verdict", "N/A"),
-            "qa_avg_score":       qa_report.get("summary", {}).get("avg_score", 0),
-            "data_quality_pass_rate_pct": qa_report.get("summary", {}).get("data_quality_pass_rate_pct", 100.0),
-            "validation_errors":  state.get("validation_errors", []),
-            "failed_call_ids":    state.get("failed_call_ids", []),
-            "token_usage":        usage,
-            "insights_source":    insights.get("source", "none"),
+            "run_timestamp": ts,
+            "pipeline_version": "4.5.0",
+            "agents_executed": agents_executed,
+            "offset": state.get("offset", 0),
+            "seed": state.get("seed", 42),
+            "n_requested": state.get("n_calls", 0),
+            "n_raw": len(state.get("raw_transcripts", [])),
+            "n_validated": len(state.get("validated_transcripts", [])),
+            "n_analyzed": len(results),
+            "n_qa_passed": len(state.get("qa_passed_results", results)),
+            "n_failed": len(state.get("failed_call_ids", [])),
+            "qa_verdict": qa_report.get("dataset_verdict", "N/A"),
+            "qa_avg_score": qa_report.get("summary", {}).get("avg_score", 0),
+            "data_quality_pass_rate_pct": qa_report.get("summary", {}).get(
+                "data_quality_pass_rate_pct", 100.0
+            ),
+            "validation_errors": state.get("validation_errors", []),
+            "failed_call_ids": state.get("failed_call_ids", []),
+            "token_usage": usage,
+            "insights_source": insights.get("source", "none"),
             "decision_log_count": len(decision_log),
             "output_files": {
-                "csv":           str(csv_path),
-                "summary_json":  str(summary_path),
-                "full_json":     str(full_path),
-                "qa_report":     str(qa_path),
-                "insights":      str(insights_path),
-                "decisions":     str(decisions_path),
+                "csv": str(csv_path),
+                "summary_json": str(summary_path),
+                "full_json": str(full_path),
+                "qa_report": str(qa_path),
+                "insights": str(insights_path),
+                "decisions": str(decisions_path),
             },
         }
         manifest_path = OUTPUT_DIR / f"run_manifest_{ts}.json"
@@ -188,36 +194,38 @@ class ExportAgent:
         audit_path = AUDIT_LOG.export(OUTPUT_DIR)
 
         export_paths = {
-            "csv":          str(csv_path),
-            "summary":      str(summary_path),
+            "csv": str(csv_path),
+            "summary": str(summary_path),
             "full_results": str(full_path),
-            "qa_report":    str(qa_path),
-            "insights":     str(insights_path),
-            "decisions":    str(decisions_path),
-            "manifest":     str(manifest_path),
-            "audit_log":    str(audit_path),
+            "qa_report": str(qa_path),
+            "insights": str(insights_path),
+            "decisions": str(decisions_path),
+            "manifest": str(manifest_path),
+            "audit_log": str(audit_path),
         }
 
         # Update agent memory with this run's outcomes
         kpis = state.get("aggregated_metrics", {}).get("kpis", {})
         usage = state.get("token_usage", {})
         MEMORY.load()
-        MEMORY.record_run({
-            "run_timestamp":         ts,
-            "offset":                state.get("offset", 0),
-            "seed":                  state.get("seed", 42),
-            "n_calls":               state.get("n_calls", 0),
-            "n_analyzed":            len(results),
-            "n_failed":              len(state.get("failed_call_ids", [])),
-            "fcr_rate_pct":          kpis.get("fcr_rate_pct", 0),
-            "avg_handle_time_minutes": kpis.get("avg_handle_time_minutes", 0),
-            "qa_avg_score":          qa_report.get("summary", {}).get("avg_score", 0),
-            "qa_verdict":            qa_report.get("dataset_verdict", "N/A"),
-            "total_tokens":          usage.get("total_tokens", 0),
-            "total_cost_usd":        usage.get("total_cost_usd", 0),
-            "model":                 usage.get("model", "unknown"),
-            "insights_source":       insights.get("source", "unknown"),
-        })
+        MEMORY.record_run(
+            {
+                "run_timestamp": ts,
+                "offset": state.get("offset", 0),
+                "seed": state.get("seed", 42),
+                "n_calls": state.get("n_calls", 0),
+                "n_analyzed": len(results),
+                "n_failed": len(state.get("failed_call_ids", [])),
+                "fcr_rate_pct": kpis.get("fcr_rate_pct", 0),
+                "avg_handle_time_minutes": kpis.get("avg_handle_time_minutes", 0),
+                "qa_avg_score": qa_report.get("summary", {}).get("avg_score", 0),
+                "qa_verdict": qa_report.get("dataset_verdict", "N/A"),
+                "total_tokens": usage.get("total_tokens", 0),
+                "total_cost_usd": usage.get("total_cost_usd", 0),
+                "model": usage.get("model", "unknown"),
+                "insights_source": insights.get("source", "unknown"),
+            }
+        )
         MEMORY.save()
 
         # Semantic vector memory — embeds this run's KPI profile so future
@@ -237,23 +245,28 @@ class ExportAgent:
                     run_id=ts,
                     kpi_text=kpi_text,
                     metadata={
-                        "fcr_rate_pct":            kpis.get("fcr_rate_pct", 0),
-                        "aht_minutes":             kpis.get("avg_handle_time_minutes", 0),
-                        "qa_avg_score":            qa_report.get("summary", {}).get("avg_score", 0),
-                        "total_cost_usd":          usage.get("total_cost_usd", 0),
-                        "model":                   usage.get("model", "unknown"),
+                        "fcr_rate_pct": kpis.get("fcr_rate_pct", 0),
+                        "aht_minutes": kpis.get("avg_handle_time_minutes", 0),
+                        "qa_avg_score": qa_report.get("summary", {}).get("avg_score", 0),
+                        "total_cost_usd": usage.get("total_cost_usd", 0),
+                        "model": usage.get("model", "unknown"),
                     },
                 )
                 VECTOR_STORE.save()
             except Exception as exc:
-                log.warning("[%s] Vector memory write failed (%s) — run not embedded", self.name, exc)
+                log.warning(
+                    "[%s] Vector memory write failed (%s) — run not embedded", self.name, exc
+                )
 
         AUDIT_LOG.record_agent_end(
-            self.name, {"files_written": len(export_paths)},
+            self.name,
+            {"files_written": len(export_paths)},
             elapsed_s=time.monotonic() - t0,
         )
         log.info(
             "[%s] All outputs written to %s  |  Audit: %s events",
-            self.name, OUTPUT_DIR.resolve(), AUDIT_LOG.summary()["total_events"],
+            self.name,
+            OUTPUT_DIR.resolve(),
+            AUDIT_LOG.summary()["total_events"],
         )
         return {**state, "export_paths": export_paths, "decision_log": decision_log}

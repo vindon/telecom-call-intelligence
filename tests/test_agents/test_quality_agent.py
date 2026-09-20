@@ -11,20 +11,20 @@ from qa_audit import audit_record
 def _bad_record() -> dict:
     """A record engineered to fail every QA dimension → LOW grade."""
     return {
-        "call_id":                  "bad-call",
-        "total_duration_seconds":   5,           # implausibly short
-        "total_issues_count":       9,           # outside [0, 5], no issue_1_description
-        "fcr_indicator":            True,
-        "escalation_required":      True,        # contradicts FCR
-        "all_issues_resolved":      True,
-        "repeat_call_risk":         "high",      # contradicts all_issues_resolved
-        "could_be_self_served":     True,        # no channel given
-        "upsell_attempted":         False,
-        "upsell_outcome":           "accepted",  # contradicts upsell_attempted
-        "customer_sentiment_start": "angry",     # invalid enum
-        "agent_skill_rating":       "amazing",   # invalid enum
-        "handle_time_efficiency":   "blazing",   # invalid enum
-        "primary_cost_driver":      "vibes",     # invalid enum
+        "call_id": "bad-call",
+        "total_duration_seconds": 5,  # implausibly short
+        "total_issues_count": 9,  # outside [0, 5], no issue_1_description
+        "fcr_indicator": True,
+        "escalation_required": True,  # contradicts FCR
+        "all_issues_resolved": True,
+        "repeat_call_risk": "high",  # contradicts all_issues_resolved
+        "could_be_self_served": True,  # no channel given
+        "upsell_attempted": False,
+        "upsell_outcome": "accepted",  # contradicts upsell_attempted
+        "customer_sentiment_start": "angry",  # invalid enum
+        "agent_skill_rating": "amazing",  # invalid enum
+        "handle_time_efficiency": "blazing",  # invalid enum
+        "primary_cost_driver": "vibes",  # invalid enum
     }
 
 
@@ -50,7 +50,10 @@ class TestQualityAgent:
         assert scored["_qa_grade"] == "HIGH"
         assert scored["_qa_score"] >= 85
         assert set(scored["_qa_dimensions"]) == {
-            "completeness", "enum_validity", "consistency", "plausibility",
+            "completeness",
+            "enum_validity",
+            "consistency",
+            "plausibility",
         }
 
     def test_low_records_excluded_from_passed(self, make_record):

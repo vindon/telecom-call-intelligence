@@ -30,6 +30,7 @@ import sys
 from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from pipeline.agents import (
     AggregationAgent,
@@ -55,6 +56,7 @@ log = get_logger(__name__)
 
 # ── LangSmith tracing setup ───────────────────────────────────────────
 
+
 def _configure_tracing() -> None:
     """
     Activate LangSmith tracing if the env vars are present.
@@ -73,46 +75,48 @@ def _configure_tracing() -> None:
 
 
 # ── Agent singletons (stateless — safe to share across invocations) ───
-_data_agent        = DataIngestionAgent()
-_extraction_agent  = ExtractionAgent()
-_quality_agent     = QualityAgent()
+_data_agent = DataIngestionAgent()
+_extraction_agent = ExtractionAgent()
+_quality_agent = QualityAgent()
 _aggregation_agent = AggregationAgent()
-_insights_agent    = InsightsAgent()
-_export_agent      = ExportAgent()
+_insights_agent = InsightsAgent()
+_export_agent = ExportAgent()
 
 
 # ── State schema ──────────────────────────────────────────────────────
 
+
 class PipelineState(TypedDict):
     # ── Run configuration ────────────────────────────────────────────
-    n_calls:               int
-    seed:                  int
-    offset:                int
-    inter_call_delay:      float
-    checkpoint_key:        str
+    n_calls: int
+    seed: int
+    offset: int
+    inter_call_delay: float
+    checkpoint_key: str
     # ── Agent outputs ────────────────────────────────────────────────
-    raw_transcripts:       list   # DataIngestionAgent
-    validated_transcripts: list   # DataIngestionAgent
-    analysis_results:      list   # ExtractionAgent  (enriched by QualityAgent)
-    qa_report:             dict   # QualityAgent
-    qa_passed_results:     list   # QualityAgent
-    aggregated_metrics:    dict   # AggregationAgent
-    agent_insights:        dict   # InsightsAgent
-    export_paths:          dict   # ExportAgent
+    raw_transcripts: list  # DataIngestionAgent
+    validated_transcripts: list  # DataIngestionAgent
+    analysis_results: list  # ExtractionAgent  (enriched by QualityAgent)
+    qa_report: dict  # QualityAgent
+    qa_passed_results: list  # QualityAgent
+    aggregated_metrics: dict  # AggregationAgent
+    agent_insights: dict  # InsightsAgent
+    export_paths: dict  # ExportAgent
     # ── Telemetry ────────────────────────────────────────────────────
-    validation_errors:     list
-    failed_call_ids:       list
-    token_usage:           dict
-    react_stats:           dict   # ReAct loop coverage improvement telemetry
-    approval_granted:      bool   # human approval gate result
+    validation_errors: list
+    failed_call_ids: list
+    token_usage: dict
+    react_stats: dict  # ReAct loop coverage improvement telemetry
+    approval_granted: bool  # human approval gate result
     # ── Traceability ─────────────────────────────────────────────────
-    decision_log:          list   # DecisionRecord dicts — agent reasoning audit trail
+    decision_log: list  # DecisionRecord dicts — agent reasoning audit trail
 
 
 # ── Node wrappers (thin console-printing shims around each agent) ─────
 # Wrappers take PipelineState (the StateGraph schema) and return plain dict
 # updates; agents receive dict(state) copies since TypedDict is not assignable
 # to their dict parameters under mypy.
+
 
 def _banner(step: int | str, total: int | str, label: str) -> None:
     print("\n" + "═" * 60)
@@ -124,7 +128,7 @@ def ingest_node(state: PipelineState) -> dict:
     _banner(1, 7, "DataIngestionAgent — Fetch & Validate")
     result = _data_agent.run(dict(state))
     n_valid = len(result["validated_transcripts"])
-    n_skip  = len(result["validation_errors"])
+    n_skip = len(result["validation_errors"])
     print(f"  ✓ Valid: {n_valid}  |  Skipped: {n_skip}")
     for e in result["validation_errors"][:5]:
         print(f"    - {e}")
@@ -140,17 +144,21 @@ def extract_node(state: PipelineState) -> dict:
 
 def quality_node(state: PipelineState) -> dict:
     _banner(3, 7, "QualityAgent — Inline QA Scoring (100-pt model)")
-    result  = _quality_agent.run(dict(state))
-    rep     = result.get("qa_report", {})
+    result = _quality_agent.run(dict(state))
+    rep = result.get("qa_report", {})
     summary = rep.get("summary", {})
     verdict = rep.get("dataset_verdict", "N/A")
     gate_ok = not rep.get("_quality_gate_failed", False)
-    print(f"  Dataset verdict  : {'✓ PASS' if verdict == 'PASS' else '✗ FAIL' if verdict == 'FAIL' else verdict}")
+    print(
+        f"  Dataset verdict  : {'✓ PASS' if verdict == 'PASS' else '✗ FAIL' if verdict == 'FAIL' else verdict}"
+    )
     if summary:
         print(f"  Avg QA score     : {summary.get('avg_score', 0)} / 100")
-        print(f"  Grade breakdown  : HIGH {summary.get('grade_HIGH', 0)}  "
-              f"MEDIUM {summary.get('grade_MEDIUM', 0)}  "
-              f"LOW {summary.get('grade_LOW', 0)} (excluded)")
+        print(
+            f"  Grade breakdown  : HIGH {summary.get('grade_HIGH', 0)}  "
+            f"MEDIUM {summary.get('grade_MEDIUM', 0)}  "
+            f"LOW {summary.get('grade_LOW', 0)} (excluded)"
+        )
     if not gate_ok:
         print("  ⚠ Quality gate FAILED — routing to emergency export")
     return result
@@ -167,8 +175,8 @@ def _route_after_quality(state: PipelineState) -> str:
         decision=f"Route quality → {destination}",
         reason=(
             "Quality gate tripped: pass_rate below threshold — skipping aggregate/insights"
-            if gate_failed else
-            "Quality gate passed — continuing to normal aggregate→insights path"
+            if gate_failed
+            else "Quality gate passed — continuing to normal aggregate→insights path"
         ),
         evidence={
             "quality_gate_failed": gate_failed,
@@ -183,37 +191,43 @@ def _route_after_quality(state: PipelineState) -> str:
     # so we log here for observability but the record is captured in export_node
     # via the accumulated decision_log in state from upstream agents)
     if gate_failed:
-        log.warning("Quality gate failed — routing directly to export (skipping aggregate/insights)")
+        log.warning(
+            "Quality gate failed — routing directly to export (skipping aggregate/insights)"
+        )
     return destination
 
 
 def aggregate_node(state: PipelineState) -> dict:
     _banner(4, 7, "AggregationAgent — Executive KPI Computation")
     result = _aggregation_agent.run(dict(state))
-    kpis   = result["aggregated_metrics"]["kpis"]
-    usage  = result["token_usage"]
+    kpis = result["aggregated_metrics"]["kpis"]
+    usage = result["token_usage"]
     print(f"  Calls aggregated  : {kpis['total_calls_analyzed']}")
     print(f"  Avg handle time   : {kpis['avg_handle_time_minutes']} min")
     print(f"  FCR rate          : {kpis['fcr_rate_pct']}%")
     print(f"  Avoidable calls   : {kpis['avoidable_call_rate_pct']}%")
     print(f"  Agentic AI oppty  : {kpis['agentic_ai_resolvable_pct']}%")
-    print(f"  Savings oppty     : ${result['aggregated_metrics']['cost_levers']['total_savings_opportunity_usd']:,.0f}/mo (est.)")
-    print(f"  Inference tokens  : {usage.get('total_tokens', 0):,}  "
-          f"(${usage.get('total_cost_usd', 0):.4f} USD)")
+    print(
+        f"  Savings oppty     : ${result['aggregated_metrics']['cost_levers']['total_savings_opportunity_usd']:,.0f}/mo (est.)"
+    )
+    print(
+        f"  Inference tokens  : {usage.get('total_tokens', 0):,}  "
+        f"(${usage.get('total_cost_usd', 0):.4f} USD)"
+    )
     return result
 
 
 def insights_node(state: PipelineState) -> dict:
     _banner(5, 7, "InsightsAgent — LLM Strategic Recommendations")
-    result   = _insights_agent.run(dict(state))
+    result = _insights_agent.run(dict(state))
     insights = result.get("agent_insights", {})
-    source   = insights.get("source", "unknown")
+    source = insights.get("source", "unknown")
     print(f"  Insights source  : {source}")
     summary_text = insights.get("executive_summary", "")
     if summary_text:
         # Word-wrap at 56 chars for clean console output
-        words  = summary_text.split()
-        line   = "  "
+        words = summary_text.split()
+        line = "  "
         for word in words:
             if len(line) + len(word) + 1 > 58:
                 print(line)
@@ -257,22 +271,31 @@ def approval_gate_node(state: PipelineState) -> dict:
         return {**state, "approval_granted": True, "decision_log": dl.finalize()}
 
     kpis = state.get("aggregated_metrics", {}).get("kpis", {})
-    print(f"\n  FCR: {kpis.get('fcr_rate_pct', 'N/A')}%  "
-          f"AHT: {kpis.get('avg_handle_time_minutes', 'N/A')} min  "
-          f"AI-resolvable: {kpis.get('agentic_ai_resolvable_pct', 'N/A')}%")
+    print(
+        f"\n  FCR: {kpis.get('fcr_rate_pct', 'N/A')}%  "
+        f"AHT: {kpis.get('avg_handle_time_minutes', 'N/A')} min  "
+        f"AI-resolvable: {kpis.get('agentic_ai_resolvable_pct', 'N/A')}%"
+    )
     print(f"\n  Insights source : {state.get('agent_insights', {}).get('source', 'unknown')}")
-    print(f"  Deliberation    : {state.get('agent_insights', {}).get('deliberation_passes', 0)} passes")
+    print(
+        f"  Deliberation    : {state.get('agent_insights', {}).get('deliberation_passes', 0)} passes"
+    )
 
     AUDIT_LOG.record_governance(
-        check="human_approval_gate", passed=False,
+        check="human_approval_gate",
+        passed=False,
         details={"status": "awaiting_input", "timeout_s": APPROVAL_TIMEOUT_S},
     )
 
     timeout = APPROVAL_TIMEOUT_S
-    prompt  = f"\n  Approve export? [y/N] (auto-approve in {timeout}s): " if timeout > 0 \
-              else "\n  Approve export? [y/N]: "
+    prompt = (
+        f"\n  Approve export? [y/N] (auto-approve in {timeout}s): "
+        if timeout > 0
+        else "\n  Approve export? [y/N]: "
+    )
 
     import select
+
     granted = False
     try:
         if timeout > 0:
@@ -285,7 +308,7 @@ def approval_gate_node(state: PipelineState) -> dict:
                 print("\n  ⏱  Timeout — auto-approving")
                 granted = True
         else:
-            answer  = input(prompt).strip().lower()
+            answer = input(prompt).strip().lower()
             granted = answer in ("y", "yes")
     except (EOFError, OSError):
         # Non-interactive environment (CI, subprocess) — auto-approve
@@ -296,7 +319,8 @@ def approval_gate_node(state: PipelineState) -> dict:
     print(f"  {'✓ Export approved' if granted else '✗ Export rejected — pipeline halted'}")
 
     AUDIT_LOG.record_governance(
-        check="human_approval_gate", passed=granted,
+        check="human_approval_gate",
+        passed=granted,
         details={"status": status},
     )
 
@@ -306,8 +330,8 @@ def approval_gate_node(state: PipelineState) -> dict:
         decision=f"Export {'approved' if granted else 'rejected'} by operator",
         reason=(
             "Operator explicitly confirmed export at the interactive approval gate"
-            if granted else
-            "Operator rejected export — pipeline halted before writing outputs"
+            if granted
+            else "Operator rejected export — pipeline halted before writing outputs"
         ),
         evidence={
             "granted": granted,
@@ -329,7 +353,7 @@ def approval_gate_node(state: PipelineState) -> dict:
 def export_node(state: PipelineState) -> dict:
     _banner(7, 7, "ExportAgent — CSV · JSON · QA Report · Insights · Manifest")
     result = _export_agent.run(dict(state))
-    paths  = result["export_paths"]
+    paths = result["export_paths"]
     n_decisions = len(result.get("decision_log", []))
     print(f"  ✓ CSV         : {paths.get('csv', '')}")
     print(f"  ✓ Summary     : {paths.get('summary', '')}  ← Streamlit dashboard")
@@ -343,7 +367,8 @@ def export_node(state: PipelineState) -> dict:
 
 # ── Graph assembly ────────────────────────────────────────────────────
 
-def build_pipeline() -> object:
+
+def build_pipeline() -> CompiledStateGraph:
     """
     Compile and return the 7-node LangGraph pipeline.
 
@@ -365,23 +390,24 @@ def build_pipeline() -> object:
     if VECTOR_MEMORY_ENABLED:
         try:
             from pipeline.vector_memory import VECTOR_STORE
+
             VECTOR_STORE.load()
         except Exception as exc:
             log.debug("[build_pipeline] Vector memory load skipped: %s", exc)
 
     graph = StateGraph(PipelineState)
 
-    graph.add_node("ingest",    ingest_node)
-    graph.add_node("extract",   extract_node)
-    graph.add_node("quality",   quality_node)
+    graph.add_node("ingest", ingest_node)
+    graph.add_node("extract", extract_node)
+    graph.add_node("quality", quality_node)
     graph.add_node("aggregate", aggregate_node)
-    graph.add_node("insights",  insights_node)
-    graph.add_node("approval",  approval_gate_node)
-    graph.add_node("export",    export_node)
+    graph.add_node("insights", insights_node)
+    graph.add_node("approval", approval_gate_node)
+    graph.add_node("export", export_node)
 
     graph.set_entry_point("ingest")
-    graph.add_edge("ingest",    "extract")
-    graph.add_edge("extract",   "quality")
+    graph.add_edge("ingest", "extract")
+    graph.add_edge("extract", "quality")
 
     # Dynamic routing: quality gate failure → skip aggregate + insights + approval
     graph.add_conditional_edges(
@@ -391,8 +417,8 @@ def build_pipeline() -> object:
     )
 
     graph.add_edge("aggregate", "insights")
-    graph.add_edge("insights",  "approval")
-    graph.add_edge("approval",  "export")
-    graph.add_edge("export",    END)
+    graph.add_edge("insights", "approval")
+    graph.add_edge("approval", "export")
+    graph.add_edge("export", END)
 
     return graph.compile()

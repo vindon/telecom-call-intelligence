@@ -31,21 +31,21 @@ def sample_transcript():
 @pytest.fixture
 def sample_analysis_result():
     return {
-        "call_id":              "test-call-001",
-        "intent":               "billing_inquiry",
-        "resolution_status":    "resolved",
+        "call_id": "test-call-001",
+        "intent": "billing_inquiry",
+        "resolution_status": "resolved",
         "first_call_resolution": True,
-        "escalated":            False,
-        "handle_time_seconds":  420,
-        "issue_count":          1,
-        "upsell_attempted":     False,
-        "upsell_success":       False,
-        "sentiment_start":      "negative",
-        "sentiment_end":        "positive",
-        "repeat_call_risk":     "low",
-        "avoidable_call":       False,
+        "escalated": False,
+        "handle_time_seconds": 420,
+        "issue_count": 1,
+        "upsell_attempted": False,
+        "upsell_success": False,
+        "sentiment_start": "negative",
+        "sentiment_end": "positive",
+        "repeat_call_risk": "low",
+        "avoidable_call": False,
         "agentic_ai_resolvable": True,
-        "cost_driver":          "billing",
+        "cost_driver": "billing",
         "agent_professionalism": "high",
     }
 
@@ -53,34 +53,34 @@ def sample_analysis_result():
 @pytest.fixture
 def sample_run_summary():
     return {
-        "run_timestamp":           "20260518_120000",
-        "offset":                  0,
-        "seed":                    42,
-        "n_calls":                 20,
-        "n_analyzed":              18,
-        "n_failed":                2,
-        "fcr_rate_pct":            72.5,
+        "run_timestamp": "20260518_120000",
+        "offset": 0,
+        "seed": 42,
+        "n_calls": 20,
+        "n_analyzed": 18,
+        "n_failed": 2,
+        "fcr_rate_pct": 72.5,
         "avg_handle_time_minutes": 7.2,
-        "qa_avg_score":            88.0,
-        "qa_verdict":              "PASS",
-        "total_tokens":            45000,
-        "total_cost_usd":          0.0012,
-        "model":                   "gemini-2.5-flash-lite",
-        "insights_source":         "gemini_llm",
+        "qa_avg_score": 88.0,
+        "qa_verdict": "PASS",
+        "total_tokens": 45000,
+        "total_cost_usd": 0.0012,
+        "model": "gemini-2.5-flash-lite",
+        "insights_source": "gemini_llm",
     }
 
 
 @pytest.fixture
 def sample_qa_report():
     return {
-        "dataset_verdict":    "PASS",
+        "dataset_verdict": "PASS",
         "total_calls_audited": 20,
         "summary": {
-            "avg_score":      88.5,
-            "pass_rate_pct":  95.0,
-            "grade_HIGH":     14,
-            "grade_MEDIUM":   5,
-            "grade_LOW":      1,
+            "avg_score": 88.5,
+            "pass_rate_pct": 95.0,
+            "grade_HIGH": 14,
+            "grade_MEDIUM": 5,
+            "grade_LOW": 1,
         },
     }
 
@@ -89,6 +89,7 @@ def sample_qa_report():
 def tmp_memory(tmp_path):
     """An AgentMemory instance backed by a temp file — no side effects."""
     from pipeline.memory import AgentMemory
+
     return AgentMemory(path=tmp_path / "agent_memory.json")
 
 
@@ -99,57 +100,60 @@ def make_record():
     (REQUIRED_FIELDS + ENUM_RULES). The default record scores HIGH;
     pass overrides to degrade specific dimensions.
     """
+
     def _make(**overrides) -> dict:
         record = {
-            "call_id":                        "test-call-001",
-            "total_duration_seconds":         420,
-            "total_issues_count":             1,
-            "issue_1_category":               "billing",
-            "issue_1_description":            "Question about an early-termination fee",
-            "issue_1_resolution_method":      "agent_action",
-            "primary_issue_resolved":         True,
-            "all_issues_resolved":            True,
-            "fcr_indicator":                  True,
-            "escalation_required":            False,
-            "customer_sentiment_start":       "negative",
-            "customer_sentiment_end":         "positive",
-            "customer_sentiment_improved":    True,
-            "agent_skill_rating":             "proficient",
-            "primary_cost_driver":            "billing",
-            "avoidable_call":                 False,
-            "could_be_self_served":           False,
-            "agentic_ai_resolvable":          True,
-            "proactive_outreach_applicable":  False,
-            "repeat_call_risk":               "low",
-            "handle_time_efficiency":         "efficient",
-            "call_summary":                   "Customer asked about a fee; agent explained it.",
-            "upsell_attempted":               False,
-            "upsell_outcome":                 "not_attempted",
-            "hold_count":                     0,
+            "call_id": "test-call-001",
+            "total_duration_seconds": 420,
+            "total_issues_count": 1,
+            "issue_1_category": "billing",
+            "issue_1_description": "Question about an early-termination fee",
+            "issue_1_resolution_method": "agent_action",
+            "primary_issue_resolved": True,
+            "all_issues_resolved": True,
+            "fcr_indicator": True,
+            "escalation_required": False,
+            "customer_sentiment_start": "negative",
+            "customer_sentiment_end": "positive",
+            "customer_sentiment_improved": True,
+            "agent_skill_rating": "proficient",
+            "primary_cost_driver": "billing",
+            "avoidable_call": False,
+            "could_be_self_served": False,
+            "agentic_ai_resolvable": True,
+            "proactive_outreach_applicable": False,
+            "repeat_call_risk": "low",
+            "handle_time_efficiency": "efficient",
+            "call_summary": "Customer asked about a fee; agent explained it.",
+            "upsell_attempted": False,
+            "upsell_outcome": "not_attempted",
+            "hold_count": 0,
             "agent_empathy_statements_count": 2,
-            "phase_welcome_duration_seconds":    30,
-            "phase_discovery_duration_seconds":  90,
-            "phase_diagnosis_duration_seconds":  120,
+            "phase_welcome_duration_seconds": 30,
+            "phase_discovery_duration_seconds": 90,
+            "phase_diagnosis_duration_seconds": 120,
             "phase_resolution_duration_seconds": 120,
-            "phase_hold_total_seconds":          0,
-            "phase_upsell_duration_seconds":     0,
-            "phase_closing_duration_seconds":    60,
-            "_prompt_tokens":                 2000,
-            "_completion_tokens":             1500,
-            "_total_tokens":                  3500,
+            "phase_hold_total_seconds": 0,
+            "phase_upsell_duration_seconds": 0,
+            "phase_closing_duration_seconds": 60,
+            "_prompt_tokens": 2000,
+            "_completion_tokens": 1500,
+            "_total_tokens": 3500,
         }
         record.update(overrides)
         return record
+
     return _make
 
 
 @pytest.fixture
 def make_transcript():
     """Factory for transcript dicts matching hf_loader's output schema."""
+
     def _make(call_id: str = "conv-001", **overrides) -> dict:
         transcript = {
-            "call_id":         call_id,
-            "call_date":       "2026-06-01",
+            "call_id": call_id,
+            "call_date": "2026-06-01",
             "transcript_text": (
                 "[10:00:01] AGENT: Thank you for calling TeleCo support, how can I help you today?\n"
                 "[10:00:09] CUSTOMER: Hi, I need help understanding a charge on my latest bill.\n"
@@ -158,12 +162,13 @@ def make_transcript():
                 "[10:00:45] AGENT: I see it — that is an early-termination fee from your previous plan.\n"
                 "[10:00:58] CUSTOMER: Oh, I understand now. Thank you for explaining that clearly.\n"
             ),
-            "turn_count":      6,
-            "agent_turns":     3,
-            "customer_turns":  3,
-            "raw_start":       "10:00:01",
-            "raw_end":         "10:00:58",
+            "turn_count": 6,
+            "agent_turns": 3,
+            "customer_turns": 3,
+            "raw_start": "10:00:01",
+            "raw_end": "10:00:58",
         }
         transcript.update(overrides)
         return transcript
+
     return _make

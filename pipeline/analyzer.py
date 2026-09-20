@@ -54,6 +54,7 @@ from pipeline.security import (
     OUTPUT_SANITIZER,
     SECRET_GUARD,
 )
+from pipeline.tracing import call_trace_id, traced_span
 
 _USE_CLAUDE = MODEL.startswith("claude")
 
@@ -68,12 +69,14 @@ _gemini_quota_breaker = CircuitBreaker(GEMINI_QUOTA_SENTINEL)
 
 # ── System prompt ─────────────────────────────────────────────────────
 
+
 def load_system_prompt() -> str:
     with open(PROMPT_PATH, encoding="utf-8") as f:
         return f.read().strip()
 
 
 # ── Message builder ───────────────────────────────────────────────────
+
 
 def _build_user_message(transcript: dict) -> str:
     # The leading _cot_reasoning instruction implements Chain-of-Thought:
@@ -116,6 +119,7 @@ def _build_gap_fill_message(transcript: dict, missing_fields: list[str]) -> str:
 
 # ── Checkpoint I/O ────────────────────────────────────────────────────
 
+
 def checkpoint_path(key: str) -> Path:
     return CHECKPOINT_DIR / f".checkpoint_{key}.jsonl"
 
@@ -125,7 +129,7 @@ def load_checkpoint(key: str) -> tuple[list[dict], set[str]]:
     if not path.exists():
         return [], set()
     results: list[dict] = []
-    done_ids: set[str]  = set()
+    done_ids: set[str] = set()
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
@@ -148,6 +152,7 @@ def _append_checkpoint(key: str, result: dict) -> None:
 
 # ── Claude extraction helper ──────────────────────────────────────────
 
+
 def _parse_json_text(text: str) -> dict:
     """Strip markdown fences if present, then parse JSON."""
     text = text.strip()
@@ -156,7 +161,22 @@ def _parse_json_text(text: str) -> dict:
     return json.loads(text.strip())
 
 
-def _call_claude(client: Any, system_prompt: str, user_message: str, max_tokens: int) -> tuple[str, int, int, int, int]:
+def _safe_trace_output(result: dict | None) -> dict:
+    """
+    Structured extraction fields only, for use as Langfuse span output.
+    Drops `_cot_reasoning` (a model-written paraphrase of the transcript)
+    and the `_`-prefixed token/telemetry fields — the extracted business
+    fields (issue category, FCR indicator, sentiment, etc.) are the only
+    part of the result safe and useful to show in a trace.
+    """
+    if not result:
+        return {}
+    return {k: v for k, v in result.items() if not k.startswith("_")}
+
+
+def _call_claude(
+    client: Any, system_prompt: str, user_message: str, max_tokens: int
+) -> tuple[str, int, int, int, int]:
     """
     Invoke Claude and return (text, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens).
 
@@ -182,17 +202,63 @@ def _call_claude(client: Any, system_prompt: str, user_message: str, max_tokens:
     )
     text = response.content[0].text
     cache_creation = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
-    cache_read     = getattr(response.usage, "cache_read_input_tokens", 0) or 0
-    return text, response.usage.input_tokens, response.usage.output_tokens, cache_creation, cache_read
+    cache_read = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+    return (
+        text,
+        response.usage.input_tokens,
+        response.usage.output_tokens,
+        cache_creation,
+        cache_read,
+    )
+
+
+def _call_gemini(
+    client: Any, system_prompt: str, user_message: str, max_tokens: int
+) -> tuple[str, int, int, int, int]:
+    """
+    Invoke Gemini and return (text, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens).
+
+    Cache fields are always 0 — Gemini doesn't have an equivalent to Claude's
+    ephemeral prompt cache, so this only exists to match _call_claude()'s
+    return shape for the shared caller logic in analyze_transcript()/
+    gap_fill_transcript().
+    """
+    GEMINI_RATE_LIMITER.acquire()
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=user_message,
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            response_mime_type="application/json",
+            temperature=TEMPERATURE,
+            max_output_tokens=max_tokens,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
+    )
+    text = response.text
+    in_tok = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
+    out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
+    return text, in_tok, out_tok, 0, 0
+
+
+def _call_model(
+    client: Any, system_prompt: str, user_message: str, max_tokens: int
+) -> tuple[str, int, int, int, int]:
+    """Dispatch to the configured provider — see EXTRACTION_MODEL in config.py."""
+    if _USE_CLAUDE:
+        return _call_claude(client, system_prompt, user_message, max_tokens)
+    return _call_gemini(client, system_prompt, user_message, max_tokens)
 
 
 # ── Core analysis ─────────────────────────────────────────────────────
+
 
 def analyze_transcript(
     client: Any,
     system_prompt: str,
     transcript: dict,
     max_retries: int = 3,
+    session_id: str = "",
 ) -> dict | None:
     """
     Analyze a single transcript via Claude Haiku (primary) or Gemini (fallback).
@@ -200,70 +266,98 @@ def analyze_transcript(
     Returns:
         Parsed result dict with _prompt_tokens/_completion_tokens/_total_tokens,
         or None on permanent failure.
+
+    Wrapped in one Langfuse trace per call_id (see pipeline/tracing.py) so the
+    Claude/Gemini generation(s) — one per retry attempt — nest under a single
+    "extract-transcript" span instead of each becoming its own root trace. The
+    trace_id is deterministic from call_id so a later ReAct gap-fill retry
+    (extraction_agent.py::_react_loop, a separate pass over all results) can
+    join the same trace instead of opening a disconnected one.
     """
     call_id_short = transcript["call_id"][:12]
     transcript = INPUT_SANITIZER.sanitize_transcript(transcript)
+    provider = "claude" if _USE_CLAUDE else "gemini"
 
-    for attempt in range(max_retries):
-        try:
-            if _USE_CLAUDE:
-                text, in_tok, out_tok, cache_create_tok, cache_read_tok = _call_claude(
+    with traced_span(
+        "extract-transcript",
+        input={"call_date": transcript.get("call_date"), "channel": "voice"},
+        trace_id=call_trace_id(transcript["call_id"]),
+        session_id=session_id or None,
+        tags=["extraction", provider],
+        metadata={"call_id": call_id_short},
+    ) as span:
+        for attempt in range(max_retries):
+            try:
+                text, in_tok, out_tok, cache_create_tok, cache_read_tok = _call_model(
                     client, system_prompt, _build_user_message(transcript), MAX_TOKENS
                 )
-            else:
-                GEMINI_RATE_LIMITER.acquire()
-                response = client.models.generate_content(
-                    model=MODEL,
-                    contents=_build_user_message(transcript),
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_prompt,
-                        response_mime_type="application/json",
-                        temperature=TEMPERATURE,
-                        max_output_tokens=MAX_TOKENS,
-                        thinking_config=types.ThinkingConfig(thinking_budget=0),
-                    ),
+
+                SECRET_GUARD.assert_no_secrets_in_output(text)
+                OUTPUT_SANITIZER.check_response_size(text, limit=MAX_RESPONSE_BYTES)
+
+                result = _parse_json_text(text)
+                result = OUTPUT_SANITIZER.sanitize_extraction_result(result)
+                result["_prompt_tokens"] = in_tok
+                result["_completion_tokens"] = out_tok
+                result["_cache_creation_tokens"] = cache_create_tok
+                result["_cache_read_tokens"] = cache_read_tok
+                result["_total_tokens"] = in_tok + out_tok + cache_create_tok + cache_read_tok
+                log.debug(
+                    "OK  %s  prompt=%d  completion=%d  cache_write=%d  cache_read=%d",
+                    call_id_short,
+                    in_tok,
+                    out_tok,
+                    cache_create_tok,
+                    cache_read_tok,
                 )
-                text = response.text
-                in_tok  = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
-                out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
-                cache_create_tok = 0  # Gemini path does not use Claude's prompt cache
-                cache_read_tok   = 0
+                span.update(output=_safe_trace_output(result))
+                return result
 
-            SECRET_GUARD.assert_no_secrets_in_output(text)
-            OUTPUT_SANITIZER.check_response_size(text, limit=MAX_RESPONSE_BYTES)
-
-            result = _parse_json_text(text)
-            result = OUTPUT_SANITIZER.sanitize_extraction_result(result)
-            result["_prompt_tokens"]         = in_tok
-            result["_completion_tokens"]     = out_tok
-            result["_cache_creation_tokens"] = cache_create_tok
-            result["_cache_read_tokens"]     = cache_read_tok
-            result["_total_tokens"]          = in_tok + out_tok + cache_create_tok + cache_read_tok
-            log.debug("OK  %s  prompt=%d  completion=%d  cache_write=%d  cache_read=%d",
-                       call_id_short, in_tok, out_tok, cache_create_tok, cache_read_tok)
-            return result
-
-        except json.JSONDecodeError as exc:
-            log.warning("JSON parse error [%s] attempt %d/%d: %s", call_id_short, attempt + 1, max_retries, exc)
-            if attempt == max_retries - 1:
-                return None
-            time.sleep(2)
-
-        except Exception as exc:
-            exc_str = str(exc)
-            # Rate limit handling — both Claude and Gemini signal 429
-            if "429" in exc_str or "rate_limit" in exc_str.lower() or "overloaded" in exc_str.lower():
-                wait = 30 * (2 ** attempt)
-                log.warning("Rate limit [%s] attempt %d/%d. Waiting %ds — %s",
-                            call_id_short, attempt + 1, max_retries, wait, exc_str[:120])
-                time.sleep(wait)
-            else:
-                log.warning("Error [%s] attempt %d/%d: %s", call_id_short, attempt + 1, max_retries, exc_str[:120])
+            except json.JSONDecodeError as exc:
+                log.warning(
+                    "JSON parse error [%s] attempt %d/%d: %s",
+                    call_id_short,
+                    attempt + 1,
+                    max_retries,
+                    exc,
+                )
                 if attempt == max_retries - 1:
+                    span.update(output={"error": "json_decode_error", "attempts": max_retries})
                     return None
-                time.sleep(5 * (attempt + 1))
+                time.sleep(2)
 
-    return None
+            except Exception as exc:
+                exc_str = str(exc)
+                # Rate limit handling — both Claude and Gemini signal 429
+                if (
+                    "429" in exc_str
+                    or "rate_limit" in exc_str.lower()
+                    or "overloaded" in exc_str.lower()
+                ):
+                    wait = 30 * (2**attempt)
+                    log.warning(
+                        "Rate limit [%s] attempt %d/%d. Waiting %ds — %s",
+                        call_id_short,
+                        attempt + 1,
+                        max_retries,
+                        wait,
+                        exc_str[:120],
+                    )
+                    time.sleep(wait)
+                else:
+                    log.warning(
+                        "Error [%s] attempt %d/%d: %s",
+                        call_id_short,
+                        attempt + 1,
+                        max_retries,
+                        exc_str[:120],
+                    )
+                    if attempt == max_retries - 1:
+                        span.update(output={"error": type(exc).__name__, "attempts": max_retries})
+                        return None
+                    time.sleep(5 * (attempt + 1))
+
+        return None
 
 
 # ── ReAct: targeted gap-fill call ────────────────────────────────────
@@ -305,11 +399,17 @@ def gap_fill_transcript(
     system_prompt: str,
     transcript: dict,
     first_pass: dict,
+    session_id: str = "",
 ) -> dict:
     """
     ReAct 'Act (retry)' step: identify missing critical fields from the
     first pass and make a targeted second call to fill them in.
     Returns a merged dict (first_pass values preserved where retry returns null).
+
+    Opened under the same trace_id as the original extract-transcript span
+    (deterministic from call_id — see pipeline/tracing.py) even though this
+    runs later, in a separate pass over all results (extraction_agent.py::
+    _react_loop), so both calls for one transcript land in one trace.
     """
     # Circuit breaker: once quota is exhausted for the day, skip all retries
     # so remaining batches can complete their primary extraction.
@@ -320,71 +420,86 @@ def gap_fill_transcript(
     if not missing:
         return first_pass
 
-    call_id_short = transcript.get("call_id", "?")[:12]
-    log.info("[ReAct] call %s: gap-fill for %d missing fields: %s",
-             call_id_short, len(missing), missing)
+    call_id = transcript.get("call_id", "?")
+    call_id_short = call_id[:12]
+    log.info(
+        "[ReAct] call %s: gap-fill for %d missing fields: %s", call_id_short, len(missing), missing
+    )
 
-    try:
-        gap_msg = _build_gap_fill_message(transcript, missing)
-        if _USE_CLAUDE:
-            text, in_tok, out_tok, cache_create_tok, cache_read_tok = _call_claude(client, system_prompt, gap_msg, 1024)
-        else:
-            GEMINI_RATE_LIMITER.acquire()
-            response = client.models.generate_content(
-                model=MODEL,
-                contents=gap_msg,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    response_mime_type="application/json",
-                    temperature=TEMPERATURE,
-                    max_output_tokens=1024,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
+    with traced_span(
+        "gap-fill-transcript",
+        input={"missing_fields": missing},
+        trace_id=call_trace_id(call_id),
+        session_id=session_id or None,
+        tags=["extraction", "react-gap-fill", "claude" if _USE_CLAUDE else "gemini"],
+        metadata={"call_id": call_id_short, "coverage_before": score_field_coverage(first_pass)},
+    ) as span:
+        try:
+            gap_msg = _build_gap_fill_message(transcript, missing)
+            text, in_tok, out_tok, cache_create_tok, cache_read_tok = _call_model(
+                client, system_prompt, gap_msg, 1024
             )
-            text = response.text
-            in_tok  = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
-            out_tok = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
-            cache_create_tok = 0
-            cache_read_tok   = 0
 
-        SECRET_GUARD.assert_no_secrets_in_output(text)
-        retry_result = _parse_json_text(text)
-        retry_result = OUTPUT_SANITIZER.sanitize_extraction_result(retry_result)
+            SECRET_GUARD.assert_no_secrets_in_output(text)
+            retry_result = _parse_json_text(text)
+            retry_result = OUTPUT_SANITIZER.sanitize_extraction_result(retry_result)
 
-        merged = dict(first_pass)
-        for field, val in retry_result.items():
-            if _is_missing(merged.get(field)) and not _is_missing(val):
-                merged[field] = val
-        # Gap-fill spend must count toward token totals — BudgetGuard and
-        # token_summary() read these keys for cost enforcement and reporting.
-        merged["_prompt_tokens"]         = merged.get("_prompt_tokens", 0) + in_tok
-        merged["_completion_tokens"]     = merged.get("_completion_tokens", 0) + out_tok
-        merged["_cache_creation_tokens"] = merged.get("_cache_creation_tokens", 0) + cache_create_tok
-        merged["_cache_read_tokens"]     = merged.get("_cache_read_tokens", 0) + cache_read_tok
-        merged["_total_tokens"] = (
-            merged.get("_prompt_tokens", 0) + merged.get("_completion_tokens", 0)
-            + merged.get("_cache_creation_tokens", 0) + merged.get("_cache_read_tokens", 0)
-        )
-        log.info("[ReAct] call %s: gap-fill improved coverage %d → %d",
-                 call_id_short, score_field_coverage(first_pass), score_field_coverage(merged))
-        return merged
+            merged = dict(first_pass)
+            for field, val in retry_result.items():
+                if _is_missing(merged.get(field)) and not _is_missing(val):
+                    merged[field] = val
+            # Gap-fill spend must count toward token totals — BudgetGuard and
+            # token_summary() read these keys for cost enforcement and reporting.
+            merged["_prompt_tokens"] = merged.get("_prompt_tokens", 0) + in_tok
+            merged["_completion_tokens"] = merged.get("_completion_tokens", 0) + out_tok
+            merged["_cache_creation_tokens"] = (
+                merged.get("_cache_creation_tokens", 0) + cache_create_tok
+            )
+            merged["_cache_read_tokens"] = merged.get("_cache_read_tokens", 0) + cache_read_tok
+            merged["_total_tokens"] = (
+                merged.get("_prompt_tokens", 0)
+                + merged.get("_completion_tokens", 0)
+                + merged.get("_cache_creation_tokens", 0)
+                + merged.get("_cache_read_tokens", 0)
+            )
+            new_coverage = score_field_coverage(merged)
+            log.info(
+                "[ReAct] call %s: gap-fill improved coverage %d → %d",
+                call_id_short,
+                score_field_coverage(first_pass),
+                new_coverage,
+            )
+            span.update(
+                output={
+                    "coverage_after": new_coverage,
+                    "fields_recovered": _safe_trace_output(retry_result),
+                }
+            )
+            return merged
 
-    except Exception as exc:
-        exc_str = str(exc)
-        if "429" in exc_str or "rate_limit" in exc_str.lower():
-            if not _USE_CLAUDE:
-                # Gemini 429 = daily quota exhausted — circuit break across all batches
-                _gemini_quota_breaker.trip()
-                log.warning("[ReAct] Gemini quota exhausted — sentinel written; gap-fill disabled for all remaining batches.")
+        except Exception as exc:
+            exc_str = str(exc)
+            if "429" in exc_str or "rate_limit" in exc_str.lower():
+                if not _USE_CLAUDE:
+                    # Gemini 429 = daily quota exhausted — circuit break across all batches
+                    _gemini_quota_breaker.trip()
+                    log.warning(
+                        "[ReAct] Gemini quota exhausted — sentinel written; gap-fill disabled for all remaining batches."
+                    )
+                else:
+                    # Claude 429 = transient per-minute limit — CLAUDE_RATE_LIMITER already backs off
+                    log.warning(
+                        "[ReAct] Claude rate-limited on gap-fill for call %s — skipping this call only",
+                        call_id_short,
+                    )
             else:
-                # Claude 429 = transient per-minute limit — CLAUDE_RATE_LIMITER already backs off
-                log.warning("[ReAct] Claude rate-limited on gap-fill for call %s — skipping this call only", call_id_short)
-        else:
-            log.warning("[ReAct] gap-fill failed for call %s: %s", call_id_short, exc_str[:120])
-        return first_pass
+                log.warning("[ReAct] gap-fill failed for call %s: %s", call_id_short, exc_str[:120])
+            span.update(output={"error": type(exc).__name__})
+            return first_pass
 
 
 # ── Batch orchestration ───────────────────────────────────────────────
+
 
 def analyze_batch(
     transcripts: list[dict],
@@ -415,41 +530,48 @@ def analyze_batch(
     system_prompt = load_system_prompt()
 
     # ── Resume from checkpoint ───────────────────────────────────────
-    results:    list[dict] = []
-    failed_ids: list[str]  = []
-    done_ids:   set[str]   = set()
+    results: list[dict] = []
+    failed_ids: list[str] = []
+    done_ids: set[str] = set()
 
     if checkpoint_key:
         resumed, done_ids = load_checkpoint(checkpoint_key)
         if resumed:
             log.info(
                 "Resuming checkpoint '%s': %d calls already completed",
-                checkpoint_key, len(resumed),
+                checkpoint_key,
+                len(resumed),
             )
         results = resumed
 
     initial_count = len(results)
     remaining = [t for t in transcripts if t["call_id"] not in done_ids]
-    skipped   = len(transcripts) - len(remaining)
+    skipped = len(transcripts) - len(remaining)
 
     log.info(
         "Batch start: %d to analyze, %d skipped (checkpoint), key='%s'",
-        len(remaining), skipped, checkpoint_key or "none",
+        len(remaining),
+        skipped,
+        checkpoint_key or "none",
     )
 
     provider_label = "Anthropic (Claude)" if _USE_CLAUDE else "Google AI Studio"
     print(f"\nAnalyzing {len(remaining)} transcripts with {MODEL} via {provider_label} ...")
     if skipped:
         print(f"  ↩ Resuming checkpoint '{checkpoint_key}' — {skipped} calls already done")
-    print(f"Delay: {inter_call_delay}s · Est. {len(remaining) * (inter_call_delay + 3) / 60:.1f} min total\n")
+    print(
+        f"Delay: {inter_call_delay}s · Est. {len(remaining) * (inter_call_delay + 3) / 60:.1f} min total\n"
+    )
 
     with tqdm(total=len(remaining), desc="Calls analyzed", unit="call") as pbar:
         for i, transcript in enumerate(remaining):
-            result = analyze_transcript(client, system_prompt, transcript)
+            result = analyze_transcript(
+                client, system_prompt, transcript, session_id=checkpoint_key
+            )
 
             if result is not None:
-                result["_turn_count"]     = transcript.get("turn_count",     0)
-                result["_agent_turns"]    = transcript.get("agent_turns",    0)
+                result["_turn_count"] = transcript.get("turn_count", 0)
+                result["_agent_turns"] = transcript.get("agent_turns", 0)
                 result["_customer_turns"] = transcript.get("customer_turns", 0)
                 results.append(result)
 
@@ -460,17 +582,21 @@ def analyze_batch(
                 log.warning("Permanent failure — call %s", transcript["call_id"][:12])
 
             pbar.update(1)
-            pbar.set_postfix({
-                "ok":   len(results) - initial_count,
-                "fail": len(failed_ids),
-            })
+            pbar.set_postfix(
+                {
+                    "ok": len(results) - initial_count,
+                    "fail": len(failed_ids),
+                }
+            )
 
             if i < len(remaining) - 1:
                 time.sleep(inter_call_delay)
 
     log.info(
         "Batch done: %d OK  |  %d failed  |  key='%s'",
-        len(results), len(failed_ids), checkpoint_key or "none",
+        len(results),
+        len(failed_ids),
+        checkpoint_key or "none",
     )
     print(f"\n✓ Completed: {len(results)} OK  |  {len(failed_ids)} failed")
     if failed_ids:

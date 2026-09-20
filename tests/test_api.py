@@ -25,6 +25,7 @@ VALID_TRANSCRIPT = (
 
 # ── /health ───────────────────────────────────────────────────────────
 
+
 class TestHealth:
     def test_health_ok(self):
         resp = client.get("/health")
@@ -37,6 +38,7 @@ class TestHealth:
 
 
 # ── /summary ──────────────────────────────────────────────────────────
+
 
 class TestSummary:
     def test_404_when_no_summary_exists(self, monkeypatch, tmp_path):
@@ -61,6 +63,7 @@ class TestSummary:
 
 
 # ── /analyze ──────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def fake_client(monkeypatch):

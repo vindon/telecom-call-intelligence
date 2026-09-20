@@ -18,9 +18,9 @@ import sys
 from pipeline.config import OUTPUT_DIR as _LOG_DIR
 
 _LOG_FILE = _LOG_DIR / "pipeline.log"
-_FMT      = "%(asctime)s  %(levelname)-8s  %(name)-28s  %(message)s"
-_DATE     = "%Y-%m-%d %H:%M:%S"
-_INIT     = False   # module-level flag — configure root handler once
+_FMT = "%(asctime)s  %(levelname)-8s  %(name)-28s  %(message)s"
+_DATE = "%Y-%m-%d %H:%M:%S"
+_INIT = False  # module-level flag — configure root handler once
 
 
 def _bootstrap():

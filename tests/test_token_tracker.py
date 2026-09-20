@@ -18,6 +18,7 @@ from pipeline.token_tracker import (
 
 # ── Pricing resolution ────────────────────────────────────────────────
 
+
 class TestResolvePricing:
     def test_claude_haiku_prefix(self):
         # Verified against platform.claude.com/docs/en/about-claude/pricing, 2026-08-08.
@@ -49,6 +50,7 @@ class TestResolvePricing:
 
 # ── cost_usd ──────────────────────────────────────────────────────────
 
+
 class TestCostUsd:
     def test_one_million_tokens_each(self):
         assert cost_usd(1_000_000, 1_000_000) == PRICE_INPUT_PER_MTOK + PRICE_OUTPUT_PER_MTOK
@@ -68,7 +70,7 @@ class TestCostUsd:
     def test_cache_read_is_cheaper_than_full_price_input(self):
         # A cache-read token must cost strictly less than the same token priced
         # as fresh input — this is the entire point of caching.
-        as_cache_read  = cost_usd(0, 0, 0, 1_000_000)
+        as_cache_read = cost_usd(0, 0, 0, 1_000_000)
         as_fresh_input = cost_usd(1_000_000, 0)
         assert as_cache_read == round(PRICE_INPUT_PER_MTOK * CACHE_READ_MULTIPLIER, 10)
         assert as_cache_read < as_fresh_input
@@ -93,6 +95,7 @@ class TestCostUsd:
 
 
 # ── token_summary ─────────────────────────────────────────────────────
+
 
 class TestTokenSummary:
     def test_empty_results_returns_error(self):
@@ -149,8 +152,18 @@ class TestTokenSummary:
 
     def test_cache_totals_are_summed_and_costed_separately(self):
         results = [
-            {"_prompt_tokens": 600, "_completion_tokens": 2145, "_cache_creation_tokens": 4675, "_cache_read_tokens": 0},
-            {"_prompt_tokens": 600, "_completion_tokens": 2145, "_cache_creation_tokens": 0, "_cache_read_tokens": 4675},
+            {
+                "_prompt_tokens": 600,
+                "_completion_tokens": 2145,
+                "_cache_creation_tokens": 4675,
+                "_cache_read_tokens": 0,
+            },
+            {
+                "_prompt_tokens": 600,
+                "_completion_tokens": 2145,
+                "_cache_creation_tokens": 0,
+                "_cache_read_tokens": 4675,
+            },
         ]
         s = token_summary(results)
         assert s["total_cache_creation_tokens"] == 4675

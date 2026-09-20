@@ -82,7 +82,17 @@ def _validate_api_keys() -> None:
             print(f"  {err}\n")
         sys.exit(1)
 
+
 _validate_api_keys()
+
+# Activate Langfuse tracing (no-op if LANGFUSE_PUBLIC_KEY/SECRET_KEY are unset)
+# before pipeline.graph pulls in pipeline.analyzer, which imports google.genai
+# at module level — see pipeline/tracing.py's module docstring for why this
+# ordering matters for the OTel auto-instrumentors.
+from pipeline.tracing import configure as _configure_tracing  # noqa: E402
+from pipeline.tracing import flush as _flush_tracing  # noqa: E402
+
+_configure_tracing()
 
 from pipeline.graph import build_pipeline  # noqa: E402
 
@@ -92,26 +102,36 @@ def main() -> dict:
         description="Telecom Call Intelligence — single-batch pipeline runner"
     )
     parser.add_argument(
-        "--n",      type=int,   default=DEFAULT_N_CALLS,
+        "--n",
+        type=int,
+        default=DEFAULT_N_CALLS,
         help=f"Number of calls to analyze (default: {DEFAULT_N_CALLS})",
     )
     parser.add_argument(
-        "--seed",   type=int,   default=DEFAULT_SEED,
+        "--seed",
+        type=int,
+        default=DEFAULT_SEED,
         help=f"Random seed for HuggingFace sampling (default: {DEFAULT_SEED})",
     )
     parser.add_argument(
-        "--offset", type=int,   default=0,
+        "--offset",
+        type=int,
+        default=0,
         help="Skip first N unique conversations before sampling (default: 0). "
-             "Use multiples of --n to guarantee non-overlapping batches.",
+        "Use multiples of --n to guarantee non-overlapping batches.",
     )
     parser.add_argument(
-        "--delay",  type=float, default=DEFAULT_DELAY_S,
+        "--delay",
+        type=float,
+        default=DEFAULT_DELAY_S,
         help=f"Seconds between API calls (default: {DEFAULT_DELAY_S})",
     )
     parser.add_argument(
-        "--budget", type=float, default=None,
+        "--budget",
+        type=float,
+        default=None,
         help="Override budget cap for this batch in USD (default: BUDGET_USD from config). "
-             "Set by run_batches.py to enforce per-batch spending limits.",
+        "Set by run_batches.py to enforce per-batch spending limits.",
     )
     args = parser.parse_args()
 
@@ -120,12 +140,14 @@ def main() -> dict:
     # not the full BUDGET_USD, preventing multi-batch runs from exceeding the total limit.
     if args.budget is not None:
         from pipeline.governance import BUDGET_GUARD
+
         BUDGET_GUARD.max_cost_usd = args.budget
 
     # Auto-generate a checkpoint key that encodes all sampling parameters
     checkpoint_key = f"offset{args.offset}_n{args.n}_seed{args.seed}"
 
     from pipeline.token_tracker import PROVIDER as _PROVIDER
+
     _est_cost_100 = BUDGET_USD  # show budget cap, not a guess
     print("\n" + "█" * 60)
     print("  TELECOM CALL INTELLIGENCE — Multi-Agent Pipeline")
@@ -144,34 +166,34 @@ def main() -> dict:
     print("█" * 60 + "\n")
 
     initial_state = {
-        "n_calls":               args.n,
-        "seed":                  args.seed,
-        "offset":                args.offset,
-        "inter_call_delay":      args.delay,
-        "checkpoint_key":        checkpoint_key,
-        "raw_transcripts":       [],
+        "n_calls": args.n,
+        "seed": args.seed,
+        "offset": args.offset,
+        "inter_call_delay": args.delay,
+        "checkpoint_key": checkpoint_key,
+        "raw_transcripts": [],
         "validated_transcripts": [],
-        "analysis_results":      [],
-        "qa_report":             {},
-        "qa_passed_results":     [],
-        "aggregated_metrics":    {},
-        "agent_insights":        {},
-        "export_paths":          {},
-        "validation_errors":     [],
-        "failed_call_ids":       [],
-        "token_usage":           {},
-        "react_stats":           {},
-        "approval_granted":      False,
-        "decision_log":          [],
+        "analysis_results": [],
+        "qa_report": {},
+        "qa_passed_results": [],
+        "aggregated_metrics": {},
+        "agent_insights": {},
+        "export_paths": {},
+        "validation_errors": [],
+        "failed_call_ids": [],
+        "token_usage": {},
+        "react_stats": {},
+        "approval_granted": False,
+        "decision_log": [],
     }
 
-    pipeline    = build_pipeline()
+    pipeline = build_pipeline()
     final_state = pipeline.invoke(initial_state)
 
     usage = final_state.get("token_usage", {})
 
-    qa   = final_state.get("qa_report", {})
-    ins  = final_state.get("agent_insights", {})
+    qa = final_state.get("qa_report", {})
+    ins = final_state.get("agent_insights", {})
 
     print("\n" + "█" * 60)
     print("  MULTI-AGENT PIPELINE COMPLETE")
@@ -182,21 +204,35 @@ def main() -> dict:
         print(f"  Tokens used      : {usage.get('total_tokens', 0):,}")
         print(f"  Inference cost   : ${usage.get('total_cost_usd', 0):.4f} USD")
     if qa:
-        print(f"  QA verdict       : {qa.get('dataset_verdict', 'N/A')}  "
-              f"(avg score: {qa.get('summary', {}).get('avg_score', 0)}/100)")
+        print(
+            f"  QA verdict       : {qa.get('dataset_verdict', 'N/A')}  "
+            f"(avg score: {qa.get('summary', {}).get('avg_score', 0)}/100)"
+        )
     if ins:
         print(f"  Insights source  : {ins.get('source', 'N/A')}")
     from pipeline.governance import AUDIT_LOG
+
     audit_summary = AUDIT_LOG.summary()
-    print(f"  Audit events     : {audit_summary['total_events']}  "
-          f"(errors: {audit_summary['error_count']})")
+    print(
+        f"  Audit events     : {audit_summary['total_events']}  "
+        f"(errors: {audit_summary['error_count']})"
+    )
     from pipeline.memory import MEMORY
-    print(f"  Memory runs      : {MEMORY.total_runs}  "
-          f"total calls: {MEMORY.cumulative['total_calls_analyzed']}")
+
+    print(
+        f"  Memory runs      : {MEMORY.total_runs}  "
+        f"total calls: {MEMORY.cumulative['total_calls_analyzed']}"
+    )
     print("█" * 60 + "\n")
 
     return final_state
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        # Short-lived process — flush buffered Langfuse traces before exit
+        # (no-op if tracing is disabled). Runs even if the pipeline raised
+        # (e.g. an approval-gate rejection) so partial-run traces aren't lost.
+        _flush_tracing()

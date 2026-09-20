@@ -57,19 +57,19 @@ class AgentMemory:
 
     def _empty(self) -> dict:
         return {
-            "schema_version":  _SCHEMA_VERSION,
-            "created_at":      datetime.now(UTC).isoformat(),
-            "last_updated":    None,
-            "total_runs":      0,
-            "run_history":     [],       # list of run summaries (newest last)
-            "failure_log":     [],       # list of failed call records
-            "quota_events":    [],       # list of quota-exhaustion events
-            "model_performance": {},     # model_name → {calls, successes, avg_latency_s}
+            "schema_version": _SCHEMA_VERSION,
+            "created_at": datetime.now(UTC).isoformat(),
+            "last_updated": None,
+            "total_runs": 0,
+            "run_history": [],  # list of run summaries (newest last)
+            "failure_log": [],  # list of failed call records
+            "quota_events": [],  # list of quota-exhaustion events
+            "model_performance": {},  # model_name → {calls, successes, avg_latency_s}
             "cumulative": {
                 "total_calls_analyzed": 0,
-                "total_tokens":         0,
-                "total_cost_usd":       0.0,
-                "total_api_calls":      0,
+                "total_tokens": 0,
+                "total_cost_usd": 0.0,
+                "total_api_calls": 0,
             },
         }
 
@@ -120,20 +120,20 @@ class AgentMemory:
         self._data["total_runs"] += 1
 
         entry = {
-            "run_id":          self._data["total_runs"],
-            "timestamp":       run_summary.get("run_timestamp", datetime.now().isoformat()),
-            "offset":          run_summary.get("offset", 0),
-            "seed":            run_summary.get("seed", 42),
-            "n_requested":     run_summary.get("n_calls", 0),
-            "n_analyzed":      run_summary.get("n_analyzed", 0),
-            "n_failed":        run_summary.get("n_failed", 0),
-            "fcr_rate_pct":    run_summary.get("fcr_rate_pct", 0),
-            "aht_minutes":     run_summary.get("avg_handle_time_minutes", 0),
-            "qa_avg_score":    run_summary.get("qa_avg_score", 0),
-            "qa_verdict":      run_summary.get("qa_verdict", "N/A"),
-            "total_tokens":    run_summary.get("total_tokens", 0),
-            "total_cost_usd":  run_summary.get("total_cost_usd", 0),
-            "model":           run_summary.get("model", "unknown"),
+            "run_id": self._data["total_runs"],
+            "timestamp": run_summary.get("run_timestamp", datetime.now().isoformat()),
+            "offset": run_summary.get("offset", 0),
+            "seed": run_summary.get("seed", 42),
+            "n_requested": run_summary.get("n_calls", 0),
+            "n_analyzed": run_summary.get("n_analyzed", 0),
+            "n_failed": run_summary.get("n_failed", 0),
+            "fcr_rate_pct": run_summary.get("fcr_rate_pct", 0),
+            "aht_minutes": run_summary.get("avg_handle_time_minutes", 0),
+            "qa_avg_score": run_summary.get("qa_avg_score", 0),
+            "qa_verdict": run_summary.get("qa_verdict", "N/A"),
+            "total_tokens": run_summary.get("total_tokens", 0),
+            "total_cost_usd": run_summary.get("total_cost_usd", 0),
+            "model": run_summary.get("model", "unknown"),
             "insights_source": run_summary.get("insights_source", "unknown"),
         }
         # Keep last 50 runs
@@ -144,18 +144,18 @@ class AgentMemory:
         # Update cumulative counters
         c = self._data["cumulative"]
         c["total_calls_analyzed"] += entry["n_analyzed"]
-        c["total_tokens"]         += entry["total_tokens"]
-        c["total_cost_usd"]       += entry["total_cost_usd"]
+        c["total_tokens"] += entry["total_tokens"]
+        c["total_cost_usd"] += entry["total_cost_usd"]
 
     def record_failures(self, failed_ids: list[str], context: str = "") -> None:
         """Log failed call IDs for pattern analysis."""
         if not failed_ids:
             return
         entry = {
-            "timestamp":  datetime.now(UTC).isoformat(),
-            "context":    context,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "context": context,
             "failed_ids": failed_ids,
-            "count":      len(failed_ids),
+            "count": len(failed_ids),
         }
         self._data["failure_log"].append(entry)
         # Keep last 20 failure events
@@ -166,27 +166,25 @@ class AgentMemory:
         """Record a quota-exhaustion event for scheduling awareness."""
         entry = {
             "timestamp": datetime.now(UTC).isoformat(),
-            "model":     model,
-            "provider":  provider,
+            "model": model,
+            "provider": provider,
         }
         self._data["quota_events"].append(entry)
         if len(self._data["quota_events"]) > 10:
             self._data["quota_events"] = self._data["quota_events"][-10:]
-        log.warning(
-            "[AgentMemory] Quota event recorded: %s / %s", model, provider
-        )
+        log.warning("[AgentMemory] Quota event recorded: %s / %s", model, provider)
 
     def record_model_call(self, model: str, success: bool, latency_s: float) -> None:
         """Update per-model performance statistics."""
         if model not in self._data["model_performance"]:
             self._data["model_performance"][model] = {
-                "calls":         0,
-                "successes":     0,
+                "calls": 0,
+                "successes": 0,
                 "total_latency": 0.0,
             }
         m = self._data["model_performance"][model]
-        m["calls"]         += 1
-        m["successes"]     += 1 if success else 0
+        m["calls"] += 1
+        m["successes"] += 1 if success else 0
         m["total_latency"] += latency_s
 
     # ── Read operations ───────────────────────────────────────────────
@@ -202,23 +200,22 @@ class AgentMemory:
             return {"message": "No prior runs recorded"}
 
         n = len(history)
-        avg_fcr  = sum(r["fcr_rate_pct"] for r in history) / n
-        avg_aht  = sum(r["aht_minutes"]  for r in history) / n
-        avg_qa   = sum(r["qa_avg_score"] for r in history) / n
+        avg_fcr = sum(r["fcr_rate_pct"] for r in history) / n
+        avg_aht = sum(r["aht_minutes"] for r in history) / n
+        avg_qa = sum(r["qa_avg_score"] for r in history) / n
         avg_cost = sum(r["total_cost_usd"] for r in history) / n
 
         return {
-            "runs_in_memory":       n,
-            "avg_fcr_rate_pct":     round(avg_fcr, 1),
-            "avg_aht_minutes":      round(avg_aht, 2),
-            "avg_qa_score":         round(avg_qa, 1),
+            "runs_in_memory": n,
+            "avg_fcr_rate_pct": round(avg_fcr, 1),
+            "avg_aht_minutes": round(avg_aht, 2),
+            "avg_qa_score": round(avg_qa, 1),
             "avg_cost_usd_per_run": round(avg_cost, 4),
             "total_calls_analyzed": self._data["cumulative"]["total_calls_analyzed"],
-            "total_cost_usd":       round(self._data["cumulative"]["total_cost_usd"], 4),
-            "quota_events_count":   len(self._data["quota_events"]),
-            "last_quota_event":     (
-                self._data["quota_events"][-1]["timestamp"]
-                if self._data["quota_events"] else None
+            "total_cost_usd": round(self._data["cumulative"]["total_cost_usd"], 4),
+            "quota_events_count": len(self._data["quota_events"]),
+            "last_quota_event": (
+                self._data["quota_events"][-1]["timestamp"] if self._data["quota_events"] else None
             ),
         }
 
@@ -229,10 +226,10 @@ class AgentMemory:
             return {"model": model, "message": "No data"}
         calls = m["calls"]
         return {
-            "model":           model,
-            "total_calls":     calls,
+            "model": model,
+            "total_calls": calls,
             "success_rate_pct": round(m["successes"] / calls * 100, 1),
-            "avg_latency_s":   round(m["total_latency"] / calls, 2),
+            "avg_latency_s": round(m["total_latency"] / calls, 2),
         }
 
     def get_context_for_insights(self) -> str:

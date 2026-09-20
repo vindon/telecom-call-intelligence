@@ -39,15 +39,15 @@ from pipeline.security import INPUT_SANITIZER, OUTPUT_SANITIZER  # noqa: E402
 # Initialise the correct LLM client based on EXTRACTION_MODEL.
 # Changing EXTRACTION_MODEL in config.py automatically switches the API client here.
 _extraction_client = None
-_client_provider   = "unknown"
+_client_provider = "unknown"
 
 try:
     if _USE_CLAUDE:
         _extraction_client = get_anthropic_client(EXTRACTION_API_TIMEOUT_S)
-        _client_provider   = "Anthropic (Claude)"
+        _client_provider = "Anthropic (Claude)"
     else:
         _extraction_client = get_gemini_client(EXTRACTION_API_TIMEOUT_S)
-        _client_provider   = "Google AI Studio"
+        _client_provider = "Google AI Studio"
 except Exception:
     _extraction_client = None
 
@@ -71,6 +71,7 @@ def _get_system_prompt() -> str:
 
 
 # ── Request / response models ──────────────────────────────────────────
+
 
 class AnalyzeRequest(BaseModel):
     transcript: str = Field(
@@ -122,6 +123,7 @@ class HealthResponse(BaseModel):
 
 # ── Route: health ──────────────────────────────────────────────────────
 
+
 @app.get("/health", response_model=HealthResponse, tags=["Operations"])
 def health() -> HealthResponse:
     return HealthResponse(
@@ -137,6 +139,7 @@ def health() -> HealthResponse:
 
 # ── Route: summary ─────────────────────────────────────────────────────
 
+
 @app.get("/summary", response_model=SummaryResponse, tags=["Analytics"])
 def summary() -> JSONResponse:
     path = Path(OUTPUT_DIR / "summary.json")
@@ -146,12 +149,14 @@ def summary() -> JSONResponse:
             detail="No summary found. Run the pipeline first: python run_pipeline.py",
         )
     import json
+
     with open(path) as f:
         data = json.load(f)
     return JSONResponse(content=data)
 
 
 # ── Route: analyze ─────────────────────────────────────────────────────
+
 
 @app.post("/analyze", response_model=AnalyzeResponse, tags=["Extraction"])
 def analyze(req: AnalyzeRequest, request: Request) -> AnalyzeResponse:
@@ -200,6 +205,7 @@ def analyze(req: AnalyzeRequest, request: Request) -> AnalyzeResponse:
 
 
 # ── Global error handler ───────────────────────────────────────────────
+
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:

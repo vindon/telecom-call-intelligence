@@ -46,11 +46,24 @@ _MAX_REASON_CHARS = 500
 
 # Keys that must never appear in evidence dicts — enforces the CLAUDE.md contract
 # that transcript text and customer PII are never stored in decision records.
-_FORBIDDEN_EVIDENCE_KEYS: frozenset[str] = frozenset({
-    "transcript_text", "transcript", "text", "customer_name", "customer_id",
-    "agent_name", "phone", "email", "ssn", "account_number", "address",
-    "raw_transcript", "call_text", "conversation",
-})
+_FORBIDDEN_EVIDENCE_KEYS: frozenset[str] = frozenset(
+    {
+        "transcript_text",
+        "transcript",
+        "text",
+        "customer_name",
+        "customer_id",
+        "agent_name",
+        "phone",
+        "email",
+        "ssn",
+        "account_number",
+        "address",
+        "raw_transcript",
+        "call_text",
+        "conversation",
+    }
+)
 
 
 def _utc_now() -> str:
@@ -63,6 +76,7 @@ def _short_id() -> str:
 
 # ── DecisionRecord ────────────────────────────────────────────────────
 
+
 class DecisionRecord:
     """
     One immutable decision taken by an agent.
@@ -73,49 +87,57 @@ class DecisionRecord:
     """
 
     __slots__ = (
-        "record_id", "agent", "decision_type", "timestamp",
-        "decision", "reason", "evidence", "call_id",
-        "confidence", "alternatives",
+        "record_id",
+        "agent",
+        "decision_type",
+        "timestamp",
+        "decision",
+        "reason",
+        "evidence",
+        "call_id",
+        "confidence",
+        "alternatives",
     )
 
     def __init__(
         self,
-        agent:         str,
+        agent: str,
         decision_type: str,
-        decision:      str,
-        reason:        str,
-        evidence:      dict[str, Any] | None = None,
-        call_id:       str | None = None,
-        confidence:    str | None = None,
-        alternatives:  list[str] | None = None,
+        decision: str,
+        reason: str,
+        evidence: dict[str, Any] | None = None,
+        call_id: str | None = None,
+        confidence: str | None = None,
+        alternatives: list[str] | None = None,
     ) -> None:
-        self.record_id     = _short_id()
-        self.agent         = agent
+        self.record_id = _short_id()
+        self.agent = agent
         self.decision_type = decision_type
-        self.timestamp     = _utc_now()
-        self.decision      = decision
-        self.reason        = reason[:_MAX_REASON_CHARS]
-        self.evidence      = evidence or {}
-        self.call_id       = call_id
-        self.confidence    = confidence
-        self.alternatives  = alternatives or []
+        self.timestamp = _utc_now()
+        self.decision = decision
+        self.reason = reason[:_MAX_REASON_CHARS]
+        self.evidence = evidence or {}
+        self.call_id = call_id
+        self.confidence = confidence
+        self.alternatives = alternatives or []
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "record_id":     self.record_id,
-            "agent":         self.agent,
+            "record_id": self.record_id,
+            "agent": self.agent,
             "decision_type": self.decision_type,
-            "timestamp":     self.timestamp,
-            "decision":      self.decision,
-            "reason":        self.reason,
-            "evidence":      self.evidence,
-            "call_id":       self.call_id,
-            "confidence":    self.confidence,
-            "alternatives":  self.alternatives,
+            "timestamp": self.timestamp,
+            "decision": self.decision,
+            "reason": self.reason,
+            "evidence": self.evidence,
+            "call_id": self.call_id,
+            "confidence": self.confidence,
+            "alternatives": self.alternatives,
         }
 
 
 # ── DecisionLogger ────────────────────────────────────────────────────
+
 
 class DecisionLogger:
     """
@@ -128,7 +150,7 @@ class DecisionLogger:
     """
 
     def __init__(self, agent_name: str, state: dict) -> None:
-        self._agent  = agent_name
+        self._agent = agent_name
         self._records: list[dict] = list(state.get("decision_log", []))
         self._new: list[DecisionRecord] = []
 
@@ -147,12 +169,12 @@ class DecisionLogger:
     def log(
         self,
         decision_type: str,
-        decision:      str,
-        reason:        str,
-        evidence:      dict[str, Any] | None = None,
-        call_id:       str | None = None,
-        confidence:    str | None = None,
-        alternatives:  list[str] | None = None,
+        decision: str,
+        reason: str,
+        evidence: dict[str, Any] | None = None,
+        call_id: str | None = None,
+        confidence: str | None = None,
+        alternatives: list[str] | None = None,
     ) -> None:
         """Record one decision."""
         self._validate_evidence(evidence)
@@ -169,7 +191,10 @@ class DecisionLogger:
         self._new.append(rec)
         log.debug(
             "[DecisionLog] %s | %s | %s (call=%s)",
-            self._agent, decision_type, decision[:60], call_id or "-",
+            self._agent,
+            decision_type,
+            decision[:60],
+            call_id or "-",
         )
 
     def finalize(self) -> list[dict]:
@@ -182,6 +207,7 @@ class DecisionLogger:
 
 
 # ── Standalone helper ─────────────────────────────────────────────────
+
 
 def summarize_decisions(decision_log: list[dict]) -> dict[str, Any]:
     """
@@ -196,42 +222,52 @@ def summarize_decisions(decision_log: list[dict]) -> dict[str, Any]:
     """
     if not decision_log:
         return {
-            "total_decisions":   0,
-            "by_agent":          {},
-            "by_type":           {},
+            "total_decisions": 0,
+            "by_agent": {},
+            "by_type": {},
             "notable_decisions": [],
         }
 
     by_agent: dict[str, int] = {}
-    by_type:  dict[str, int] = {}
-    notable:  list[dict]     = []
+    by_type: dict[str, int] = {}
+    notable: list[dict] = []
 
-    _notable_types = frozenset({
-        "qa_exclusion", "quality_gate_outcome", "routing_decision",
-        "approval_decision", "provider_selected", "react_trigger",
-        "transcript_skip", "data_quality_gate_outcome",
-        "phase_reconciliation_failure", "timestamp_ground_truth_mismatch",
-        "transcript_truncation_detected",
-    })
+    _notable_types = frozenset(
+        {
+            "qa_exclusion",
+            "quality_gate_outcome",
+            "routing_decision",
+            "approval_decision",
+            "provider_selected",
+            "react_trigger",
+            "transcript_skip",
+            "data_quality_gate_outcome",
+            "phase_reconciliation_failure",
+            "timestamp_ground_truth_mismatch",
+            "transcript_truncation_detected",
+        }
+    )
 
     for rec in decision_log:
         agent = rec.get("agent", "unknown")
         dtype = rec.get("decision_type", "unknown")
         by_agent[agent] = by_agent.get(agent, 0) + 1
-        by_type[dtype]  = by_type.get(dtype, 0) + 1
+        by_type[dtype] = by_type.get(dtype, 0) + 1
         if dtype in _notable_types:
-            notable.append({
-                "record_id":     rec.get("record_id"),
-                "agent":         agent,
-                "decision_type": dtype,
-                "decision":      rec.get("decision", ""),
-                "call_id":       rec.get("call_id"),
-                "confidence":    rec.get("confidence"),
-            })
+            notable.append(
+                {
+                    "record_id": rec.get("record_id"),
+                    "agent": agent,
+                    "decision_type": dtype,
+                    "decision": rec.get("decision", ""),
+                    "call_id": rec.get("call_id"),
+                    "confidence": rec.get("confidence"),
+                }
+            )
 
     return {
-        "total_decisions":   len(decision_log),
-        "by_agent":          by_agent,
-        "by_type":           by_type,
+        "total_decisions": len(decision_log),
+        "by_agent": by_agent,
+        "by_type": by_type,
         "notable_decisions": notable[:20],  # cap at 20 for readability
     }

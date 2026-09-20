@@ -19,6 +19,7 @@ from pipeline.orchestrator import (
 
 # ── BatchTask ─────────────────────────────────────────────────────────
 
+
 class TestBatchTask:
     def _task(self, **overrides) -> BatchTask:
         defaults = dict(task_id=1, offset=0, n_calls=20, seed=42, delay=2.0)
@@ -38,6 +39,7 @@ class TestBatchTask:
 
 
 # ── WorkPlanner ───────────────────────────────────────────────────────
+
 
 class TestWorkPlanner:
     def test_plan_exact_multiple(self):
@@ -87,9 +89,9 @@ class TestWorkPlanner:
         assert est > 0
 
     def test_estimate_duration_proportional(self):
-        tasks_20  = WorkPlanner.plan(total_calls=20,  batch_size=20)
+        tasks_20 = WorkPlanner.plan(total_calls=20, batch_size=20)
         tasks_100 = WorkPlanner.plan(total_calls=100, batch_size=20)
-        est_20  = WorkPlanner.estimate_duration(tasks_20,  avg_call_s=10.0)
+        est_20 = WorkPlanner.estimate_duration(tasks_20, avg_call_s=10.0)
         est_100 = WorkPlanner.estimate_duration(tasks_100, avg_call_s=10.0)
         assert est_100 > est_20
 
@@ -100,6 +102,7 @@ class TestWorkPlanner:
 # blocks every subsequent orchestration run until a human clears it. This
 # replaced an auto-retry loop that, in production on 2026-08-09, silently
 # retried a hung batch twice before a human noticed the wasted spend.
+
 
 class TestStrictFailurePolicy:
     def _patch_sentinels(self, monkeypatch, tmp_path):
@@ -113,7 +116,7 @@ class TestStrictFailurePolicy:
 
         def fake_run_task(task):
             ran.append(task.task_id)
-            task.status    = "failed"
+            task.status = "failed"
             task.error_msg = "simulated failure"
 
         monkeypatch.setattr(orch, "_run_task", fake_run_task)
@@ -129,7 +132,7 @@ class TestStrictFailurePolicy:
         orch = Orchestrator(total_calls=20, batch_size=20, rate_limit_rpm=999)
 
         def fake_run_task(task):
-            task.status    = "failed"
+            task.status = "failed"
             task.error_msg = "timeout (600s)"
             task.exit_code = -1
 
@@ -144,10 +147,19 @@ class TestStrictFailurePolicy:
 
     def test_halt_sentinel_blocks_next_run(self, monkeypatch, tmp_path):
         self._patch_sentinels(monkeypatch, tmp_path)
-        orchestrator_module._HALT_SENTINEL.write_text(json.dumps({
-            "halted_at": "2026-01-01T00:00:00", "task_id": 1, "offset": 0, "n_calls": 20,
-            "error": "timeout", "reason": "test", "tasks_completed_before_halt": [],
-        }))
+        orchestrator_module._HALT_SENTINEL.write_text(
+            json.dumps(
+                {
+                    "halted_at": "2026-01-01T00:00:00",
+                    "task_id": 1,
+                    "offset": 0,
+                    "n_calls": 20,
+                    "error": "timeout",
+                    "reason": "test",
+                    "tasks_completed_before_halt": [],
+                }
+            )
+        )
         orch = Orchestrator(total_calls=20, batch_size=20, rate_limit_rpm=999)
         called: list[int] = []
         monkeypatch.setattr(orch, "_run_task", lambda task: called.append(task.task_id))
@@ -183,6 +195,7 @@ class TestStrictFailurePolicy:
 
         def fake_subprocess_run(*args, **kwargs):
             import subprocess
+
             raise subprocess.TimeoutExpired(cmd="run_pipeline.py", timeout=600)
 
         monkeypatch.setattr(orchestrator_module.subprocess, "run", fake_subprocess_run)
@@ -212,6 +225,7 @@ class TestStrictFailurePolicy:
 
 # ── AgentHealthMonitor ────────────────────────────────────────────────
 
+
 class TestAgentHealthMonitor:
     def test_empty_monitor_is_empty(self):
         monitor = AgentHealthMonitor()
@@ -232,7 +246,7 @@ class TestAgentHealthMonitor:
 
     def test_mixed_success_rate_50_pct(self):
         monitor = AgentHealthMonitor()
-        monitor.record("ExtractionAgent", success=True,  elapsed_s=5.0)
+        monitor.record("ExtractionAgent", success=True, elapsed_s=5.0)
         monitor.record("ExtractionAgent", success=False, elapsed_s=1.0)
         assert monitor.summary()["ExtractionAgent"]["success_rate_pct"] == 50.0
 
@@ -244,11 +258,11 @@ class TestAgentHealthMonitor:
 
     def test_multiple_agents_tracked_independently(self):
         monitor = AgentHealthMonitor()
-        monitor.record("ExtractionAgent", success=True,  elapsed_s=5.0)
-        monitor.record("InsightsAgent",   success=False, elapsed_s=1.0)
+        monitor.record("ExtractionAgent", success=True, elapsed_s=5.0)
+        monitor.record("InsightsAgent", success=False, elapsed_s=1.0)
         summary = monitor.summary()
         assert summary["ExtractionAgent"]["success_rate_pct"] == 100.0
-        assert summary["InsightsAgent"]["success_rate_pct"]   == 0.0
+        assert summary["InsightsAgent"]["success_rate_pct"] == 0.0
 
     def test_is_healthy_no_data(self):
         monitor = AgentHealthMonitor()
@@ -266,7 +280,7 @@ class TestAgentHealthMonitor:
 
     def test_is_healthy_exactly_at_threshold(self):
         monitor = AgentHealthMonitor()
-        monitor.record("ExtractionAgent", success=True,  elapsed_s=1.0)
+        monitor.record("ExtractionAgent", success=True, elapsed_s=1.0)
         monitor.record("ExtractionAgent", success=False, elapsed_s=1.0)
         # 50% success, threshold 50% → healthy
         assert monitor.is_healthy("ExtractionAgent", min_success_rate=0.5) is True

@@ -16,7 +16,7 @@ Then follow the 6-step checklist from CLAUDE.md exactly:
 - Stateless class with a `run(state: dict) -> dict` method
 - Return pattern: `return {**state, "new_key": new_value}` — never mutate state in place
 - No instance state between calls
-- **Required:** instrument with `DecisionLogger` — import from `pipeline.decision_log`, create at the start of `run()`, call `dl.log(decision_type, decision, reason, evidence={...})` for significant decisions, and return `"decision_log": dl.finalize()` in the state dict. See CLAUDE.md for the full list of named decision types.
+- **Required:** instrument with `DecisionLogger` — import from `pipeline.decision_log`, create at the start of `run()`, call `dl.log(decision_type, decision, reason, evidence={...})` for significant decisions, and return `"decision_log": dl.finalize()` in the state dict. See docs/decision-logging.md for the full list of named decision types.
 
 **Step 2** — Export from `pipeline/agents/__init__.py`:
 - Add the class to the existing import block
