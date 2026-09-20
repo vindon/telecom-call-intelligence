@@ -46,7 +46,7 @@ def _run_subprocess(cmd: list[str], label: str) -> bool:
     print(f"\n{'─' * 60}")
     print(f"  RUNNING: {label}")
     print(f"  CMD    : {' '.join(cmd)}")
-    print('─' * 60)
+    print("─" * 60)
     result = subprocess.run(cmd, check=False)
     if result.returncode == 0:
         print(f"\n  ✓ {label} — completed (exit 0)")
@@ -60,39 +60,53 @@ def main() -> None:
         description="Telecom Call Intelligence — multi-batch orchestrator"
     )
     parser.add_argument(
-        "--batches", type=int, default=5,
+        "--batches",
+        type=int,
+        default=5,
         help="Number of sequential batches to run (default: 5)",
     )
     parser.add_argument(
-        "--n", type=int, default=DEFAULT_BATCH_SIZE,
+        "--n",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
         help="Calls per batch (default: 20). Total calls = batches × n.",
     )
     parser.add_argument(
-        "--seed", type=int, default=DEFAULT_SEED,
+        "--seed",
+        type=int,
+        default=DEFAULT_SEED,
         help="Random seed for reproducible transcript sampling (default: 42).",
     )
     parser.add_argument(
-        "--start-offset", type=int, default=0,
+        "--start-offset",
+        type=int,
+        default=0,
         help="Offset of the first batch (default: 0). Batches always start at 0 "
-             "otherwise, so re-running with the same seed reprocesses the same "
-             "conversations — pass a value beyond any previous run's "
-             "offset+n_calls to guarantee a fresh, non-overlapping sample.",
+        "otherwise, so re-running with the same seed reprocesses the same "
+        "conversations — pass a value beyond any previous run's "
+        "offset+n_calls to guarantee a fresh, non-overlapping sample.",
     )
     parser.add_argument(
-        "--delay", type=float, default=DEFAULT_DELAY_S,
+        "--delay",
+        type=float,
+        default=DEFAULT_DELAY_S,
         help="Seconds between LLM API calls within each batch (default: 2.0).",
     )
     parser.add_argument(
-        "--acknowledge-halt", action="store_true",
+        "--acknowledge-halt",
+        action="store_true",
         help="Clear a prior run's halt-for-human-review sentinel and proceed. "
-             "Required after any batch failure — review outputs/pipeline.log first.",
+        "Required after any batch failure — review outputs/pipeline.log first.",
     )
     parser.add_argument(
-        "--rpm", type=int, default=DEFAULT_RATE_LIMIT_RPM,
+        "--rpm",
+        type=int,
+        default=DEFAULT_RATE_LIMIT_RPM,
         help="Rate limit in requests per minute — used for duration estimates (default: 15).",
     )
     parser.add_argument(
-        "--skip-merge", action="store_true",
+        "--skip-merge",
+        action="store_true",
         help="Skip merge_outputs.py and qa_audit.py after all batches complete.",
     )
     args = parser.parse_args()
@@ -106,12 +120,12 @@ def main() -> None:
     total_calls = args.batches * args.n
 
     orch = Orchestrator(
-        total_calls    = total_calls,
-        batch_size     = args.n,
-        seed           = args.seed,
-        delay          = args.delay,
-        rate_limit_rpm = args.rpm,
-        start_offset   = args.start_offset,
+        total_calls=total_calls,
+        batch_size=args.n,
+        seed=args.seed,
+        delay=args.delay,
+        rate_limit_rpm=args.rpm,
+        start_offset=args.start_offset,
     )
 
     report = orch.run()
@@ -127,9 +141,7 @@ def main() -> None:
     # ── Post-processing ───────────────────────────────────────────────
     if args.skip_merge:
         print("\n  --skip-merge set: skipping merge and QA audit.")
-        print("  Run manually:\n"
-              "    python merge_outputs.py\n"
-              "    python qa_audit.py")
+        print("  Run manually:\n    python merge_outputs.py\n    python qa_audit.py")
         return
 
     print(f"\n{'═' * 60}")

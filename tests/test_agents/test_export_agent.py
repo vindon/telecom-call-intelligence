@@ -31,12 +31,12 @@ def _full_state(make_record) -> dict:
         "n_calls": 2,
         "seed": 42,
         "offset": 0,
-        "raw_transcripts":       [{}, {}],
+        "raw_transcripts": [{}, {}],
         "validated_transcripts": [{}, {}],
-        "analysis_results":      results,
-        "qa_passed_results":     results,
-        "failed_call_ids":       [],
-        "validation_errors":     [],
+        "analysis_results": results,
+        "qa_passed_results": results,
+        "failed_call_ids": [],
+        "validation_errors": [],
         "aggregated_metrics": {
             "kpis": {"fcr_rate_pct": 75.0, "avg_handle_time_minutes": 7.0},
             "distributions": {},
@@ -53,8 +53,14 @@ class TestFullExport:
         out = ExportAgent().run(_full_state(make_record))
         paths = out["export_paths"]
         assert set(paths) == {
-            "csv", "summary", "full_results", "qa_report",
-            "insights", "decisions", "manifest", "audit_log",
+            "csv",
+            "summary",
+            "full_results",
+            "qa_report",
+            "insights",
+            "decisions",
+            "manifest",
+            "audit_log",
         }
         for label, path in paths.items():
             assert Path(path).exists(), label
@@ -94,7 +100,9 @@ class TestFullExport:
         results = exp_mod.VECTOR_STORE.query("FCR 75% AHT 7.0 min", top_k=1)
         assert results[0]["fcr_rate_pct"] == 75.0
 
-    def test_vector_memory_write_failure_does_not_break_export(self, isolate, make_record, monkeypatch):
+    def test_vector_memory_write_failure_does_not_break_export(
+        self, isolate, make_record, monkeypatch
+    ):
         monkeypatch.setattr(
             exp_mod.VECTOR_STORE, "save", lambda: (_ for _ in ()).throw(OSError("disk full"))
         )

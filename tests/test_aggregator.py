@@ -22,6 +22,7 @@ from pipeline.config import EXTRACTION_MODEL
 
 # ── Helpers ───────────────────────────────────────────────────────────
 
+
 class TestHelpers:
     def test_pct_basic(self):
         df = pd.DataFrame({"flag": [True, True, False, None]})
@@ -47,27 +48,41 @@ class TestHelpers:
         assert list(result.keys())[0] == "a"
 
     def test_issue_category_counts_spans_issue_slots(self):
-        df = pd.DataFrame([
-            {"issue_1_category": "billing", "issue_2_category": "technical"},
-            {"issue_1_category": "billing", "issue_2_category": None},
-            {"issue_1_category": "null"},  # string nulls must be ignored
-        ])
+        df = pd.DataFrame(
+            [
+                {"issue_1_category": "billing", "issue_2_category": "technical"},
+                {"issue_1_category": "billing", "issue_2_category": None},
+                {"issue_1_category": "null"},  # string nulls must be ignored
+            ]
+        )
         counts = _issue_category_counts(df)
         assert counts == {"billing": 2, "technical": 1}
 
 
 # ── aggregate_metrics ─────────────────────────────────────────────────
 
+
 @pytest.fixture
 def results(make_record):
     return [
-        make_record(call_id="c1", fcr_indicator=True, total_issues_count=2,
-                    upsell_attempted=True, upsell_outcome="accepted"),
-        make_record(call_id="c2", fcr_indicator=True,
-                    upsell_attempted=True, upsell_outcome="declined"),
+        make_record(
+            call_id="c1",
+            fcr_indicator=True,
+            total_issues_count=2,
+            upsell_attempted=True,
+            upsell_outcome="accepted",
+        ),
+        make_record(
+            call_id="c2", fcr_indicator=True, upsell_attempted=True, upsell_outcome="declined"
+        ),
         make_record(call_id="c3", fcr_indicator=False, escalation_required=True),
-        make_record(call_id="c4", fcr_indicator=False, avoidable_call=True,
-                    could_be_self_served=True, self_serve_channel_applicable="app"),
+        make_record(
+            call_id="c4",
+            fcr_indicator=False,
+            avoidable_call=True,
+            could_be_self_served=True,
+            self_serve_channel_applicable="app",
+        ),
     ]
 
 
@@ -83,16 +98,36 @@ def segmentation_results(make_record):
       s5 — none of the three flags                         -> HUMAN_REQUIRED
     """
     return [
-        make_record(call_id="s1", proactive_outreach_applicable=True,
-                     could_be_self_served=True, agentic_ai_resolvable=True),
-        make_record(call_id="s2", proactive_outreach_applicable=False,
-                     could_be_self_served=True, agentic_ai_resolvable=False),
-        make_record(call_id="s3", proactive_outreach_applicable=False,
-                     could_be_self_served=False, agentic_ai_resolvable=True),
-        make_record(call_id="s4", proactive_outreach_applicable=False,
-                     could_be_self_served=True, agentic_ai_resolvable=True),
-        make_record(call_id="s5", proactive_outreach_applicable=False,
-                     could_be_self_served=False, agentic_ai_resolvable=False),
+        make_record(
+            call_id="s1",
+            proactive_outreach_applicable=True,
+            could_be_self_served=True,
+            agentic_ai_resolvable=True,
+        ),
+        make_record(
+            call_id="s2",
+            proactive_outreach_applicable=False,
+            could_be_self_served=True,
+            agentic_ai_resolvable=False,
+        ),
+        make_record(
+            call_id="s3",
+            proactive_outreach_applicable=False,
+            could_be_self_served=False,
+            agentic_ai_resolvable=True,
+        ),
+        make_record(
+            call_id="s4",
+            proactive_outreach_applicable=False,
+            could_be_self_served=True,
+            agentic_ai_resolvable=True,
+        ),
+        make_record(
+            call_id="s5",
+            proactive_outreach_applicable=False,
+            could_be_self_served=False,
+            agentic_ai_resolvable=False,
+        ),
     ]
 
 
@@ -103,8 +138,16 @@ class TestAggregateMetrics:
 
     def test_top_level_structure(self, results):
         m = aggregate_metrics(results)
-        assert set(m) == {"meta", "kpis", "phase_avg_seconds", "phase_drilldown",
-                          "distributions", "cost_levers", "issue_breakdown", "token_usage"}
+        assert set(m) == {
+            "meta",
+            "kpis",
+            "phase_avg_seconds",
+            "phase_drilldown",
+            "distributions",
+            "cost_levers",
+            "issue_breakdown",
+            "token_usage",
+        }
         assert m["meta"]["total_calls_analyzed"] == 4
         assert m["meta"]["model"] == EXTRACTION_MODEL
 
@@ -163,12 +206,11 @@ class TestAggregateMetrics:
 
 # ── Resolution segmentation (prevent / automate / human-required) ──────
 
+
 class TestResolutionSegments:
     def test_segments_sum_to_100(self, segmentation_results):
         kpis = aggregate_metrics(segmentation_results)["kpis"]
-        total = (
-            kpis["prevent_pct"] + kpis["automate_pct"] + kpis["human_required_pct"]
-        )
+        total = kpis["prevent_pct"] + kpis["automate_pct"] + kpis["human_required_pct"]
         assert total == 100.0
 
     def test_priority_ordering(self, segmentation_results):
@@ -189,26 +231,27 @@ class TestResolutionSegments:
         # s3 only -> 1/5 = 20%
         assert kpis["automate_agentic_pct"] == 20.0
         assert (
-            kpis["automate_self_serve_pct"] + kpis["automate_agentic_pct"]
-            == kpis["automate_pct"]
+            kpis["automate_self_serve_pct"] + kpis["automate_agentic_pct"] == kpis["automate_pct"]
         )
 
     def test_cost_levers_derive_from_segments_not_marginals(self, segmentation_results):
         levers = aggregate_metrics(segmentation_results)["cost_levers"]
         baseline = levers["monthly_volume_estimate"] * COST_PER_CALL_USD
         # 40% self-serve * 0.85 + 20% agentic * 0.70 + 20% prevent * 0.60
-        assert levers["self_serve_savings_usd"]     == round(baseline * 0.40 * 0.85)
-        assert levers["agentic_ai_savings_usd"]      == round(baseline * 0.20 * 0.70)
-        assert levers["proactive_care_savings_usd"]  == round(baseline * 0.20 * 0.60)
+        assert levers["self_serve_savings_usd"] == round(baseline * 0.40 * 0.85)
+        assert levers["agentic_ai_savings_usd"] == round(baseline * 0.20 * 0.70)
+        assert levers["proactive_care_savings_usd"] == round(baseline * 0.20 * 0.60)
         assert levers["savings_pct_of_baseline"] == 60.0
 
     def test_all_human_required_when_no_flags_set(self, make_record):
-        results = [make_record(
-            call_id="h1",
-            could_be_self_served=False,
-            agentic_ai_resolvable=False,
-            proactive_outreach_applicable=False,
-        )]
+        results = [
+            make_record(
+                call_id="h1",
+                could_be_self_served=False,
+                agentic_ai_resolvable=False,
+                proactive_outreach_applicable=False,
+            )
+        ]
         kpis = aggregate_metrics(results)["kpis"]
         assert kpis["human_required_pct"] == 100.0
         assert kpis["prevent_pct"] == 0.0
@@ -217,11 +260,17 @@ class TestResolutionSegments:
 
 # ── Phase economics (Cost to Serve/Sell/Retain + Phase Drill-Down) ──────
 
+
 class TestPhasePnl:
     def test_pure_serve_call(self):
         phase_avg = {
-            "Welcome & Auth": 10, "Discovery": 20, "Diagnosis": 30, "Resolution": 40,
-            "Hold": 0, "Upsell": 0, "Closing": 0,
+            "Welcome & Auth": 10,
+            "Discovery": 20,
+            "Diagnosis": 30,
+            "Resolution": 40,
+            "Hold": 0,
+            "Upsell": 0,
+            "Closing": 0,
         }
         pnl = _phase_pnl(phase_avg, baseline_monthly_cost=600_000)
         assert pnl["serve_time_pct"] == 100.0
@@ -234,8 +283,13 @@ class TestPhasePnl:
     def test_mixed_phases_split_correctly(self):
         # serve=80, sell=10, retain=10 (of 100 total)
         phase_avg = {
-            "Welcome & Auth": 10, "Discovery": 20, "Diagnosis": 20, "Resolution": 30,
-            "Hold": 5, "Closing": 5, "Upsell": 10,
+            "Welcome & Auth": 10,
+            "Discovery": 20,
+            "Diagnosis": 20,
+            "Resolution": 30,
+            "Hold": 5,
+            "Closing": 5,
+            "Upsell": 10,
         }
         pnl = _phase_pnl(phase_avg, baseline_monthly_cost=600_000)
         assert pnl["serve_time_pct"] == 80.0
@@ -257,15 +311,24 @@ class TestPhaseDrilldown:
     @pytest.fixture
     def drilldown_results(self, make_record):
         return [
-            make_record(call_id="d1", issue_1_category="billing",
-                        phase_discovery_duration_seconds=100,
-                        agent_disproportionate_time_phase="discovery"),
-            make_record(call_id="d2", issue_1_category="billing",
-                        phase_discovery_duration_seconds=50,
-                        agent_disproportionate_time_phase="diagnosis"),
-            make_record(call_id="d3", issue_1_category="technical",
-                        phase_discovery_duration_seconds=200,
-                        agent_disproportionate_time_phase="discovery"),
+            make_record(
+                call_id="d1",
+                issue_1_category="billing",
+                phase_discovery_duration_seconds=100,
+                agent_disproportionate_time_phase="discovery",
+            ),
+            make_record(
+                call_id="d2",
+                issue_1_category="billing",
+                phase_discovery_duration_seconds=50,
+                agent_disproportionate_time_phase="diagnosis",
+            ),
+            make_record(
+                call_id="d3",
+                issue_1_category="technical",
+                phase_discovery_duration_seconds=200,
+                agent_disproportionate_time_phase="discovery",
+            ),
         ]
 
     def test_ranks_intents_by_avg_phase_duration(self, drilldown_results):
@@ -299,13 +362,16 @@ class TestPhaseDrilldown:
 
 # ── Issue-tree breakdown (Section 6: category x segment x method) ──────
 
+
 class TestSegmentMasks:
     def test_masks_partition_every_call_exactly_once(self, segmentation_results):
         df = pd.DataFrame(segmentation_results)
         masks = _segment_masks(df)
         combined = (
-            masks["prevent"] | masks["automate_self_serve"]
-            | masks["automate_agentic"] | masks["human"]
+            masks["prevent"]
+            | masks["automate_self_serve"]
+            | masks["automate_agentic"]
+            | masks["human"]
         )
         assert combined.all()
         assert sum(int(m.sum()) for m in masks.values()) == len(df)
@@ -322,20 +388,36 @@ def breakdown_results(make_record):
       device (4):    4 automate/self-serve
     """
     flags = {
-        "prevent": dict(proactive_outreach_applicable=True,
-                        could_be_self_served=False, agentic_ai_resolvable=False),
-        "automate_self_serve": dict(proactive_outreach_applicable=False,
-                                     could_be_self_served=True, agentic_ai_resolvable=False),
-        "automate_agentic": dict(proactive_outreach_applicable=False,
-                                  could_be_self_served=False, agentic_ai_resolvable=True),
-        "human": dict(proactive_outreach_applicable=False,
-                      could_be_self_served=False, agentic_ai_resolvable=False),
+        "prevent": dict(
+            proactive_outreach_applicable=True,
+            could_be_self_served=False,
+            agentic_ai_resolvable=False,
+        ),
+        "automate_self_serve": dict(
+            proactive_outreach_applicable=False,
+            could_be_self_served=True,
+            agentic_ai_resolvable=False,
+        ),
+        "automate_agentic": dict(
+            proactive_outreach_applicable=False,
+            could_be_self_served=False,
+            agentic_ai_resolvable=True,
+        ),
+        "human": dict(
+            proactive_outreach_applicable=False,
+            could_be_self_served=False,
+            agentic_ai_resolvable=False,
+        ),
     }
 
     def seg(category, n, segment, method):
         return [
-            make_record(call_id=f"{category}-{segment}-{i}", issue_1_category=category,
-                        issue_1_resolution_method=method, **flags[segment])
+            make_record(
+                call_id=f"{category}-{segment}-{i}",
+                issue_1_category=category,
+                issue_1_resolution_method=method,
+                **flags[segment],
+            )
             for i in range(n)
         ]
 
@@ -367,7 +449,10 @@ class TestCategoryResolutionBreakdown:
         assert [c["count"] for c in cats] == [10, 6, 4]
 
     def test_category_pct_and_dollars(self, breakdown_results):
-        cats = {c["category"]: c for c in aggregate_metrics(breakdown_results)["issue_breakdown"]["categories"]}
+        cats = {
+            c["category"]: c
+            for c in aggregate_metrics(breakdown_results)["issue_breakdown"]["categories"]
+        }
         assert cats["billing"]["pct"] == 50.0
         assert cats["billing"]["dollars"] == 300_000
         assert cats["technical"]["dollars"] == 180_000
@@ -398,14 +483,15 @@ class TestCategoryResolutionBreakdown:
         assert dollars[-1] == 60_000
         # technical/prevent ($30K) is the smallest opportunity — excluded from top 4
         assert not any(
-            item["category"] == "technical" and item["segment"] == "prevent"
-            for item in queue
+            item["category"] == "technical" and item["segment"] == "prevent" for item in queue
         )
 
     def test_build_queue_automate_combines_self_serve_and_agentic(self, breakdown_results):
         queue = aggregate_metrics(breakdown_results)["issue_breakdown"]["build_queue"]
         billing_automate = next(
-            item for item in queue if item["category"] == "billing" and item["segment"] == "automate"
+            item
+            for item in queue
+            if item["category"] == "billing" and item["segment"] == "automate"
         )
         assert billing_automate["count"] == 5
         assert billing_automate["self_serve_count"] == 3

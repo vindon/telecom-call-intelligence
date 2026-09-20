@@ -42,12 +42,16 @@ log = get_logger(__name__)
 
 # Prompt injection: attempts to override system instructions
 _INJECTION_PATTERNS: list[re.Pattern] = [
-    re.compile(r"ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?)", re.IGNORECASE),
-    re.compile(r"(disregard|override|bypass)\s+(your\s+)?(instructions?|guidelines?|rules?)", re.IGNORECASE),
+    re.compile(
+        r"ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?)", re.IGNORECASE
+    ),
+    re.compile(
+        r"(disregard|override|bypass)\s+(your\s+)?(instructions?|guidelines?|rules?)", re.IGNORECASE
+    ),
     re.compile(r"forget\s+(everything|all)\s+(you|your)", re.IGNORECASE),
     re.compile(r"you\s+are\s+now\s+(?!a\s+(telecom|customer|call))", re.IGNORECASE),
-    re.compile(r"</?(system|user|assistant)>", re.IGNORECASE),   # XML role injection
-    re.compile(r"\[INST\]|\[/INST\]|<<SYS>>|<</SYS>>"),          # Llama template injection
+    re.compile(r"</?(system|user|assistant)>", re.IGNORECASE),  # XML role injection
+    re.compile(r"\[INST\]|\[/INST\]|<<SYS>>|<</SYS>>"),  # Llama template injection
     re.compile(r"DAN\s*mode|jailbreak", re.IGNORECASE),
     re.compile(r"roleplay\s+as\s+", re.IGNORECASE),
     re.compile(r"act\s+as\s+(if\s+you\s+are\s+)?(?!a\s+(telecom|customer))", re.IGNORECASE),
@@ -57,9 +61,9 @@ _INJECTION_PATTERNS: list[re.Pattern] = [
 
 # Secrets: API keys and credentials that must never appear in state or outputs
 _SECRET_PATTERNS: list[re.Pattern] = [
-    re.compile(r"AIza[0-9A-Za-z\-_]{35}"),                        # Google / Gemini key
-    re.compile(r"sk-ant-[A-Za-z0-9\-_]{20,}"),                    # Anthropic key
-    re.compile(r"sk-[A-Za-z0-9]{20,}"),                           # OpenAI key
+    re.compile(r"AIza[0-9A-Za-z\-_]{35}"),  # Google / Gemini key
+    re.compile(r"sk-ant-[A-Za-z0-9\-_]{20,}"),  # Anthropic key
+    re.compile(r"sk-[A-Za-z0-9]{20,}"),  # OpenAI key
     re.compile(r"(?:GEMINI|GOOGLE|OPENAI|ANTHROPIC|NVIDIA)_API_KEY\s*[=:]\s*\S+", re.IGNORECASE),
     re.compile(r"[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{27,}"),  # JWT
     re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", re.IGNORECASE),
@@ -72,33 +76,46 @@ _CODE_EXECUTION_PATTERNS: list[re.Pattern] = [
     re.compile(r"\bexec\s*\(|\beval\s*\("),
     re.compile(r"subprocess\.|os\.system\b|os\.popen\b"),
     re.compile(r"\bimport\s+(os|sys|subprocess|shutil|socket)\b"),
-    re.compile(r"<script[^>]*>", re.IGNORECASE),    # XSS
+    re.compile(r"<script[^>]*>", re.IGNORECASE),  # XSS
     re.compile(r"javascript:", re.IGNORECASE),
     re.compile(r"data:text/html", re.IGNORECASE),
     re.compile(r"(?:rm|del)\s+-[rf]", re.IGNORECASE),  # destructive shell
 ]
 
 # Sensitive state keys that must never appear in serialised state payloads
-_SENSITIVE_STATE_KEYS: frozenset[str] = frozenset({
-    "api_key", "gemini_api_key", "google_api_key",
-    "anthropic_api_key", "nvidia_api_key", "langchain_api_key",
-    "openai_api_key", "secret", "password", "token",
-    "auth", "credential", "private_key",
-})
+_SENSITIVE_STATE_KEYS: frozenset[str] = frozenset(
+    {
+        "api_key",
+        "gemini_api_key",
+        "google_api_key",
+        "anthropic_api_key",
+        "nvidia_api_key",
+        "langchain_api_key",
+        "openai_api_key",
+        "secret",
+        "password",
+        "token",
+        "auth",
+        "credential",
+        "private_key",
+    }
+)
 
 
 # ── Exception ─────────────────────────────────────────────────────────
+
 
 class SecurityViolation(Exception):
     """Raised when a hard security check fails and the action must be blocked."""
 
     def __init__(self, check: str, detail: str) -> None:
-        self.check  = check
+        self.check = check
         self.detail = detail
         super().__init__(f"[SecurityViolation:{check}] {detail}")
 
 
 # ── 1. Input Sanitizer ────────────────────────────────────────────────
+
 
 class InputSanitizer:
     """
@@ -120,7 +137,9 @@ class InputSanitizer:
         if len(text) > max_chars:
             log.warning(
                 "[InputSanitizer] call %s truncated: %d → %d chars",
-                str(transcript.get("call_id", "?"))[:12], len(text), max_chars,
+                str(transcript.get("call_id", "?"))[:12],
+                len(text),
+                max_chars,
             )
             text = text[:max_chars] + "\n[TRUNCATED-SECURITY]"
 
@@ -132,7 +151,8 @@ class InputSanitizer:
         if injections:
             log.warning(
                 "[InputSanitizer] call %s: %d injection pattern(s) — neutralising",
-                str(transcript.get("call_id", "?"))[:12], len(injections),
+                str(transcript.get("call_id", "?"))[:12],
+                len(injections),
             )
             for pat in _INJECTION_PATTERNS:
                 text = pat.sub("[FILTERED]", text)
@@ -162,6 +182,7 @@ class InputSanitizer:
 
 
 # ── 2. Output Sanitizer ───────────────────────────────────────────────
+
 
 class OutputSanitizer:
     """
@@ -200,9 +221,7 @@ class OutputSanitizer:
                 # Block code execution
                 for pat in _CODE_EXECUTION_PATTERNS:
                     if pat.search(value):
-                        log.error(
-                            "[OutputSanitizer] Code execution in field '%s' — filtering", key
-                        )
+                        log.error("[OutputSanitizer] Code execution in field '%s' — filtering", key)
                         value = "[CONTENT_FILTERED]"
                         break
 
@@ -233,6 +252,7 @@ class OutputSanitizer:
 
 # ── 3. Agent Scope Guard ──────────────────────────────────────────────
 
+
 class AgentScopeGuard:
     """
     Enforces that each agent only calls tools within its authorised scope.
@@ -242,12 +262,12 @@ class AgentScopeGuard:
     """
 
     _ALLOWED_TOOLS: dict[str, frozenset[str]] = {
-        "DataIngestionAgent":  frozenset({"fetch_transcripts"}),
-        "ExtractionAgent":     frozenset({"score_extraction"}),
-        "QualityAgent":        frozenset({"score_extraction"}),
-        "AggregationAgent":    frozenset({"compute_kpis"}),
-        "InsightsAgent":       frozenset({"generate_insights"}),
-        "ExportAgent":         frozenset({"export_results"}),
+        "DataIngestionAgent": frozenset({"fetch_transcripts"}),
+        "ExtractionAgent": frozenset({"score_extraction"}),
+        "QualityAgent": frozenset({"score_extraction"}),
+        "AggregationAgent": frozenset({"compute_kpis"}),
+        "InsightsAgent": frozenset({"generate_insights"}),
+        "ExportAgent": frozenset({"export_results"}),
     }
 
     def check(self, agent: str, tool: str) -> None:
@@ -269,6 +289,7 @@ class AgentScopeGuard:
 
 # ── 4. Secret Guard ───────────────────────────────────────────────────
 
+
 class SecretGuard:
     """
     Prevents API keys and credentials from leaking through state
@@ -281,8 +302,7 @@ class SecretGuard:
         Never use the original state dict in log calls — use this instead.
         """
         return {
-            k: "[REDACTED]" if k.lower() in _SENSITIVE_STATE_KEYS else v
-            for k, v in state.items()
+            k: "[REDACTED]" if k.lower() in _SENSITIVE_STATE_KEYS else v for k, v in state.items()
         }
 
     def assert_no_secrets_in_output(self, text: str) -> None:
@@ -307,6 +327,7 @@ class SecretGuard:
 
 # ── 5. Rate Limiter ───────────────────────────────────────────────────
 
+
 class RateLimiter:
     """
     Sliding-window rate limiter for external API calls.
@@ -320,7 +341,7 @@ class RateLimiter:
 
     def __init__(self, max_calls: int, window_s: float) -> None:
         self.max_calls = max_calls
-        self.window_s  = window_s
+        self.window_s = window_s
         self._timestamps: collections.deque[float] = collections.deque()
 
     def acquire(self) -> None:
@@ -333,8 +354,12 @@ class RateLimiter:
         if len(self._timestamps) >= self.max_calls:
             sleep_s = self.window_s - (now - self._timestamps[0])
             if sleep_s > 0:
-                log.info("[RateLimiter] Rate limit reached (%d/%d) — sleeping %.1fs",
-                         len(self._timestamps), self.max_calls, sleep_s)
+                log.info(
+                    "[RateLimiter] Rate limit reached (%d/%d) — sleeping %.1fs",
+                    len(self._timestamps),
+                    self.max_calls,
+                    sleep_s,
+                )
                 time.sleep(sleep_s)
 
         self._timestamps.append(time.monotonic())
@@ -347,10 +372,10 @@ class RateLimiter:
 
 # ── Module-level singletons ───────────────────────────────────────────
 
-INPUT_SANITIZER     = InputSanitizer()
-OUTPUT_SANITIZER    = OutputSanitizer()
-SCOPE_GUARD         = AgentScopeGuard()
-SECRET_GUARD        = SecretGuard()
+INPUT_SANITIZER = InputSanitizer()
+OUTPUT_SANITIZER = OutputSanitizer()
+SCOPE_GUARD = AgentScopeGuard()
+SECRET_GUARD = SecretGuard()
 
 # 15 calls / 60 s matches the Gemini free-tier RPM limit.
 # Raise max_calls to match your paid-tier quota.

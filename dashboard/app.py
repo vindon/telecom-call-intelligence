@@ -21,7 +21,8 @@ st.set_page_config(
 )
 
 # ── CSS ───────────────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(
+    """
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -509,69 +510,90 @@ st.markdown("""
     @page { margin: 1.5cm; size: A4 landscape; }
   }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ── Palette ───────────────────────────────────────────────────────────
-TEAL   = "#0D9488"
+TEAL = "#0D9488"
 PURPLE = "#7C3AED"
-BLUE   = "#2563EB"
-GREEN  = "#059669"
-RED    = "#DC2626"
-AMBER  = "#D97706"
-SLATE  = "#64748B"
+BLUE = "#2563EB"
+GREEN = "#059669"
+RED = "#DC2626"
+AMBER = "#D97706"
+SLATE = "#64748B"
 
 PLOTLY = dict(
-    paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+    paper_bgcolor="#FFFFFF",
+    plot_bgcolor="#FFFFFF",
     font=dict(family="Inter, sans-serif", color="#334155", size=12),
 )
 
 # Phase display config: color, type label
 PHASE_META = {
     "Welcome & Auth": ("#94A3B8", "Overhead"),
-    "Discovery":      ("#F59E0B", "Customer explains issue"),
-    "Diagnosis":      ("#F97316", "Agent investigates"),
-    "Resolution":     ("#10B981", "Value delivery"),
-    "Hold":           ("#EF4444", "Dead time"),
-    "Upsell":         ("#3B82F6", "Revenue"),
-    "Closing":        ("#CBD5E1", "Overhead"),
+    "Discovery": ("#F59E0B", "Customer explains issue"),
+    "Diagnosis": ("#F97316", "Agent investigates"),
+    "Resolution": ("#10B981", "Value delivery"),
+    "Hold": ("#EF4444", "Dead time"),
+    "Upsell": ("#3B82F6", "Revenue"),
+    "Closing": ("#CBD5E1", "Overhead"),
 }
-PHASE_ORDER = ["Welcome & Auth", "Discovery", "Diagnosis", "Resolution", "Hold", "Upsell", "Closing"]
+PHASE_ORDER = [
+    "Welcome & Auth",
+    "Discovery",
+    "Diagnosis",
+    "Resolution",
+    "Hold",
+    "Upsell",
+    "Closing",
+]
 
 # Issue category → automation tier + color
 ISSUE_TIER = {
-    "billing":     ("Agentic AI",  PURPLE),
-    "technical":   ("Proactive",   TEAL),
-    "plan":        ("Agentic AI",  PURPLE),
-    "account":     ("Agentic AI",  PURPLE),
-    "device":      ("Agentic AI",  BLUE),
-    "information": ("Self-Serve",  SLATE),
+    "billing": ("Agentic AI", PURPLE),
+    "technical": ("Proactive", TEAL),
+    "plan": ("Agentic AI", PURPLE),
+    "account": ("Agentic AI", PURPLE),
+    "device": ("Agentic AI", BLUE),
+    "information": ("Self-Serve", SLATE),
     "information_only": ("Self-Serve", SLATE),
 }
 
 # Intents mapped to issue categories
 _INTENTS = {
-    "billing":     [("Bill explanation & itemised charges", "Agentic AI", "Low",    0.10),
-                    ("Payment / direct debit setup",        "Agentic AI", "Low",    0.06),
-                    ("Billing dispute investigation",       "Human Agent","—",      0.22)],
-    "technical":   [("Network / outage status check",      "Proactive",  "Medium", 0.12),
-                    ("Service activation / provisioning",  "Agentic AI", "Low",    0.08),
-                    ("Complex fault diagnosis",            "Human Agent","—",      0.25)],
-    "plan":        [("Plan details & inclusions enquiry",  "Agentic AI", "Low",    0.08),
-                    ("Data balance & usage check",         "Agentic AI", "Low",    0.07),
-                    ("Plan upgrade / change",              "Human Agent","—",      0.05)],
-    "account":     [("Address / contact detail update",    "Agentic AI", "Low",    0.05),
-                    ("Account security & identity",        "Human Agent","—",      0.04)],
-    "information": [("General service enquiries",          "Agentic AI", "Low",    0.02)],
-    "information_only": [("General service enquiries",     "Agentic AI", "Low",    0.02)],
-    "device":      [("Order & delivery status",            "Agentic AI", "Low",    0.02),
-                    ("Device hardware fault",              "Human Agent","—",      0.02)],
+    "billing": [
+        ("Bill explanation & itemised charges", "Agentic AI", "Low", 0.10),
+        ("Payment / direct debit setup", "Agentic AI", "Low", 0.06),
+        ("Billing dispute investigation", "Human Agent", "—", 0.22),
+    ],
+    "technical": [
+        ("Network / outage status check", "Proactive", "Medium", 0.12),
+        ("Service activation / provisioning", "Agentic AI", "Low", 0.08),
+        ("Complex fault diagnosis", "Human Agent", "—", 0.25),
+    ],
+    "plan": [
+        ("Plan details & inclusions enquiry", "Agentic AI", "Low", 0.08),
+        ("Data balance & usage check", "Agentic AI", "Low", 0.07),
+        ("Plan upgrade / change", "Human Agent", "—", 0.05),
+    ],
+    "account": [
+        ("Address / contact detail update", "Agentic AI", "Low", 0.05),
+        ("Account security & identity", "Human Agent", "—", 0.04),
+    ],
+    "information": [("General service enquiries", "Agentic AI", "Low", 0.02)],
+    "information_only": [("General service enquiries", "Agentic AI", "Low", 0.02)],
+    "device": [
+        ("Order & delivery status", "Agentic AI", "Low", 0.02),
+        ("Device hardware fault", "Human Agent", "—", 0.02),
+    ],
 }
 
 _TIER_COLOR = {
-    "Proactive":   (TEAL,   "#CCFBF1", "#0F766E"),
-    "Agentic AI":  (PURPLE, "#EDE9FE", "#6D28D9"),
-    "Human Agent": (BLUE,   "#DBEAFE", "#1D4ED8"),
-    "Self-Serve":  (SLATE,  "#F1F5F9", "#334155"),
+    "Proactive": (TEAL, "#CCFBF1", "#0F766E"),
+    "Agentic AI": (PURPLE, "#EDE9FE", "#6D28D9"),
+    "Human Agent": (BLUE, "#DBEAFE", "#1D4ED8"),
+    "Self-Serve": (SLATE, "#F1F5F9", "#334155"),
 }
 
 
@@ -586,144 +608,254 @@ DEMO_DATA = {
     },
     "kpis": {
         "total_calls_analyzed": 100,
-        "avg_handle_time_seconds": 524, "avg_handle_time_minutes": 8.7,
-        "fcr_rate_pct": 68.0, "avoidable_call_rate_pct": 41.0,
-        "self_serve_deflection_pct": 37.0, "agentic_ai_resolvable_pct": 29.0,
-        "proactive_outreach_pct": 12.0, "all_issues_resolved_pct": 71.0,
-        "escalation_rate_pct": 14.0, "sentiment_improved_pct": 61.0,
+        "avg_handle_time_seconds": 524,
+        "avg_handle_time_minutes": 8.7,
+        "fcr_rate_pct": 68.0,
+        "avoidable_call_rate_pct": 41.0,
+        "self_serve_deflection_pct": 37.0,
+        "agentic_ai_resolvable_pct": 29.0,
+        "proactive_outreach_pct": 12.0,
+        "all_issues_resolved_pct": 71.0,
+        "escalation_rate_pct": 14.0,
+        "sentiment_improved_pct": 61.0,
         "agent_tool_struggle_pct": 23.0,
         # Mutually-exclusive resolution segmentation (sums to 100) —
         # derived to match the cost_levers below (see _resolution_segments).
-        "prevent_pct": 14.5, "automate_pct": 66.0, "human_required_pct": 19.5,
-        "automate_self_serve_pct": 37.0, "automate_agentic_pct": 29.0,
+        "prevent_pct": 14.5,
+        "automate_pct": 66.0,
+        "human_required_pct": 19.5,
+        "automate_self_serve_pct": 37.0,
+        "automate_agentic_pct": 29.0,
     },
     "phase_avg_seconds": {
-        "Welcome & Auth": 46, "Discovery": 108, "Diagnosis": 152,
-        "Resolution": 128, "Hold": 87, "Upsell": 44, "Closing": 54,
+        "Welcome & Auth": 46,
+        "Discovery": 108,
+        "Diagnosis": 152,
+        "Resolution": 128,
+        "Hold": 87,
+        "Upsell": 44,
+        "Closing": 54,
     },
     "phase_drilldown": {
         "Discovery": [
-            {"intent": "technical",   "avg_seconds": 135.0, "calls": 31, "stall_pct": 18.0},
-            {"intent": "device",      "avg_seconds": 122.0, "calls": 4,  "stall_pct": 10.0},
-            {"intent": "billing",     "avg_seconds": 110.0, "calls": 38, "stall_pct": 12.0},
-            {"intent": "account",     "avg_seconds": 95.0,  "calls": 9,  "stall_pct": 5.0},
-            {"intent": "plan",        "avg_seconds": 88.0,  "calls": 16, "stall_pct": 3.0},
+            {"intent": "technical", "avg_seconds": 135.0, "calls": 31, "stall_pct": 18.0},
+            {"intent": "device", "avg_seconds": 122.0, "calls": 4, "stall_pct": 10.0},
+            {"intent": "billing", "avg_seconds": 110.0, "calls": 38, "stall_pct": 12.0},
+            {"intent": "account", "avg_seconds": 95.0, "calls": 9, "stall_pct": 5.0},
+            {"intent": "plan", "avg_seconds": 88.0, "calls": 16, "stall_pct": 3.0},
         ],
         "Diagnosis": [
-            {"intent": "technical",   "avg_seconds": 195.0, "calls": 31, "stall_pct": 35.0},
-            {"intent": "device",      "avg_seconds": 178.0, "calls": 4,  "stall_pct": 20.0},
-            {"intent": "billing",     "avg_seconds": 145.0, "calls": 38, "stall_pct": 22.0},
-            {"intent": "account",     "avg_seconds": 120.0, "calls": 9,  "stall_pct": 10.0},
-            {"intent": "information", "avg_seconds": 90.0,  "calls": 2,  "stall_pct": 0.0},
+            {"intent": "technical", "avg_seconds": 195.0, "calls": 31, "stall_pct": 35.0},
+            {"intent": "device", "avg_seconds": 178.0, "calls": 4, "stall_pct": 20.0},
+            {"intent": "billing", "avg_seconds": 145.0, "calls": 38, "stall_pct": 22.0},
+            {"intent": "account", "avg_seconds": 120.0, "calls": 9, "stall_pct": 10.0},
+            {"intent": "information", "avg_seconds": 90.0, "calls": 2, "stall_pct": 0.0},
         ],
         "Resolution": [
-            {"intent": "plan",        "avg_seconds": 160.0, "calls": 16, "stall_pct": 15.0},
-            {"intent": "billing",     "avg_seconds": 140.0, "calls": 38, "stall_pct": 18.0},
-            {"intent": "technical",   "avg_seconds": 125.0, "calls": 31, "stall_pct": 10.0},
-            {"intent": "account",     "avg_seconds": 105.0, "calls": 9,  "stall_pct": 5.0},
-            {"intent": "device",      "avg_seconds": 95.0,  "calls": 4,  "stall_pct": 0.0},
+            {"intent": "plan", "avg_seconds": 160.0, "calls": 16, "stall_pct": 15.0},
+            {"intent": "billing", "avg_seconds": 140.0, "calls": 38, "stall_pct": 18.0},
+            {"intent": "technical", "avg_seconds": 125.0, "calls": 31, "stall_pct": 10.0},
+            {"intent": "account", "avg_seconds": 105.0, "calls": 9, "stall_pct": 5.0},
+            {"intent": "device", "avg_seconds": 95.0, "calls": 4, "stall_pct": 0.0},
         ],
         "Upsell": [
-            {"intent": "plan",        "avg_seconds": 70.0, "calls": 16, "stall_pct": 0.0},
-            {"intent": "billing",     "avg_seconds": 50.0, "calls": 38, "stall_pct": 0.0},
-            {"intent": "information", "avg_seconds": 35.0, "calls": 2,  "stall_pct": 0.0},
-            {"intent": "account",     "avg_seconds": 28.0, "calls": 9,  "stall_pct": 0.0},
-            {"intent": "device",      "avg_seconds": 15.0, "calls": 4,  "stall_pct": 0.0},
+            {"intent": "plan", "avg_seconds": 70.0, "calls": 16, "stall_pct": 0.0},
+            {"intent": "billing", "avg_seconds": 50.0, "calls": 38, "stall_pct": 0.0},
+            {"intent": "information", "avg_seconds": 35.0, "calls": 2, "stall_pct": 0.0},
+            {"intent": "account", "avg_seconds": 28.0, "calls": 9, "stall_pct": 0.0},
+            {"intent": "device", "avg_seconds": 15.0, "calls": 4, "stall_pct": 0.0},
         ],
     },
     "distributions": {
         "issue_category": {
-            "billing": 38, "technical": 31, "plan": 16,
-            "account": 9, "device": 4, "information": 2,
+            "billing": 38,
+            "technical": 31,
+            "plan": 16,
+            "account": 9,
+            "device": 4,
+            "information": 2,
         },
-        "agent_skill":    {"proficient": "44.0", "adequate": "38.0", "needs_improvement": "18.0"},
+        "agent_skill": {"proficient": "44.0", "adequate": "38.0", "needs_improvement": "18.0"},
         "agent_disproportionate_phase": {
-            "none": "48.0", "diagnosis": "26.0", "discovery": "14.0", "resolution": "12.0",
+            "none": "48.0",
+            "diagnosis": "26.0",
+            "discovery": "14.0",
+            "resolution": "12.0",
         },
     },
     "cost_levers": {
-        "cost_per_call_usd": 6.0, "monthly_volume_estimate": 100000,
+        "cost_per_call_usd": 6.0,
+        "monthly_volume_estimate": 100000,
         "baseline_monthly_cost_usd": 600000,
-        "self_serve_savings_usd": 188700, "agentic_ai_savings_usd": 121800,
-        "proactive_care_savings_usd": 52200, "total_savings_opportunity_usd": 362700,
+        "self_serve_savings_usd": 188700,
+        "agentic_ai_savings_usd": 121800,
+        "proactive_care_savings_usd": 52200,
+        "total_savings_opportunity_usd": 362700,
         "savings_pct_of_baseline": 60.5,
         # Phase-time P&L (Serve P1-P4 / Sell P5 / Retain cross-cutting) —
         # derived from phase_avg_seconds above via _phase_pnl (70.1/7.1/22.8% of 619s total).
-        "serve_time_pct": 70.1, "serve_cost_usd": 420600,
-        "sell_time_pct": 7.1,   "sell_cost_usd": 42600,
-        "retain_time_pct": 22.8, "retain_cost_usd": 136800,
+        "serve_time_pct": 70.1,
+        "serve_cost_usd": 420600,
+        "sell_time_pct": 7.1,
+        "sell_cost_usd": 42600,
+        "retain_time_pct": 22.8,
+        "retain_cost_usd": 136800,
     },
     "issue_breakdown": {
         "categories": [
             {
-                "category": "billing", "count": 38, "pct": 38.0, "dollars": 228000,
+                "category": "billing",
+                "count": 38,
+                "pct": 38.0,
+                "dollars": 228000,
                 "segments": {
-                    "prevent":            {"count": 5,  "pct": 13.2, "methods": {"agent_action": 3, "self_serve_guidance": 2}},
-                    "automate_self_serve":{"count": 20, "pct": 52.6, "methods": {"self_serve_guidance": 15, "agent_action": 5}},
-                    "automate_agentic":   {"count": 8,  "pct": 21.1, "methods": {"agent_action": 8}},
-                    "human":              {"count": 5,  "pct": 13.2, "methods": {"escalated": 3, "unresolved": 2}},
+                    "prevent": {
+                        "count": 5,
+                        "pct": 13.2,
+                        "methods": {"agent_action": 3, "self_serve_guidance": 2},
+                    },
+                    "automate_self_serve": {
+                        "count": 20,
+                        "pct": 52.6,
+                        "methods": {"self_serve_guidance": 15, "agent_action": 5},
+                    },
+                    "automate_agentic": {"count": 8, "pct": 21.1, "methods": {"agent_action": 8}},
+                    "human": {
+                        "count": 5,
+                        "pct": 13.2,
+                        "methods": {"escalated": 3, "unresolved": 2},
+                    },
                 },
             },
             {
-                "category": "technical", "count": 31, "pct": 31.0, "dollars": 186000,
+                "category": "technical",
+                "count": 31,
+                "pct": 31.0,
+                "dollars": 186000,
                 "segments": {
-                    "prevent":            {"count": 8,  "pct": 25.8, "methods": {"self_serve_guidance": 5, "agent_action": 3}},
-                    "automate_self_serve":{"count": 5,  "pct": 16.1, "methods": {"self_serve_guidance": 4, "agent_action": 1}},
-                    "automate_agentic":   {"count": 10, "pct": 32.3, "methods": {"agent_action": 7, "workaround": 3}},
-                    "human":              {"count": 8,  "pct": 25.8, "methods": {"escalated": 5, "workaround": 2, "unresolved": 1}},
+                    "prevent": {
+                        "count": 8,
+                        "pct": 25.8,
+                        "methods": {"self_serve_guidance": 5, "agent_action": 3},
+                    },
+                    "automate_self_serve": {
+                        "count": 5,
+                        "pct": 16.1,
+                        "methods": {"self_serve_guidance": 4, "agent_action": 1},
+                    },
+                    "automate_agentic": {
+                        "count": 10,
+                        "pct": 32.3,
+                        "methods": {"agent_action": 7, "workaround": 3},
+                    },
+                    "human": {
+                        "count": 8,
+                        "pct": 25.8,
+                        "methods": {"escalated": 5, "workaround": 2, "unresolved": 1},
+                    },
                 },
             },
             {
-                "category": "plan", "count": 16, "pct": 16.0, "dollars": 96000,
+                "category": "plan",
+                "count": 16,
+                "pct": 16.0,
+                "dollars": 96000,
                 "segments": {
-                    "prevent":            {"count": 1, "pct": 6.2,  "methods": {"agent_action": 1}},
-                    "automate_self_serve":{"count": 8, "pct": 50.0, "methods": {"self_serve_guidance": 6, "agent_action": 2}},
-                    "automate_agentic":   {"count": 5, "pct": 31.2, "methods": {"agent_action": 5}},
-                    "human":              {"count": 2, "pct": 12.5, "methods": {"escalated": 2}},
+                    "prevent": {"count": 1, "pct": 6.2, "methods": {"agent_action": 1}},
+                    "automate_self_serve": {
+                        "count": 8,
+                        "pct": 50.0,
+                        "methods": {"self_serve_guidance": 6, "agent_action": 2},
+                    },
+                    "automate_agentic": {"count": 5, "pct": 31.2, "methods": {"agent_action": 5}},
+                    "human": {"count": 2, "pct": 12.5, "methods": {"escalated": 2}},
                 },
             },
             {
-                "category": "account", "count": 9, "pct": 9.0, "dollars": 54000,
+                "category": "account",
+                "count": 9,
+                "pct": 9.0,
+                "dollars": 54000,
                 "segments": {
-                    "automate_self_serve":{"count": 3, "pct": 33.3, "methods": {"self_serve_guidance": 2, "agent_action": 1}},
-                    "automate_agentic":   {"count": 4, "pct": 44.4, "methods": {"agent_action": 4}},
-                    "human":              {"count": 2, "pct": 22.2, "methods": {"escalated": 2}},
+                    "automate_self_serve": {
+                        "count": 3,
+                        "pct": 33.3,
+                        "methods": {"self_serve_guidance": 2, "agent_action": 1},
+                    },
+                    "automate_agentic": {"count": 4, "pct": 44.4, "methods": {"agent_action": 4}},
+                    "human": {"count": 2, "pct": 22.2, "methods": {"escalated": 2}},
                 },
             },
             {
-                "category": "device", "count": 4, "pct": 4.0, "dollars": 24000,
+                "category": "device",
+                "count": 4,
+                "pct": 4.0,
+                "dollars": 24000,
                 "segments": {
-                    "automate_self_serve":{"count": 1, "pct": 25.0, "methods": {"self_serve_guidance": 1}},
-                    "automate_agentic":   {"count": 2, "pct": 50.0, "methods": {"agent_action": 2}},
-                    "human":              {"count": 1, "pct": 25.0, "methods": {"escalated": 1}},
+                    "automate_self_serve": {
+                        "count": 1,
+                        "pct": 25.0,
+                        "methods": {"self_serve_guidance": 1},
+                    },
+                    "automate_agentic": {"count": 2, "pct": 50.0, "methods": {"agent_action": 2}},
+                    "human": {"count": 1, "pct": 25.0, "methods": {"escalated": 1}},
                 },
             },
             {
-                "category": "information", "count": 2, "pct": 2.0, "dollars": 12000,
+                "category": "information",
+                "count": 2,
+                "pct": 2.0,
+                "dollars": 12000,
                 "segments": {
-                    "human": {"count": 2, "pct": 100.0, "methods": {"escalated": 1, "unresolved": 1}},
+                    "human": {
+                        "count": 2,
+                        "pct": 100.0,
+                        "methods": {"escalated": 1, "unresolved": 1},
+                    },
                 },
             },
         ],
         "build_queue": [
             {
-                "category": "billing", "segment": "automate", "count": 28, "pct": 73.7,
-                "dollars": 168000, "category_count": 38, "self_serve_count": 20, "agentic_count": 8,
+                "category": "billing",
+                "segment": "automate",
+                "count": 28,
+                "pct": 73.7,
+                "dollars": 168000,
+                "category_count": 38,
+                "self_serve_count": 20,
+                "agentic_count": 8,
                 "methods": {"self_serve_guidance": 15, "agent_action": 13},
             },
             {
-                "category": "technical", "segment": "automate", "count": 15, "pct": 48.4,
-                "dollars": 90000, "category_count": 31, "self_serve_count": 5, "agentic_count": 10,
+                "category": "technical",
+                "segment": "automate",
+                "count": 15,
+                "pct": 48.4,
+                "dollars": 90000,
+                "category_count": 31,
+                "self_serve_count": 5,
+                "agentic_count": 10,
                 "methods": {"agent_action": 8, "self_serve_guidance": 4, "workaround": 3},
             },
             {
-                "category": "plan", "segment": "automate", "count": 13, "pct": 81.2,
-                "dollars": 78000, "category_count": 16, "self_serve_count": 8, "agentic_count": 5,
+                "category": "plan",
+                "segment": "automate",
+                "count": 13,
+                "pct": 81.2,
+                "dollars": 78000,
+                "category_count": 16,
+                "self_serve_count": 8,
+                "agentic_count": 5,
                 "methods": {"self_serve_guidance": 6, "agent_action": 7},
             },
             {
-                "category": "technical", "segment": "prevent", "count": 8, "pct": 25.8,
-                "dollars": 48000, "category_count": 31,
+                "category": "technical",
+                "segment": "prevent",
+                "count": 8,
+                "pct": 25.8,
+                "dollars": 48000,
+                "category_count": 31,
                 "methods": {"self_serve_guidance": 5, "agent_action": 3},
             },
         ],
@@ -745,25 +877,25 @@ DEMO_TRANSCRIPT = (
 )
 
 DEMO_FIELDS = [
-    ("call_intent",               "billing"),
-    ("issue_1_type",              "duplicate_charge"),
-    ("sentiment_start",           "frustrated"),
-    ("sentiment_end",             "satisfied"),
-    ("fcr",                       "true"),
-    ("escalation_required",       "false"),
+    ("call_intent", "billing"),
+    ("issue_1_type", "duplicate_charge"),
+    ("sentiment_start", "frustrated"),
+    ("sentiment_end", "satisfied"),
+    ("fcr", "true"),
+    ("escalation_required", "false"),
     ("issue_1_resolution_method", "agent_action"),
-    ("ai_resolvable",             "true"),
-    ("avoidable_contact",         "true"),
-    ("resolution_segment",        "automate_agentic"),
-    ("hold_count",                "0"),
-    ("avg_handle_time_seconds",   "147"),
-    ("empathy_statements_count",  "2"),
-    ("agent_tool_struggle",       "false"),
-    ("cot_reasoning",             "billing.duplicate → verify_account → refund_issued"),
+    ("ai_resolvable", "true"),
+    ("avoidable_contact", "true"),
+    ("resolution_segment", "automate_agentic"),
+    ("hold_count", "0"),
+    ("avg_handle_time_seconds", "147"),
+    ("empathy_statements_count", "2"),
+    ("agent_tool_struggle", "false"),
+    ("cot_reasoning", "billing.duplicate → verify_account → refund_issued"),
 ]
 
-DEMO_QA_SCORE   = 84
-DEMO_INSIGHTS   = (
+DEMO_QA_SCORE = 84
+DEMO_INSIGHTS = (
     "Billing duplicate charges are fully automatable via agentic AI — account "
     "lookup and refund issuance require no human judgment. Recommend building an "
     "automated billing reconciliation agent as Priority 1 in the build queue. "
@@ -772,19 +904,19 @@ DEMO_INSIGHTS   = (
 )
 
 _PIPELINE_AGENTS = [
-    ("Data Ingestion",  "HuggingFace corpus"),
-    ("Extraction",      "Claude Haiku 4.5"),
-    ("QA Scoring",      "100-pt inline model"),
-    ("Aggregation",     "KPI computation"),
-    ("Insights",        "NVIDIA NIM · Llama 3.3"),
-    ("Approval Gate",   "Human-in-the-loop"),
-    ("Export",          "CSV · JSON · audit"),
+    ("Data Ingestion", "HuggingFace corpus"),
+    ("Extraction", "Claude Haiku 4.5"),
+    ("QA Scoring", "100-pt inline model"),
+    ("Aggregation", "KPI computation"),
+    ("Insights", "NVIDIA NIM · Llama 3.3"),
+    ("Approval Gate", "Human-in-the-loop"),
+    ("Export", "CSV · JSON · audit"),
 ]
 
 _STATUS_STYLE = {
     "pending": ("#F1F5F9", "#94A3B8", "○"),
     "running": ("#FFFBEB", "#D97706", "◉"),
-    "done":    ("#ECFDF5", "#059669", "✓"),
+    "done": ("#ECFDF5", "#059669", "✓"),
 }
 
 
@@ -795,54 +927,57 @@ def _pipeline_html(statuses: list, timings: list) -> str:
         t = timings[i]
         timing_row = (
             f'<div style="font-size:9px;color:{clr};font-weight:700;margin-top:3px;">{t}</div>'
-            if t else '<div style="font-size:9px;color:transparent;">—</div>'
+            if t
+            else '<div style="font-size:9px;color:transparent;">—</div>'
         )
         node = (
             f'<div style="flex:1;min-width:0;background:{bg};border-radius:10px;'
             f'padding:12px 8px 10px;text-align:center;border:1.5px solid {clr}55;">'
             f'<div style="font-size:17px;color:{clr};line-height:1;'
-            f'{"animation:pulse 0.8s ease-in-out infinite;" if statuses[i]=="running" else ""}">'
-            f'{icon}</div>'
+            f'{"animation:pulse 0.8s ease-in-out infinite;" if statuses[i] == "running" else ""}">'
+            f"{icon}</div>"
             f'<div style="font-size:10.5px;font-weight:800;color:#0F172A;margin:5px 0 2px;line-height:1.2;">{name}</div>'
             f'<div style="font-size:8.5px;color:#64748B;font-weight:500;">{sub}</div>'
-            f'{timing_row}'
-            f'</div>'
+            f"{timing_row}"
+            f"</div>"
         )
         arrow_clr = "#059669" if statuses[i] == "done" else "#CBD5E1"
         connector = (
             f'<div style="color:{arrow_clr};font-size:14px;padding:0 3px;'
             f'display:flex;align-items:center;flex-shrink:0;">→</div>'
-            if i < len(_PIPELINE_AGENTS) - 1 else ""
+            if i < len(_PIPELINE_AGENTS) - 1
+            else ""
         )
         nodes += node + connector
     done_count = sum(1 for s in statuses if s == "done")
     bar_pct = done_count / len(_PIPELINE_AGENTS) * 100
     return (
-        f'<style>@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:0.4}}}}</style>'
+        f"<style>@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:0.4}}}}</style>"
         f'<div style="background:#FFFFFF;border-radius:14px;padding:20px 22px 18px;'
         f'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-bottom:14px;">'
         f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">'
         f'<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;">7-Node LangGraph Pipeline</div>'
         f'<div style="font-size:0.72rem;color:#64748B;font-weight:600;">{done_count} / {len(_PIPELINE_AGENTS)} agents complete</div>'
-        f'</div>'
+        f"</div>"
         f'<div style="display:flex;gap:5px;align-items:stretch;margin-bottom:14px;">{nodes}</div>'
         f'<div style="height:4px;background:#F1F5F9;border-radius:2px;overflow:hidden;">'
         f'<div style="height:4px;background:#059669;border-radius:2px;width:{bar_pct:.0f}%;'
         f'transition:width 0.3s ease;"></div></div>'
-        f'</div>'
+        f"</div>"
     )
 
 
 def _output_html(phase: str, data) -> str:
     """Dark terminal panel — content changes per pipeline phase."""
+
     def _panel(title: str, body: str) -> str:
         return (
             f'<div style="background:#0F172A;border-radius:14px;padding:22px 26px;'
-            f'font-family:\"JetBrains Mono\",\"Fira Code\",monospace;min-height:220px;">'
+            f'font-family:"JetBrains Mono","Fira Code",monospace;min-height:220px;">'
             f'<div style="font-size:0.65rem;font-weight:700;letter-spacing:0.14em;'
             f'text-transform:uppercase;color:#FCD34D;margin-bottom:14px;">{title}</div>'
-            f'{body}'
-            f'</div>'
+            f"{body}"
+            f"</div>"
         )
 
     if phase == "idle":
@@ -853,27 +988,27 @@ def _output_html(phase: str, data) -> str:
         body = (
             f'<div style="color:#94A3B8;font-size:0.78rem;margin-bottom:10px;">Loading transcript from HuggingFace corpus...</div>'
             f'<div style="color:#34D399;font-size:0.78rem;line-height:1.7;">'
-            f'✓ &nbsp;1 call loaded &nbsp;·&nbsp; talkmap/telecom-conversation-corpus<br>'
+            f"✓ &nbsp;1 call loaded &nbsp;·&nbsp; talkmap/telecom-conversation-corpus<br>"
             f'<span style="color:#64748B;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span><br>'
             f'<span style="color:#94A3B8;font-size:0.74rem;">{html.escape(DEMO_TRANSCRIPT[:120])}...</span>'
-            f'</div>'
+            f"</div>"
         )
         return _panel("Agent 1 — Data Ingestion", body)
 
     if phase == "extraction":
         fields_html = ""
-        for field, value in (data or []):
+        for field, value in data or []:
             fields_html += (
                 f'<div style="display:grid;grid-template-columns:220px 1fr;gap:8px;padding:2px 0;">'
                 f'<span style="color:#64748B;font-size:0.75rem;">{html.escape(field)}</span>'
                 f'<span style="color:#34D399;font-size:0.75rem;">→ &nbsp;{html.escape(str(value))}</span>'
-                f'</div>'
+                f"</div>"
             )
         cursor = '<span style="color:#F59E0B;animation:pulse 0.6s infinite;">▊</span>'
         body = (
             f'<div style="color:#94A3B8;font-size:0.75rem;margin-bottom:10px;">'
-            f'Extracting 70+ structured fields via Claude Haiku 4.5...</div>'
-            f'{fields_html}{cursor}'
+            f"Extracting 70+ structured fields via Claude Haiku 4.5...</div>"
+            f"{fields_html}{cursor}"
         )
         return _panel("Agent 2 — Extraction · Claude Haiku 4.5", body)
 
@@ -891,7 +1026,7 @@ def _output_html(phase: str, data) -> str:
             f'<div style="color:#64748B;font-size:0.72rem;">Field accuracy<span style="color:{clr};float:right;">28/30</span></div>'
             f'<div style="color:#64748B;font-size:0.72rem;">Reasoning quality<span style="color:{clr};float:right;">18/25</span></div>'
             f'<div style="color:#64748B;font-size:0.72rem;">PII compliance<span style="color:{clr};float:right;">16/20</span></div>'
-            f'</div>'
+            f"</div>"
         )
         return _panel("Agent 3 — QA Scoring · 100-pt model", body)
 
@@ -905,11 +1040,11 @@ def _output_html(phase: str, data) -> str:
             '<div style="color:#A78BFA;font-size:0.85rem;font-weight:800;">Automate<br>Agentic</div></div>'
             '<div><div style="color:#64748B;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;">AHT</div>'
             '<div style="color:#34D399;font-size:1.3rem;font-weight:900;">147s</div></div>'
-            '</div>'
+            "</div>"
             '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1E293B;">'
             '<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;KPIs written to pipeline state</div>'
             '<div style="color:#34D399;font-size:0.78rem;">✓ &nbsp;Resolution segment: automate_agentic</div>'
-            '</div>'
+            "</div>"
         )
         return _panel("Agent 4 — Aggregation · KPI computation", body)
 
@@ -926,25 +1061,25 @@ def _output_html(phase: str, data) -> str:
         body = (
             '<div style="color:#34D399;font-size:0.85rem;margin-bottom:10px;">✓ &nbsp;Auto-approved — REQUIRE_HUMAN_APPROVAL=False</div>'
             '<div style="color:#64748B;font-size:0.75rem;line-height:1.8;">'
-            'Decision logged &nbsp;·&nbsp; confidence: 0.94<br>'
-            'Routing to Export agent</div>'
+            "Decision logged &nbsp;·&nbsp; confidence: 0.94<br>"
+            "Routing to Export agent</div>"
         )
         return _panel("Agent 6 — Approval Gate · Human-in-the-loop", body)
 
     if phase in ("export", "complete"):
         body = (
             '<div style="color:#34D399;font-size:0.78rem;line-height:2;">'
-            '✓ &nbsp;outputs/results_20260616.csv &nbsp;·&nbsp; 1 row appended<br>'
-            '✓ &nbsp;outputs/decisions_20260616.json &nbsp;·&nbsp; 7 decisions logged<br>'
-            '✓ &nbsp;outputs/audit_20260616.json &nbsp;·&nbsp; full trace written<br>'
-            '✓ &nbsp;outputs/agent_memory.json &nbsp;·&nbsp; cross-run memory updated'
-            '</div>'
+            "✓ &nbsp;outputs/results_20260616.csv &nbsp;·&nbsp; 1 row appended<br>"
+            "✓ &nbsp;outputs/decisions_20260616.json &nbsp;·&nbsp; 7 decisions logged<br>"
+            "✓ &nbsp;outputs/audit_20260616.json &nbsp;·&nbsp; full trace written<br>"
+            "✓ &nbsp;outputs/agent_memory.json &nbsp;·&nbsp; cross-run memory updated"
+            "</div>"
         )
         if phase == "complete":
             body += (
                 '<div style="margin-top:14px;padding:12px 14px;background:#064E3B;border-radius:8px;">'
                 '<div style="color:#34D399;font-size:0.82rem;font-weight:700;">Pipeline complete &nbsp;·&nbsp; 1 call &nbsp;·&nbsp; 7 agents &nbsp;·&nbsp; ~10s &nbsp;·&nbsp; ~$0.013</div>'
-                '</div>'
+                "</div>"
             )
         return _panel("Agent 7 — Export · CSV · JSON · audit trail", body)
 
@@ -952,6 +1087,7 @@ def _output_html(phase: str, data) -> str:
 
 
 # ── Data loading ──────────────────────────────────────────────────────
+
 
 @st.cache_data
 def load_summary() -> tuple[dict, bool]:
@@ -968,42 +1104,49 @@ def load_summary() -> tuple[dict, bool]:
 def _cost_levers(kpis: dict) -> dict:
     cpp, vol = 6.0, 100_000
     base = cpp * vol
-    ss   = base * kpis.get("self_serve_deflection_pct", 0) / 100
-    ai   = base * kpis.get("agentic_ai_resolvable_pct",  0) / 100
-    pro  = base * kpis.get("proactive_outreach_pct",     0) / 100
-    tot  = ss + ai + pro
+    ss = base * kpis.get("self_serve_deflection_pct", 0) / 100
+    ai = base * kpis.get("agentic_ai_resolvable_pct", 0) / 100
+    pro = base * kpis.get("proactive_outreach_pct", 0) / 100
+    tot = ss + ai + pro
     return {
-        "cost_per_call_usd": cpp, "monthly_volume_estimate": vol,
+        "cost_per_call_usd": cpp,
+        "monthly_volume_estimate": vol,
         "baseline_monthly_cost_usd": base,
-        "self_serve_savings_usd": ss, "agentic_ai_savings_usd": ai,
-        "proactive_care_savings_usd": pro, "total_savings_opportunity_usd": tot,
+        "self_serve_savings_usd": ss,
+        "agentic_ai_savings_usd": ai,
+        "proactive_care_savings_usd": pro,
+        "total_savings_opportunity_usd": tot,
         "savings_pct_of_baseline": tot / base * 100 if base else 0,
     }
 
 
 # ── Charts ────────────────────────────────────────────────────────────
 
+
 def chart_phases(phase_seconds: dict) -> go.Figure:
-    total  = sum(phase_seconds.values()) or 1
+    total = sum(phase_seconds.values()) or 1
     phases = [p for p in PHASE_ORDER if p in phase_seconds]
-    secs   = [phase_seconds[p] for p in phases]
-    pcts   = [s / total * 100 for s in secs]
+    secs = [phase_seconds[p] for p in phases]
+    pcts = [s / total * 100 for s in secs]
     colors = [PHASE_META.get(p, ("#94A3B8", ""))[0] for p in phases]
-    types  = [PHASE_META.get(p, ("", "Other"))[1] for p in phases]
+    types = [PHASE_META.get(p, ("", "Other"))[1] for p in phases]
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=phases, y=secs,
-        marker=dict(color=colors, line_width=0),
-        text=[f"{s:.0f}s<br>{p:.0f}%" for s, p in zip(secs, pcts)],
-        textposition="outside",
-        textfont=dict(color="#334155", size=11, family="Inter"),
-        customdata=[[t, f"{p:.1f}"] for t, p in zip(types, pcts)],
-        hovertemplate=(
-            "<b>%{x}</b><br>%{y:.0f}s · %{customdata[1]}% of call<br>"
-            "<i>%{customdata[0]}</i><extra></extra>"
-        ),
-    ))
+    fig.add_trace(
+        go.Bar(
+            x=phases,
+            y=secs,
+            marker=dict(color=colors, line_width=0),
+            text=[f"{s:.0f}s<br>{p:.0f}%" for s, p in zip(secs, pcts)],
+            textposition="outside",
+            textfont=dict(color="#334155", size=11, family="Inter"),
+            customdata=[[t, f"{p:.1f}"] for t, p in zip(types, pcts)],
+            hovertemplate=(
+                "<b>%{x}</b><br>%{y:.0f}s · %{customdata[1]}% of call<br>"
+                "<i>%{customdata[0]}</i><extra></extra>"
+            ),
+        )
+    )
     fig.update_layout(
         **PLOTLY,
         height=320,
@@ -1015,27 +1158,31 @@ def chart_phases(phase_seconds: dict) -> go.Figure:
 
 
 _DQ_FAILURE_LABELS = {
-    "phase_reconciliation":   "Phase-time reconciliation",
+    "phase_reconciliation": "Phase-time reconciliation",
     "timestamp_ground_truth": "Timestamp ground-truth mismatch",
-    "transcript_truncation":  "Transcript truncation",
+    "transcript_truncation": "Transcript truncation",
 }
 
 
 def chart_dq_failure_breakdown(breakdown: dict) -> go.Figure:
     """Horizontal bar of why calls were excluded by the data-quality gate — live from summary.json."""
-    items  = sorted(breakdown.items(), key=lambda kv: kv[1], reverse=True)
+    items = sorted(breakdown.items(), key=lambda kv: kv[1], reverse=True)
     labels = [_DQ_FAILURE_LABELS.get(k, k) for k, _ in items]
     counts = [v for _, v in items]
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=counts, y=labels, orientation="h",
-        marker=dict(color=AMBER, line_width=0),
-        text=[str(c) for c in counts],
-        textposition="outside",
-        textfont=dict(color="#334155", size=12, family="Inter"),
-        hovertemplate="<b>%{y}</b><br>%{x} call(s) excluded<extra></extra>",
-    ))
+    fig.add_trace(
+        go.Bar(
+            x=counts,
+            y=labels,
+            orientation="h",
+            marker=dict(color=AMBER, line_width=0),
+            text=[str(c) for c in counts],
+            textposition="outside",
+            textfont=dict(color="#334155", size=12, family="Inter"),
+            hovertemplate="<b>%{y}</b><br>%{x} call(s) excluded<extra></extra>",
+        )
+    )
     fig.update_layout(
         **PLOTLY,
         height=170,
@@ -1047,23 +1194,28 @@ def chart_dq_failure_breakdown(breakdown: dict) -> go.Figure:
 
 
 def chart_issue_mix(issue_dist: dict, n_calls: int) -> go.Figure:
-    cats   = sorted(issue_dist.items(), key=lambda x: -x[1])
-    total  = sum(v for _, v in cats) or 1
+    cats = sorted(issue_dist.items(), key=lambda x: -x[1])
+    total = sum(v for _, v in cats) or 1
     labels = [c.title() for c, _ in cats]
     values = [v for _, v in cats]
     colors = [ISSUE_TIER.get(c, ("", SLATE))[1] for c, _ in cats]
-    tiers  = [ISSUE_TIER.get(c, ("Other", ""))[0] for c, _ in cats]
+    tiers = [ISSUE_TIER.get(c, ("Other", ""))[0] for c, _ in cats]
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        y=labels, x=values, orientation="h",
-        marker=dict(color=colors, line_width=0),
-        text=[f"  {v}  ({v/total*100:.0f}%)" for v in values],
-        textposition="inside", insidetextanchor="start",
-        textfont=dict(color="white", size=11, family="Inter"),
-        customdata=tiers,
-        hovertemplate="<b>%{y}</b><br>%{x} calls · <i>%{customdata}</i><extra></extra>",
-    ))
+    fig.add_trace(
+        go.Bar(
+            y=labels,
+            x=values,
+            orientation="h",
+            marker=dict(color=colors, line_width=0),
+            text=[f"  {v}  ({v / total * 100:.0f}%)" for v in values],
+            textposition="inside",
+            insidetextanchor="start",
+            textfont=dict(color="white", size=11, family="Inter"),
+            customdata=tiers,
+            hovertemplate="<b>%{y}</b><br>%{x} calls · <i>%{customdata}</i><extra></extra>",
+        )
+    )
     fig.update_layout(
         **PLOTLY,
         height=280,
@@ -1076,25 +1228,30 @@ def chart_issue_mix(issue_dist: dict, n_calls: int) -> go.Figure:
 
 def chart_drilldown_intents(rows: list[dict], color: str) -> go.Figure:
     """Top-N intents ranked by avg seconds spent in one phase, with stall rate."""
-    rows   = list(reversed(rows))  # highest bar on top
+    rows = list(reversed(rows))  # highest bar on top
     labels = [r["intent"].replace("_", " ").title() for r in rows]
-    secs   = [r["avg_seconds"] for r in rows]
-    calls  = [r["calls"] for r in rows]
+    secs = [r["avg_seconds"] for r in rows]
+    calls = [r["calls"] for r in rows]
     stalls = [r["stall_pct"] for r in rows]
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        y=labels, x=secs, orientation="h",
-        marker=dict(color=color, line_width=0),
-        text=[f"  {s:.0f}s" for s in secs],
-        textposition="inside", insidetextanchor="start",
-        textfont=dict(color="white", size=11, family="Inter"),
-        customdata=list(zip(calls, stalls)),
-        hovertemplate=(
-            "<b>%{y}</b><br>%{x:.0f}s avg · %{customdata[0]} calls<br>"
-            "%{customdata[1]:.0f}% flagged as agent stall<extra></extra>"
-        ),
-    ))
+    fig.add_trace(
+        go.Bar(
+            y=labels,
+            x=secs,
+            orientation="h",
+            marker=dict(color=color, line_width=0),
+            text=[f"  {s:.0f}s" for s in secs],
+            textposition="inside",
+            insidetextanchor="start",
+            textfont=dict(color="white", size=11, family="Inter"),
+            customdata=list(zip(calls, stalls)),
+            hovertemplate=(
+                "<b>%{y}</b><br>%{x:.0f}s avg · %{customdata[0]} calls<br>"
+                "%{customdata[1]:.0f}% flagged as agent stall<extra></extra>"
+            ),
+        )
+    )
     fig.update_layout(
         **PLOTLY,
         height=240,
@@ -1110,36 +1267,59 @@ def chart_segment_bar(segments: list[tuple[str, float, str]]) -> go.Figure:
     fig = go.Figure()
     for name, pct, color in segments:
         lbl = f"  {pct:.0f}%" if pct >= 5 else ""
-        fig.add_trace(go.Bar(
-            name=name, x=[pct], y=[""], orientation="h",
-            marker_color=color, marker_line_width=0,
-            text=[lbl], textposition="inside", insidetextanchor="start",
-            textfont=dict(color="white", size=13, family="Inter"),
-            hovertemplate=f"<b>{name}</b><br>{pct:.1f}%<extra></extra>",
-        ))
+        fig.add_trace(
+            go.Bar(
+                name=name,
+                x=[pct],
+                y=[""],
+                orientation="h",
+                marker_color=color,
+                marker_line_width=0,
+                text=[lbl],
+                textposition="inside",
+                insidetextanchor="start",
+                textfont=dict(color="white", size=13, family="Inter"),
+                hovertemplate=f"<b>{name}</b><br>{pct:.1f}%<extra></extra>",
+            )
+        )
     fig.update_layout(
         **PLOTLY,
-        barmode="stack", height=80,
-        xaxis=dict(range=[0, 100], ticksuffix="%", gridcolor="#F1F5F9",
-                   zeroline=False, tickfont=dict(size=11, color="#94A3B8")),
+        barmode="stack",
+        height=80,
+        xaxis=dict(
+            range=[0, 100],
+            ticksuffix="%",
+            gridcolor="#F1F5F9",
+            zeroline=False,
+            tickfont=dict(size=11, color="#94A3B8"),
+        ),
         yaxis=dict(showticklabels=False),
         margin=dict(l=8, r=8, t=8, b=24),
         showlegend=True,
-        legend=dict(orientation="h", y=-1.0, x=0, yanchor="top",
-                    font=dict(size=11, color="#475569")),
+        legend=dict(
+            orientation="h", y=-1.0, x=0, yanchor="top", font=dict(size=11, color="#475569")
+        ),
     )
     return fig
 
 
 # ── HTML helpers ──────────────────────────────────────────────────────
 
+
 def _sec(label: str) -> None:
     st.markdown(f'<div class="section-label">{label}</div>', unsafe_allow_html=True)
 
 
-def _seg(badge: str, badge_bg: str, badge_fg: str,
-         pct: float, calls_label: str,
-         money: str, money_color: str, desc: str) -> str:
+def _seg(
+    badge: str,
+    badge_bg: str,
+    badge_fg: str,
+    pct: float,
+    calls_label: str,
+    money: str,
+    money_color: str,
+    desc: str,
+) -> str:
     return (
         f'<div class="seg">'
         f'<span class="seg-badge" style="background:{badge_bg};color:{badge_fg};">{badge}</span><br>'
@@ -1147,7 +1327,7 @@ def _seg(badge: str, badge_bg: str, badge_fg: str,
         f'<div class="seg-calls">{calls_label}</div>'
         f'<div class="seg-money" style="color:{money_color};">{money}</div>'
         f'<div class="seg-desc">{desc}</div>'
-        f'</div>'
+        f"</div>"
     )
 
 
@@ -1155,12 +1335,14 @@ def _seg(badge: str, badge_bg: str, badge_fg: str,
 # issue_1_resolution_method values, classified for chip coloring.
 # Combo values (e.g. "workaround|escalated") are complex if any part is.
 _METHOD_COMPLEX = {"escalated", "workaround", "unresolved"}
-_METHOD_SIMPLE  = {"agent_action", "self_serve_guidance"}
+_METHOD_SIMPLE = {"agent_action", "self_serve_guidance"}
 
 # Render order for the 4-way proportion bar / overview bar.
 _SEG_BAR_CLASS = {
-    "prevent": "pv", "automate_self_serve": "ass",
-    "automate_agentic": "aai", "human": "hu",
+    "prevent": "pv",
+    "automate_self_serve": "ass",
+    "automate_agentic": "aai",
+    "human": "hu",
 }
 
 
@@ -1205,10 +1387,10 @@ def _combine_automate(segments: dict) -> dict | None:
             methods[m] = methods.get(m, 0) + c
     return {
         "count": (ss["count"] if ss else 0) + (ai["count"] if ai else 0),
-        "pct":   round((ss["pct"] if ss else 0) + (ai["pct"] if ai else 0), 1),
+        "pct": round((ss["pct"] if ss else 0) + (ai["pct"] if ai else 0), 1),
         "methods": methods,
         "self_serve_count": ss["count"] if ss else 0,
-        "agentic_count":    ai["count"] if ai else 0,
+        "agentic_count": ai["count"] if ai else 0,
     }
 
 
@@ -1253,11 +1435,11 @@ def _branch_html(seg_key: str, label: str, seg: dict, category_count: int) -> st
         f'<div class="it-branch-top">'
         f'<span class="it-badge it-badge-{seg_key}">{label}</span>'
         f'<span class="it-branch-pct it-pct-{seg_key}">{seg["pct"]:.0f}%</span>'
-        f'</div>'
+        f"</div>"
         f'<div class="it-branch-n">{seg["count"]} of {category_count} calls</div>'
-        f'<div>{_chips_html(seg["methods"])}</div>'
+        f"<div>{_chips_html(seg['methods'])}</div>"
         f'<div class="it-note">{_segment_note(seg_key, seg)}</div>'
-        f'</div>'
+        f"</div>"
     )
 
 
@@ -1277,11 +1459,11 @@ def _category_card_html(cat: dict) -> str:
         f'<div class="it-cat-head">'
         f'<div class="it-cat-name">{html.escape(cat["category"].title())}</div>'
         f'<div class="it-cat-meta">{n_cat} calls &middot; {cat["pct"]:.0f}% of sample &middot; '
-        f'&asymp; ${cat["dollars"]/1000:.0f}K / month at scale</div>'
-        f'</div>'
-        f'{_proportion_bar_html(segments)}'
+        f"&asymp; ${cat['dollars'] / 1000:.0f}K / month at scale</div>"
+        f"</div>"
+        f"{_proportion_bar_html(segments)}"
         f'<div class="it-branches">{branches}</div>'
-        f'</div>'
+        f"</div>"
     )
 
 
@@ -1291,28 +1473,36 @@ def _compact_row_html(cat: dict) -> str:
 
     summary_parts = []
     if "prevent" in segments:
-        summary_parts.append(f'<span class="it-pct-prevent">Prevent {segments["prevent"]["pct"]:.0f}%</span>')
+        summary_parts.append(
+            f'<span class="it-pct-prevent">Prevent {segments["prevent"]["pct"]:.0f}%</span>'
+        )
     if automate:
-        summary_parts.append(f'<span class="it-pct-automate">Automate {automate["pct"]:.0f}%</span>')
+        summary_parts.append(
+            f'<span class="it-pct-automate">Automate {automate["pct"]:.0f}%</span>'
+        )
     if "human" in segments:
-        summary_parts.append(f'<span class="it-pct-human">Human {segments["human"]["pct"]:.0f}%</span>')
+        summary_parts.append(
+            f'<span class="it-pct-human">Human {segments["human"]["pct"]:.0f}%</span>'
+        )
 
     # Lead with whichever segment carries the most calls in this category.
-    candidates = [("prevent", segments.get("prevent")), ("automate", automate), ("human", segments.get("human"))]
-    dominant_key, dominant_seg = max(
-        (c for c in candidates if c[1]), key=lambda kv: kv[1]["pct"]
-    )
+    candidates = [
+        ("prevent", segments.get("prevent")),
+        ("automate", automate),
+        ("human", segments.get("human")),
+    ]
+    dominant_key, dominant_seg = max((c for c in candidates if c[1]), key=lambda kv: kv[1]["pct"])
 
     return (
         f'<div class="it-compact-row">'
         f'<div class="it-compact-head">'
         f'<div class="it-compact-name">{html.escape(cat["category"].title())}</div>'
         f'<div class="it-compact-meta">{n_cat} calls &middot; {cat["pct"]:.0f}% &middot; '
-        f'&asymp; ${cat["dollars"]/1000:.0f}K/mo &middot; {" &middot; ".join(summary_parts)}</div>'
-        f'</div>'
-        f'{_proportion_bar_html(segments)}'
+        f"&asymp; ${cat['dollars'] / 1000:.0f}K/mo &middot; {' &middot; '.join(summary_parts)}</div>"
+        f"</div>"
+        f"{_proportion_bar_html(segments)}"
         f'<div class="it-note">{_segment_note(dominant_key, dominant_seg)}</div>'
-        f'</div>'
+        f"</div>"
     )
 
 
@@ -1359,18 +1549,24 @@ def _build_queue_row_html(item: dict, rank: int) -> str:
         f'<div class="it-queue-body">'
         f'<div class="it-queue-head">'
         f'<div class="it-queue-name">{_build_queue_title(item)}</div>'
-        f'<div class="it-queue-dollar {dollar_cls}">${item["dollars"]/1000:.0f}K<small>/mo</small></div>'
-        f'</div>'
+        f'<div class="it-queue-dollar {dollar_cls}">${item["dollars"] / 1000:.0f}K<small>/mo</small></div>'
+        f"</div>"
         f'<div class="it-queue-meta">{item["count"]} of {item["category_count"]} '
-        f'{html.escape(item["category"].title())} calls &middot; {item["pct"]:.0f}%</div>'
+        f"{html.escape(item['category'].title())} calls &middot; {item['pct']:.0f}%</div>"
         f'<div class="it-queue-desc">{_build_queue_desc(item)}</div>'
-        f'</div>'
-        f'</div>'
+        f"</div>"
+        f"</div>"
     )
 
 
-def _overview_bar_html(prevent_pct: float, automate_pct: float, human_pct: float,
-                        selfserve_pct: float, agentic_pct: float, base: float) -> str:
+def _overview_bar_html(
+    prevent_pct: float,
+    automate_pct: float,
+    human_pct: float,
+    selfserve_pct: float,
+    agentic_pct: float,
+    base: float,
+) -> str:
     segs = []
     if prevent_pct > 0:
         segs.append(("it-seg-prevent", prevent_pct, "Prevent", ""))
@@ -1386,9 +1582,9 @@ def _overview_bar_html(prevent_pct: float, automate_pct: float, human_pct: float
 
     bars = "".join(
         f'<div class="{cls}" style="width:{pct}%;{extra}">'
-        f'<span class="pct">${round(base * pct / 100)/1000:.0f}K</span>'
+        f'<span class="pct">${round(base * pct / 100) / 1000:.0f}K</span>'
         f'<span class="lbl">{label} &middot; {pct:.0f}%</span>'
-        f'</div>'
+        f"</div>"
         for cls, pct, label, extra in segs
     )
     return f'<div class="it-obar">{bars}</div>'
@@ -1401,53 +1597,59 @@ def _build_roadmap(issue_categories: dict, cost_per_call: float, monthly_vol: in
         for intent, tier, effort, share in _INTENTS.get(cat, []):
             if tier == "Human Agent":
                 continue
-            est_calls  = round(monthly_vol * (cat_count / total_calls) * share)
+            est_calls = round(monthly_vol * (cat_count / total_calls) * share)
             est_saving = est_calls * cost_per_call
-            rows.append({
-                "intent": intent, "tier": tier, "effort": effort,
-                "monthly_calls": est_calls, "monthly_saving": est_saving,
-            })
+            rows.append(
+                {
+                    "intent": intent,
+                    "tier": tier,
+                    "effort": effort,
+                    "monthly_calls": est_calls,
+                    "monthly_saving": est_saving,
+                }
+            )
     rows.sort(key=lambda r: -r["monthly_saving"])
     return rows
 
 
 # ── Main ──────────────────────────────────────────────────────────────
 
+
 def main():
     data, is_demo = load_summary()
-    kpis   = data["kpis"]
-    cl     = data["cost_levers"]
-    meta   = data["meta"]
-    dist   = data["distributions"]
+    kpis = data["kpis"]
+    cl = data["cost_levers"]
+    meta = data["meta"]
+    dist = data["distributions"]
     phases = data.get("phase_avg_seconds", {})
 
-    n_calls  = meta["total_calls_analyzed"]
+    n_calls = meta["total_calls_analyzed"]
     run_date = html.escape(meta.get("analysis_timestamp", "")[:10])
-    model    = html.escape(meta.get("model", ""))
+    model = html.escape(meta.get("model", ""))
     provider = html.escape(meta.get("inference_provider", ""))
-    dataset  = html.escape(meta.get("dataset", ""))
+    dataset = html.escape(meta.get("dataset", ""))
 
     # Segment arithmetic — mutually-exclusive segments computed in
     # pipeline/aggregator.py (_resolution_segments). These sum to 100%;
     # do not derive them from the overlapping marginal *_pct fields.
-    prevent_pct   = float(kpis.get("prevent_pct", 0))
-    automate_pct  = float(kpis.get("automate_pct", 0))
-    human_pct     = float(kpis.get("human_required_pct", 0))
+    prevent_pct = float(kpis.get("prevent_pct", 0))
+    automate_pct = float(kpis.get("automate_pct", 0))
+    human_pct = float(kpis.get("human_required_pct", 0))
     selfserve_pct = float(kpis.get("automate_self_serve_pct", 0))
-    agentic_pct   = float(kpis.get("automate_agentic_pct", 0))
-    total_auto    = prevent_pct + automate_pct
+    agentic_pct = float(kpis.get("automate_agentic_pct", 0))
+    total_auto = prevent_pct + automate_pct
 
-    cpp      = cl["cost_per_call_usd"]
-    vol      = cl["monthly_volume_estimate"]
-    base     = cl["baseline_monthly_cost_usd"]
-    opp      = cl["total_savings_opportunity_usd"]
-    annual   = opp * 12
+    cpp = cl["cost_per_call_usd"]
+    vol = cl["monthly_volume_estimate"]
+    base = cl["baseline_monthly_cost_usd"]
+    opp = cl["total_savings_opportunity_usd"]
+    annual = opp * 12
 
     # Phase insight stats
     total_secs = sum(phases.values()) or 1
-    disc_secs  = phases.get("Discovery", 0)
-    diag_secs  = phases.get("Diagnosis", 0)
-    aht_min  = kpis.get("avg_handle_time_minutes", round(total_secs / 60, 1))
+    disc_secs = phases.get("Discovery", 0)
+    diag_secs = phases.get("Diagnosis", 0)
+    aht_min = kpis.get("avg_handle_time_minutes", round(total_secs / 60, 1))
     aht_secs = round(kpis.get("avg_handle_time_seconds", total_secs))
 
     # Issue category data
@@ -1468,17 +1670,16 @@ def main():
         ic_clean = ic  # fallback
 
     # Hero numbers
-    badge     = "DEMO DATA" if is_demo else "LIVE DATA"
-
+    badge = "DEMO DATA" if is_demo else "LIVE DATA"
 
     # Phase-time-based P&L — Serve (P1-P4) / Sell (P5) / Retain (cross-cutting)
     # computed in pipeline/aggregator.py (_phase_pnl), stored in cost_levers.
     serve_time_pct = float(cl.get("serve_time_pct", 0))
-    sell_time_pct  = float(cl.get("sell_time_pct", 0))
+    sell_time_pct = float(cl.get("sell_time_pct", 0))
     retain_time_pct = float(cl.get("retain_time_pct", 0))
-    serve_cost     = cl.get("serve_cost_usd", 0)
-    sell_cost      = cl.get("sell_cost_usd", 0)
-    retain_cost    = cl.get("retain_cost_usd", 0)
+    serve_cost = cl.get("serve_cost_usd", 0)
+    sell_cost = cl.get("sell_cost_usd", 0)
+    retain_cost = cl.get("retain_cost_usd", 0)
 
     # ── HERO ─────────────────────────────────────────────────────────
     # Hero — headline only
@@ -1489,30 +1690,30 @@ def main():
         '<div class="hero-eyebrow">Care Call Cost Analysis</div>'
         '<div class="hero-headline">Cost Intelligence for Care Calls</div>'
         '<div class="hero-subline">Identifying cost levers across the customer journey — '
-        'surfacing cost-to-serve drivers and proactive issue-resolution opportunities, '
-        'from real call transcripts.</div>'
-        '</div>'
+        "surfacing cost-to-serve drivers and proactive issue-resolution opportunities, "
+        "from real call transcripts.</div>"
+        "</div>"
         # ── bottom: agentic left · meta+disclaimer right ──
         '<div class="hero-bottom">'
         '<div class="hero-agentic">'
-        '<strong>Agentic AI · Built with Claude Haiku 4.5 + LangGraph</strong><br>'
-        '6 specialised agents process real transcripts end-to-end — extracting 70+ cost signals, '
-        'scoring quality inline, and synthesising recommendations automatically.<br>'
+        "<strong>Agentic AI · Built with Claude Haiku 4.5 + LangGraph</strong><br>"
+        "6 specialised agents process real transcripts end-to-end — extracting 70+ cost signals, "
+        "scoring quality inline, and synthesising recommendations automatically.<br>"
         '<a href="https://telecom-call-intelligence.streamlit.app/" target="_blank" '
         'style="display:inline-block;margin-top:10px;padding:6px 16px;background:rgba(255,255,255,0.15);'
-        'border:1px solid rgba(255,255,255,0.35);border-radius:20px;color:#FFFFFF;'
-        'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-decoration:none;'
+        "border:1px solid rgba(255,255,255,0.35);border-radius:20px;color:#FFFFFF;"
+        "font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-decoration:none;"
         'text-transform:uppercase;">&#9654; View Live Demo</a>'
-        '</div>'
+        "</div>"
         f'<div class="hero-meta-row">'
         f'<div class="hero-meta">{n_calls:,} calls &nbsp;·&nbsp; {run_date} &nbsp;·&nbsp; {provider} &nbsp;·&nbsp; {model}</div>'
         f'<div class="hero-disclaimer">'
-        f'HuggingFace talkmap/telecom-conversation-corpus &nbsp;·&nbsp; avg {aht_secs}s (2.5 min) &nbsp;·&nbsp; '
-        f'Enterprise calls 600–1,100s — 4–7× longer &nbsp;·&nbsp; $ figures scale with your AHT'
-        f'</div>'
-        f'</div>'
-        '</div>'
-        '</div>'
+        f"HuggingFace talkmap/telecom-conversation-corpus &nbsp;·&nbsp; avg {aht_secs}s (2.5 min) &nbsp;·&nbsp; "
+        f"Enterprise calls 600–1,100s — 4–7× longer &nbsp;·&nbsp; $ figures scale with your AHT"
+        f"</div>"
+        f"</div>"
+        "</div>"
+        "</div>"
     )
     st.markdown(hero_html, unsafe_allow_html=True)
 
@@ -1525,69 +1726,74 @@ def main():
         '<div style="display:grid;grid-template-columns:1fr 120px 100px;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Cost to Serve <span style="color:#94A3B8;font-weight:500;">(P1–P4)</span></span>'
         f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">{serve_time_pct:.0f}% of AHT</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${serve_cost/1000:.0f}K/mo</span>'
-        '</div>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${serve_cost / 1000:.0f}K/mo</span>'
+        "</div>"
         '<div style="display:grid;grid-template-columns:1fr 120px 100px;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Cost to Sell <span style="color:#94A3B8;font-weight:500;">(P5)</span></span>'
         f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">{sell_time_pct:.0f}% of AHT</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${sell_cost/1000:.0f}K/mo</span>'
-        '</div>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${sell_cost / 1000:.0f}K/mo</span>'
+        "</div>"
         '<div style="display:grid;grid-template-columns:1fr 120px 100px;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Cost to Retain <span style="color:#94A3B8;font-weight:500;">(cross-cutting)</span></span>'
         f'<span style="font-size:0.8rem;color:#64748B;font-weight:600;text-align:center;">{retain_time_pct:.0f}% of AHT</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${retain_cost/1000:.0f}K/mo</span>'
-        '</div>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;text-align:right;">${retain_cost / 1000:.0f}K/mo</span>'
+        "</div>"
         '<div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;margin-top:4px;border-top:2px solid #0F172A;">'
         '<span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748B;">Total Monthly Cost</span>'
-        f'<span style="font-size:1.6rem;font-weight:800;color:#DC2626;">${base/1000:.0f}K</span>'
-        '</div>'
+        f'<span style="font-size:1.6rem;font-weight:800;color:#DC2626;">${base / 1000:.0f}K</span>'
+        "</div>"
         f'<div class="data-footnote">* Dataset avg AHT = {aht_secs}s. '
-        f'Enterprise calls typically 600–1,100s — multiply $ figures by your AHT ÷ {aht_secs} '
-        f'for a live deployment estimate. Serve/Sell/Retain split is computed only from calls that '
-        f'passed the Data Quality Gate (see QA & Pipeline Health tab) — phase-time data on excluded '
-        f'calls never touches this allocation.</div>'
-        '</div>'
+        f"Enterprise calls typically 600–1,100s — multiply $ figures by your AHT ÷ {aht_secs} "
+        f"for a live deployment estimate. Serve/Sell/Retain split is computed only from calls that "
+        f"passed the Data Quality Gate (see QA & Pipeline Health tab) — phase-time data on excluded "
+        f"calls never touches this allocation.</div>"
+        "</div>"
     )
     _right_panel = (
         '<div style="background:#FFFFFF;border-radius:14px;padding:24px 26px;'
         'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-top:20px;">'
         '<div style="font-size:0.95rem;font-weight:800;color:#DC2626;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">AI Recovery Opportunity</div>'
-        f'<div style="font-size:0.75rem;color:#64748B;font-style:italic;margin-bottom:14px;">Savings vs ${base/1000:.0f}K/month baseline · forecast at {vol:,} calls/month · from {n_calls}-call analysis</div>'
+        f'<div style="font-size:0.75rem;color:#64748B;font-style:italic;margin-bottom:14px;">Savings vs ${base / 1000:.0f}K/month baseline · forecast at {vol:,} calls/month · from {n_calls}-call analysis</div>'
         '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Contacts resolvable without a human</span>'
         f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">{total_auto:.0f}% of calls</span>'
-        '</div>'
+        "</div>"
         '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid #F1F5F9;">'
         f'<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Monthly saving at {vol:,} volume</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${opp/1000:.0f}K of ${base/1000:.0f}K</span>'
-        '</div>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${opp / 1000:.0f}K of ${base / 1000:.0f}K</span>'
+        "</div>"
         '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;">'
         '<span style="font-size:0.88rem;color:#0F172A;font-weight:600;">Annual cost recovery</span>'
-        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${annual/1e6:.1f}M / year</span>'
-        '</div>'
+        f'<span style="font-size:1.1rem;font-weight:800;color:#0F172A;">${annual / 1e6:.1f}M / year</span>'
+        "</div>"
         f'<div class="data-footnote">* Savings % are based on call classification from the dataset. '
-        f'Absolute $ scale with your actual AHT and call volume — see dataset note above.</div>'
-        '</div>'
+        f"Absolute $ scale with your actual AHT and call volume — see dataset note above.</div>"
+        "</div>"
     )
 
     if is_demo:
-        st.markdown("""<div class="callout" style="margin-top:14px;">
+        st.markdown(
+            """<div class="callout" style="margin-top:14px;">
           <strong>Demo mode.</strong> Run <code>python run_pipeline.py</code> to replace with live results.
-        </div>""", unsafe_allow_html=True)
+        </div>""",
+            unsafe_allow_html=True,
+        )
 
     # ── Print / Export button ─────────────────────────────────────
     st.markdown(
         '<div style="display:flex;justify-content:flex-end;margin-top:12px;">'
         '<button onclick="window.print()" style="'
-        'background:#0F172A;color:#FFFFFF;border:none;border-radius:8px;'
-        'padding:8px 18px;font-size:0.75rem;font-weight:700;letter-spacing:0.06em;'
+        "background:#0F172A;color:#FFFFFF;border:none;border-radius:8px;"
+        "padding:8px 18px;font-size:0.75rem;font-weight:700;letter-spacing:0.06em;"
         'text-transform:uppercase;cursor:pointer;font-family:Inter,sans-serif;">'
-        '&#8595; Export PDF</button></div>',
+        "&#8595; Export PDF</button></div>",
         unsafe_allow_html=True,
     )
 
     # ── TOP-LEVEL NARRATIVE TABS ────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs(["Cost to Serve", "Automation Strategy", "QA & Pipeline Health", "Live Pipeline Demo"])
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["Cost to Serve", "Automation Strategy", "QA & Pipeline Health", "Live Pipeline Demo"]
+    )
 
     # ════════════════════════════════════════════════════════════════
     # TAB 1 — COST TO SERVE
@@ -1603,8 +1809,8 @@ def main():
             st.markdown(
                 f'<div class="data-disclaimer">'
                 f'<div class="data-disclaimer-icon">⚠️</div>'
-                f'<div><strong>Data quality notice —</strong> {html.escape(aht_disclaimer)}</div>'
-                f'</div>',
+                f"<div><strong>Data quality notice —</strong> {html.escape(aht_disclaimer)}</div>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -1623,13 +1829,15 @@ def main():
                     seen.add(tier)
                     chips += (
                         f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
-                        f'font-size:0.68rem;font-weight:700;background:{color}22;color:{color};'
+                        f"font-size:0.68rem;font-weight:700;background:{color}22;color:{color};"
                         f'border:1px solid {color}44;margin-right:5px;margin-bottom:4px;">'
-                        f'{tier}</span>'
+                        f"{tier}</span>"
                     )
             st.markdown(f"<div style='margin-bottom:8px;'>{chips}</div>", unsafe_allow_html=True)
             if ic_clean:
-                st.plotly_chart(chart_issue_mix(ic_clean, n_calls), use_container_width=True, key="issue_mix")
+                st.plotly_chart(
+                    chart_issue_mix(ic_clean, n_calls), use_container_width=True, key="issue_mix"
+                )
 
         with col_phase:
             st.markdown(
@@ -1644,43 +1852,49 @@ def main():
                     seen.add(ptype)
                     chips += (
                         f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
-                        f'font-size:0.68rem;font-weight:700;background:{color}22;color:{color};'
+                        f"font-size:0.68rem;font-weight:700;background:{color}22;color:{color};"
                         f'border:1px solid {color}44;margin-right:5px;margin-bottom:4px;">'
-                        f'{ptype}</span>'
+                        f"{ptype}</span>"
                     )
             st.markdown(f"<div style='margin-bottom:8px;'>{chips}</div>", unsafe_allow_html=True)
             if phases:
                 st.plotly_chart(chart_phases(phases), use_container_width=True, key="phase_time")
 
-        disc_pct_str = f"{disc_secs/total_secs*100:.0f}%"
-        diag_pct_str = f"{diag_secs/total_secs*100:.0f}%"
-        st.markdown(f"""
+        disc_pct_str = f"{disc_secs / total_secs * 100:.0f}%"
+        diag_pct_str = f"{diag_secs / total_secs * 100:.0f}%"
+        st.markdown(
+            f"""
         <div class="callout amber">
-          <strong>Discovery and Diagnosis account for {(disc_secs+diag_secs)/total_secs*100:.0f}%
+          <strong>Discovery and Diagnosis account for {(disc_secs + diag_secs) / total_secs * 100:.0f}%
           of every call</strong>
           ({disc_pct_str} customers explaining their issue + {diag_pct_str} agents investigating it)
           on a {aht_min:.1f}-minute average call.
           AI agents pre-empt Discovery with proactive outreach; grounded knowledge bases
           cut Diagnosis time. Together they compress the majority of call handle time.
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-        disp     = dist.get("agent_disproportionate_phase", {})
+        disp = dist.get("agent_disproportionate_phase", {})
         diag_ovr = float(disp.get("diagnosis", 0))
         disc_ovr = float(disp.get("discovery", 0))
         if diag_ovr + disc_ovr > 15:
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div class="callout" style="margin-top:10px;">
               <strong>Phase overrun detected:</strong> &nbsp;
               {diag_ovr:.0f}% of calls had agents over-spending in Diagnosis and
               {disc_ovr:.0f}% in Discovery — knowledge gaps and tool friction are inflating AHT.
               These are the highest-ROI targets for AI-assisted agent tooling.
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
         # ── PHASE COST INTELLIGENCE ────────────────────────────────
         _sec("Phase Cost Intelligence — Call Anatomy by Type")
-        _dd_pct  = 27 + 19
+        _dd_pct = 27 + 19
         _dd_cost = round(cpp * _dd_pct / 100, 2)
 
         phase_html = (
@@ -1692,7 +1906,7 @@ def main():
             f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#10B981"></div><span class="cts-swatch-label">Resolution — Value delivery</span></div>'
             f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#EF4444"></div><span class="cts-swatch-label">Hold — Dead time</span></div>'
             f'<div class="cts-legend-item"><div class="cts-swatch" style="background:#3B82F6"></div><span class="cts-swatch-label">Upsell — Revenue</span></div>'
-            f'</div>'
+            f"</div>"
             f'<div class="cts-eyebrow">All Calls — Average across {n_calls:,} transcripts</div>'
             f'<div class="cts-hero-wrap"><div class="cts-hero-row">'
             f'<div class="cts-hero-label"><div class="cts-hero-name">All Calls</div><div class="cts-hero-n">n = {n_calls} · avg</div></div>'
@@ -1704,21 +1918,20 @@ def main():
             f'<div class="cts-seg" style="background:#EF4444;width:0.9%" title="Hold 1%"></div>'
             f'<div class="cts-seg" style="background:#3B82F6;width:9.7%"><span class="sp">10%</span><span class="sn">Upsell</span></div>'
             f'<div class="cts-seg" style="background:#CBD5E1;opacity:0.55;width:14%"><span class="sp">14%</span><span class="sn">Closing</span></div>'
-            f'</div></div>'
+            f"</div></div>"
             f'<div class="cts-hero-meta"><div class="cts-hero-s">{aht_secs}s</div>'
             f'<div class="cts-hero-c">${cpp:.2f} / call</div>'
-            f'<div class="cts-hero-m">${base/1000:.0f}K / month</div></div>'
-            f'</div></div>'
+            f'<div class="cts-hero-m">${base / 1000:.0f}K / month</div></div>'
+            f"</div></div>"
             f'<div class="cts-callout"><div class="cts-callout-icon">⚡</div><div>'
             f'<div class="cts-callout-head">Discovery + Diagnosis = {_dd_pct}% of every call — ${_dd_cost:.2f} of the ${cpp:.2f} unit cost</div>'
             f'<div class="cts-callout-text">This is the highest-leverage cost reduction target in the portfolio. '
-            f'<b>Proactive outreach eliminates Discovery entirely</b> for preventable contacts — the customer never calls because the issue is resolved before it forms. '
-            f'<b>Agentic AI compresses Diagnosis to near-zero</b> for deterministic issues — the agent already knows the answer before the customer finishes explaining. '
-            f'Together these two interventions address the majority of care cost.</div>'
-            f'</div></div>'
+            f"<b>Proactive outreach eliminates Discovery entirely</b> for preventable contacts — the customer never calls because the issue is resolved before it forms. "
+            f"<b>Agentic AI compresses Diagnosis to near-zero</b> for deterministic issues — the agent already knows the answer before the customer finishes explaining. "
+            f"Together these two interventions address the majority of care cost.</div>"
+            f"</div></div>"
             f'<div class="cts-eyebrow" style="margin-bottom:16px;">Breakdown by Call Type</div>'
             f'<div class="cts-grid">'
-
             # TECHNICAL
             f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#F97316,#F59E0B)"></div><div class="cts-body">'
             f'<div class="cts-card-head"><div><div class="cts-card-title">Technical</div><div class="cts-card-n">n=29 · 37% of calls · 37,180/mo</div></div>'
@@ -1731,8 +1944,7 @@ def main():
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:2%"></div></div><div class="cts-phase-pct">2%</div><div class="cts-phase-cost">$0.10</div></div>'
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:14%"></div></div><div class="cts-phase-pct">14%</div><div class="cts-phase-cost">$0.86</div></div>'
             f'<div class="cts-badge-row"><span class="cts-badge" style="background:#FEF3C7;color:#92400E">Diagnosis overrun</span><span class="cts-badge" style="background:#F5F3FF;color:#5B21B6">28% Preventable</span></div>'
-            f'</div></div>'
-
+            f"</div></div>"
             # DEVICE
             f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#F97316,#EF4444)"></div><div class="cts-body">'
             f'<div class="cts-card-head"><div><div class="cts-card-title">Device</div><div class="cts-card-n">n=19 · 24% of calls · 24,360/mo</div></div>'
@@ -1745,8 +1957,7 @@ def main():
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:4%"></div></div><div class="cts-phase-pct">4%</div><div class="cts-phase-cost">$0.23</div></div>'
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:13%"></div></div><div class="cts-phase-pct">13%</div><div class="cts-phase-cost">$0.78</div></div>'
             f'<div class="cts-badge-row"><span class="cts-badge" style="background:#FEF2F2;color:#991B1B">Highest cost per call</span><span class="cts-badge" style="background:#F5F3FF;color:#5B21B6">63% automatable</span></div>'
-            f'</div></div>'
-
+            f"</div></div>"
             # INFORMATION
             f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#10B981,#3B82F6)"></div><div class="cts-body">'
             f'<div class="cts-card-head"><div><div class="cts-card-title">Information</div><div class="cts-card-n">n=14 · 18% of calls · 17,950/mo</div></div>'
@@ -1759,8 +1970,7 @@ def main():
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:27%"></div></div><div class="cts-phase-pct" style="color:#2563EB">27%</div><div class="cts-phase-cost" style="color:#2563EB">$1.64</div></div>'
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:11%"></div></div><div class="cts-phase-pct">11%</div><div class="cts-phase-cost">$0.65</div></div>'
             f'<div class="cts-badge-row"><span class="cts-badge" style="background:#ECFDF5;color:#065F46">Low diagnosis · fast resolution</span><span class="cts-badge" style="background:#EFF6FF;color:#1E40AF">Strong upsell yield</span></div>'
-            f'</div></div>'
-
+            f"</div></div>"
             # BILLING
             f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#10B981,#7C3AED)"></div><div class="cts-body">'
             f'<div class="cts-card-head"><div><div class="cts-card-title">Billing</div><div class="cts-card-n">n=5 · 6% of calls · 6,410/mo</div></div>'
@@ -1772,8 +1982,7 @@ def main():
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#10B981"></div>Resolution</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#10B981;width:29%"></div></div><div class="cts-phase-pct" style="color:#059669">29%</div><div class="cts-phase-cost">$1.72</div></div>'
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:20%"></div></div><div class="cts-phase-pct">20%</div><div class="cts-phase-cost">$1.21</div></div>'
             f'<div class="cts-badge-row"><span class="cts-badge" style="background:#ECFDF5;color:#065F46">Below-avg diagnosis</span><span class="cts-badge" style="background:#F5F3FF;color:#5B21B6">Agentic AI candidate</span></div>'
-            f'</div></div>'
-
+            f"</div></div>"
             # PLAN
             f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#3B82F6,#7C3AED)"></div><div class="cts-body">'
             f'<div class="cts-card-head"><div><div class="cts-card-title">Plan</div><div class="cts-card-n">n=5 · 6% of calls · 6,410/mo</div></div>'
@@ -1786,8 +1995,7 @@ def main():
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#3B82F6"></div>Upsell</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#3B82F6;width:29%"></div></div><div class="cts-phase-pct" style="color:#2563EB">29%</div><div class="cts-phase-cost" style="color:#2563EB">$1.74</div></div>'
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:19%"></div></div><div class="cts-phase-pct">19%</div><div class="cts-phase-cost">$1.12</div></div>'
             f'<div class="cts-badge-row"><span class="cts-badge" style="background:#EFF6FF;color:#1E40AF">High upsell revenue phase</span><span class="cts-badge" style="background:#FEF3C7;color:#92400E">Complex resolution drives cost</span></div>'
-            f'</div></div>'
-
+            f"</div></div>"
             # ACCOUNT
             f'<div class="cts-card"><div class="cts-accent" style="background:linear-gradient(90deg,#94A3B8,#64748B)"></div><div class="cts-body">'
             f'<div class="cts-card-head"><div><div class="cts-card-title">Account</div><div class="cts-card-n">n=4 · 5% of calls · 5,130/mo</div></div>'
@@ -1800,13 +2008,12 @@ def main():
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#EF4444"></div>Hold</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#EF4444;width:4%"></div></div><div class="cts-phase-pct">4%</div><div class="cts-phase-cost">$0.22</div></div>'
             f'<div class="cts-phase-row"><div class="cts-phase-name"><div class="cts-phase-dot" style="background:#CBD5E1;opacity:.6"></div>Closing</div><div class="cts-micro-track"><div class="cts-micro-fill" style="background:#CBD5E1;width:11%"></div></div><div class="cts-phase-pct">11%</div><div class="cts-phase-cost">$0.66</div></div>'
             f'<div class="cts-badge-row"><span class="cts-badge" style="background:#ECFDF5;color:#065F46">Lowest cost per call</span><span class="cts-badge" style="background:#F8FAFC;color:#475569">Self-serve candidate</span></div>'
-            f'</div></div>'
-
-            f'</div>'  # /cts-grid
+            f"</div></div>"
+            f"</div>"  # /cts-grid
             f'<div class="data-footnote" style="margin-top:16px;">* Phase % are averages from {n_calls}-transcript dataset. '
-            f'Call-type figures are directional given small sub-sample sizes (n=4–29). '
-            f'AHT = {aht_secs}s dataset avg — see dataset note above for enterprise scale factors.</div>'
-            f'</div>'
+            f"Call-type figures are directional given small sub-sample sizes (n=4–29). "
+            f"AHT = {aht_secs}s dataset avg — see dataset note above for enterprise scale factors.</div>"
+            f"</div>"
         )
         st.markdown(phase_html, unsafe_allow_html=True)
 
@@ -1822,8 +2029,10 @@ def main():
             unsafe_allow_html=True,
         )
 
-        drilldown  = data.get("phase_drilldown", {})
-        dd_phases  = [p for p in ["Discovery", "Diagnosis", "Resolution", "Upsell"] if drilldown.get(p)]
+        drilldown = data.get("phase_drilldown", {})
+        dd_phases = [
+            p for p in ["Discovery", "Diagnosis", "Resolution", "Upsell"] if drilldown.get(p)
+        ]
 
         if dd_phases:
             _dd_tabs = st.tabs(dd_phases)
@@ -1835,7 +2044,8 @@ def main():
                     top_intent = top["intent"].replace("_", " ").title()
                     stall_note = (
                         f", {top['stall_pct']:.0f}% flagged as agent stall"
-                        if top["stall_pct"] > 0 else ""
+                        if top["stall_pct"] > 0
+                        else ""
                     )
                     st.markdown(
                         f"<div style='font-size:0.85rem;color:#475569;margin-bottom:8px;'>"
@@ -1843,13 +2053,19 @@ def main():
                         f"<strong style='color:{color};'>{_dd_phase}</strong> — averaging {top['avg_seconds']:.0f}s ({top['calls']} calls{stall_note}).</div>",
                         unsafe_allow_html=True,
                     )
-                    st.plotly_chart(chart_drilldown_intents(rows, color), use_container_width=True, key=f"dd_{_dd_phase}")
+                    st.plotly_chart(
+                        chart_drilldown_intents(rows, color),
+                        use_container_width=True,
+                        key=f"dd_{_dd_phase}",
+                    )
         else:
-            st.markdown('''<div class="callout" style="margin-top:4px;">
+            st.markdown(
+                """<div class="callout" style="margin-top:4px;">
               Phase drill-down requires <code>phase_drilldown</code> in <code>summary.json</code> —
               run <code>python merge_outputs.py</code> to regenerate.
-            </div>''', unsafe_allow_html=True)
-
+            </div>""",
+                unsafe_allow_html=True,
+            )
 
     with tab2:
         st.markdown(_right_panel, unsafe_allow_html=True)
@@ -1858,21 +2074,20 @@ def main():
         _sec("Resolution Strategy — Proactive · Agentic · Human")
         _prev_cost = round(prevent_pct / 100 * base)
         _auto_cost = round(automate_pct / 100 * base)
-        _hum_cost  = round(human_pct / 100 * base)
+        _hum_cost = round(human_pct / 100 * base)
         _prev_save = cl.get("proactive_care_savings_usd", 0)
-        _ss_save   = cl.get("self_serve_savings_usd", 0)
-        _ag_save   = cl.get("agentic_ai_savings_usd", 0)
+        _ss_save = cl.get("self_serve_savings_usd", 0)
+        _ag_save = cl.get("agentic_ai_savings_usd", 0)
         _auto_save = _ss_save + _ag_save
 
         pah_html = (
             f'<div style="padding:4px 0 20px;">'
             f'<div style="font-size:0.87rem;color:#334155;line-height:1.7;margin-bottom:20px;">'
-            f'Every care call falls into one of three resolution strategies. '
-            f'Targeting the right strategy determines whether cost is <strong>eliminated</strong>, '
-            f'<strong>automated</strong>, or <strong>optimised</strong>.'
-            f'</div>'
+            f"Every care call falls into one of three resolution strategies. "
+            f"Targeting the right strategy determines whether cost is <strong>eliminated</strong>, "
+            f"<strong>automated</strong>, or <strong>optimised</strong>."
+            f"</div>"
             f'<div class="pah-row">'
-
             # PREVENT
             f'<div class="pah-card"><div class="pah-accent" style="background:linear-gradient(90deg,#10B981,#059669)"></div>'
             f'<div class="pah-body">'
@@ -1880,12 +2095,11 @@ def main():
             f'<div class="pah-pct" style="color:#059669">{prevent_pct:.0f}%</div>'
             f'<div class="pah-label">Proactive Resolution</div>'
             f'<div class="pah-sub">Customer calls because we didn\'t reach them first. Eliminate the contact entirely before it forms.</div>'
-            f'<div class="pah-cost-row"><span class="pah-cost-label">Addressable cost / mo</span><span class="pah-cost-value" style="color:#0F172A">${_prev_cost/1000:.0f}K</span></div>'
-            f'<div class="pah-cost-row"><span class="pah-cost-label">Net saving opportunity</span><span class="pah-cost-value" style="color:#059669">${_prev_save/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Addressable cost / mo</span><span class="pah-cost-value" style="color:#0F172A">${_prev_cost / 1000:.0f}K</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Net saving opportunity</span><span class="pah-cost-value" style="color:#059669">${_prev_save / 1000:.0f}K / mo</span></div>'
             f'<div class="pah-action"><div class="pah-action-eyebrow">Recommended Action</div>'
             f'<div class="pah-action-text">Proactive outreach — push notifications, pre-emptive SMS, bill alerts — before the customer needs to call</div></div>'
-            f'</div></div>'
-
+            f"</div></div>"
             # AUTOMATE
             f'<div class="pah-card"><div class="pah-accent" style="background:linear-gradient(90deg,#3B82F6,#7C3AED)"></div>'
             f'<div class="pah-body">'
@@ -1893,13 +2107,12 @@ def main():
             f'<div class="pah-pct" style="color:#2563EB">{automate_pct:.0f}%</div>'
             f'<div class="pah-label">AI Agent Resolution</div>'
             f'<div class="pah-sub">Customer calls with a deterministic issue. Deploy AI to resolve without a live human agent.</div>'
-            f'<div class="pah-cost-row"><span class="pah-cost-label">Self-serve ({selfserve_pct:.0f}%) addressable</span><span class="pah-cost-value" style="color:#0F172A">${round(selfserve_pct/100*base)/1000:.0f}K / mo</span></div>'
-            f'<div class="pah-cost-row"><span class="pah-cost-label">Agentic AI ({agentic_pct:.1f}%) addressable</span><span class="pah-cost-value" style="color:#0F172A">${round(agentic_pct/100*base)/1000:.0f}K / mo</span></div>'
-            f'<div class="pah-cost-row"><span class="pah-cost-label">Net saving opportunity</span><span class="pah-cost-value" style="color:#2563EB">${_auto_save/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Self-serve ({selfserve_pct:.0f}%) addressable</span><span class="pah-cost-value" style="color:#0F172A">${round(selfserve_pct / 100 * base) / 1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Agentic AI ({agentic_pct:.1f}%) addressable</span><span class="pah-cost-value" style="color:#0F172A">${round(agentic_pct / 100 * base) / 1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Net saving opportunity</span><span class="pah-cost-value" style="color:#2563EB">${_auto_save / 1000:.0f}K / mo</span></div>'
             f'<div class="pah-action"><div class="pah-action-eyebrow">Recommended Action</div>'
             f'<div class="pah-action-text">Upgrade IVR to intent-aware AI, self-serve chatbot for top issue types, agentic routing for complex deterministic flows</div></div>'
-            f'</div></div>'
-
+            f"</div></div>"
             # HUMAN
             f'<div class="pah-card"><div class="pah-accent" style="background:linear-gradient(90deg,#94A3B8,#64748B)"></div>'
             f'<div class="pah-body">'
@@ -1907,14 +2120,12 @@ def main():
             f'<div class="pah-pct" style="color:#475569">{human_pct:.0f}%</div>'
             f'<div class="pah-label">Optimise for Efficiency</div>'
             f'<div class="pah-sub">Complex, empathy-critical, or compliance-governed calls. Human is the right channel.</div>'
-            f'<div class="pah-cost-row"><span class="pah-cost-label">Irreducible baseline cost</span><span class="pah-cost-value" style="color:#0F172A">${_hum_cost/1000:.0f}K / mo</span></div>'
+            f'<div class="pah-cost-row"><span class="pah-cost-label">Irreducible baseline cost</span><span class="pah-cost-value" style="color:#0F172A">${_hum_cost / 1000:.0f}K / mo</span></div>'
             f'<div class="pah-cost-row"><span class="pah-cost-label">Focus lever</span><span class="pah-cost-value" style="color:#475569">AHT reduction</span></div>'
             f'<div class="pah-action"><div class="pah-action-eyebrow">Recommended Action</div>'
             f'<div class="pah-action-text">Skills-based routing, real-time agent assist, Diagnosis-phase tooling, FCR improvement programmes</div></div>'
-            f'</div></div>'
-
-            f'</div>'  # /pah-row
-
+            f"</div></div>"
+            f"</div>"  # /pah-row
             # Split bar
             f'<div class="cts-eyebrow">Portfolio split — {n_calls:,} calls analysed</div>'
             f'<div class="pah-split-bar">'
@@ -1922,17 +2133,17 @@ def main():
             f'<div class="pah-split-seg" style="background:#3B82F6;width:{selfserve_pct:.1f}%"><span>{selfserve_pct:.0f}%</span><span class="psn">Self-serve</span></div>'
             f'<div class="pah-split-seg" style="background:#7C3AED;width:{agentic_pct:.1f}%" title="Agentic {agentic_pct:.1f}%"></div>'
             f'<div class="pah-split-seg" style="background:#94A3B8;width:{human_pct:.1f}%"><span>{human_pct:.0f}%</span><span class="psn">Human</span></div>'
-            f'</div>'
+            f"</div>"
             f'<div class="pah-split-legend">'
-            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#10B981"></div>Prevent {prevent_pct:.0f}% — ${_prev_save/1000:.0f}K/mo saveable</div>'
-            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#3B82F6"></div>Self-serve {selfserve_pct:.0f}% — ${_ss_save/1000:.0f}K/mo saveable</div>'
-            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#7C3AED"></div>Agentic {agentic_pct:.1f}% — ${_ag_save/1000:.0f}K/mo saveable</div>'
-            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#94A3B8"></div>Human required {human_pct:.0f}% — ${_hum_cost/1000:.0f}K/mo baseline</div>'
-            f'</div>'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#10B981"></div>Prevent {prevent_pct:.0f}% — ${_prev_save / 1000:.0f}K/mo saveable</div>'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#3B82F6"></div>Self-serve {selfserve_pct:.0f}% — ${_ss_save / 1000:.0f}K/mo saveable</div>'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#7C3AED"></div>Agentic {agentic_pct:.1f}% — ${_ag_save / 1000:.0f}K/mo saveable</div>'
+            f'<div class="pah-split-legend-item"><div class="cts-swatch" style="background:#94A3B8"></div>Human required {human_pct:.0f}% — ${_hum_cost / 1000:.0f}K/mo baseline</div>'
+            f"</div>"
             f'<div class="data-footnote" style="margin-top:16px;">* Segment classifications derived from call-level extraction across {n_calls} transcripts. '
-            f'Dollar figures based on dataset avg AHT of {aht_secs}s — scale proportionally for enterprise deployments. '
-            f'See dataset note above.</div>'
-            f'</div>'
+            f"Dollar figures based on dataset avg AHT of {aht_secs}s — scale proportionally for enterprise deployments. "
+            f"See dataset note above.</div>"
+            f"</div>"
         )
         st.markdown(pah_html, unsafe_allow_html=True)
 
@@ -1954,29 +2165,38 @@ def main():
         if prevent_pct > 0:
             segments_display.append(("prevent", prevent_pct))
         segments_display.append(("automate", automate_pct))
-        segments_display.append(("human",    human_pct))
+        segments_display.append(("human", human_pct))
 
         ncols = len(segments_display)
-        cols  = st.columns(ncols)
+        cols = st.columns(ncols)
 
         seg_configs = {
             "prevent": (
-                "PREVENT",        "#CCFBF1", "#0F766E", TEAL,
-                f"${cl['proactive_care_savings_usd']/1000:.0f}K / month",
+                "PREVENT",
+                "#CCFBF1",
+                "#0F766E",
+                TEAL,
+                f"${cl['proactive_care_savings_usd'] / 1000:.0f}K / month",
                 "Customer shouldn't have needed to call. Detect the trigger event first — "
                 "outage, bill spike, data exhaustion — and push a proactive alert. "
                 "Eliminates the contact before it starts.",
             ),
             "automate": (
-                "AUTOMATE",       "#EDE9FE", "#6D28D9", PURPLE,
-                f"${(cl['self_serve_savings_usd']+cl['agentic_ai_savings_usd'])/1000:.0f}K / month",
+                "AUTOMATE",
+                "#EDE9FE",
+                "#6D28D9",
+                PURPLE,
+                f"${(cl['self_serve_savings_usd'] + cl['agentic_ai_savings_usd']) / 1000:.0f}K / month",
                 f"Deterministic issue — AI agent resolves end-to-end: bill explanation, "
                 f"plan enquiry, order status, payments, balance check. "
                 f"({selfserve_pct:.0f}% self-serve · {agentic_pct:.0f}% full AI agent)",
             ),
             "human": (
-                "HUMAN REQUIRED", "#DBEAFE", "#1D4ED8", BLUE,
-                f"${(base - opp)/1000:.0f}K / month — irreducible",
+                "HUMAN REQUIRED",
+                "#DBEAFE",
+                "#1D4ED8",
+                BLUE,
+                f"${(base - opp) / 1000:.0f}K / month — irreducible",
                 "Complex faults, billing disputes, complaints, retention — "
                 "judgment-intensive situations that need an empathetic skilled agent. "
                 "Concentrate your human investment here.",
@@ -1988,9 +2208,16 @@ def main():
             n_seg = round(n_calls * pct / 100)
             with col:
                 st.markdown(
-                    _seg(badge, bbg, bfg, pct,
-                         f"{n_seg} of {n_calls} calls analysed",
-                         money, money_clr, desc),
+                    _seg(
+                        badge,
+                        bbg,
+                        bfg,
+                        pct,
+                        f"{n_seg} of {n_calls} calls analysed",
+                        money,
+                        money_clr,
+                        desc,
+                    ),
                     unsafe_allow_html=True,
                 )
 
@@ -1998,7 +2225,8 @@ def main():
         if prevent_pct == 0 and ic_clean:
             tech_pct = ic_clean.get("technical", 0) / sum(ic_clean.values()) * 100
             if tech_pct > 0:
-                st.markdown(f"""
+                st.markdown(
+                    f"""
                 <div class="callout teal" style="margin-top:14px;">
                   <strong>Proactive Care opportunity not yet activated.</strong> &nbsp;
                   {tech_pct:.0f}% of analysed contacts are technical issues —
@@ -2007,7 +2235,9 @@ def main():
                   Implementing event-driven alerts could move an estimated 15–25% of contacts
                   out of the care queue entirely.
                 </div>
-                """, unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
         # Stacked bar
         seg_bar_data = []
@@ -2017,24 +2247,29 @@ def main():
         seg_bar_data.append(("Human Agent Required", human_pct, BLUE))
 
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-        st.plotly_chart(chart_segment_bar(seg_bar_data), use_container_width=True, key="segment_bar")
+        st.plotly_chart(
+            chart_segment_bar(seg_bar_data), use_container_width=True, key="segment_bar"
+        )
 
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="callout green" style="margin-top:6px;">
           <strong>Business case from {n_calls:,} calls:</strong> &nbsp;
           {total_auto:.0f}% of your contact volume — {round(vol * total_auto / 100):,} calls/month
           at scale — is addressable through autonomous AI.
           At ${cpp:.2f} per call that is
-          <strong>${opp/1000:.0f}K/month · ${annual/1e6:.1f}M/year</strong>
+          <strong>${opp / 1000:.0f}K/month · ${annual / 1e6:.1f}M/year</strong>
           in recoverable cost, before any improvement in customer experience is counted.
         </div>
         <div class="data-footnote" style="margin-top:8px;">
-          * Dollar figures derived from dataset avg AHT of {aht_secs}s ({aht_secs/60:.1f} min).
+          * Dollar figures derived from dataset avg AHT of {aht_secs}s ({aht_secs / 60:.1f} min).
           Enterprise care calls typically run 600–1,100s — cost opportunity scales proportionally
           with your actual handle time. Phase classifications (Prevent / Automate / Human) are
           independent of AHT and remain valid at any call length.
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         # ═══════════════════════════════════════════════════════════════
         # 4 — WHICH AGENTS TO BUILD
@@ -2051,7 +2286,7 @@ def main():
                 tier_badge = (
                     f'<span style="display:inline-block;padding:2px 9px;border-radius:12px;'
                     f'font-size:0.7rem;font-weight:700;background:{bg};color:{fg};">'
-                    f'{r["tier"]}</span>'
+                    f"{r['tier']}</span>"
                 )
                 effort_clr = "#059669" if r["effort"] == "Low" else "#D97706"
                 road_html += (
@@ -2060,11 +2295,12 @@ def main():
                     f"<td style='text-align:right;color:#64748B;'>{r['monthly_calls']:,}</td>"
                     f"<td>{tier_badge}</td>"
                     f"<td style='text-align:right;font-weight:700;color:#059669;'>"
-                    f"${r['monthly_saving']/1000:.0f}K</td>"
+                    f"${r['monthly_saving'] / 1000:.0f}K</td>"
                     f"<td style='text-align:center;font-weight:600;color:{effort_clr};'>{r['effort']}</td>"
                     f"</tr>"
                 )
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <table class="road-table">
               <thead><tr>
                 <th>Call Intent</th>
@@ -2075,19 +2311,23 @@ def main():
               </tr></thead>
               <tbody>{road_html}</tbody>
             </table>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
             st.markdown(
                 f"<p style='font-size:0.7rem;color:#94A3B8;margin-top:8px;'>"
                 f"Volumes estimated from {n_calls}-call sample extrapolated to {vol:,}/month. "
-                f"Total addressable: <strong>${total_rm_saving/1000:.0f}K/month</strong>. "
+                f"Total addressable: <strong>${total_rm_saving / 1000:.0f}K/month</strong>. "
                 f"Validate against your live IVR taxonomy before build. "
                 f"* Saving figures based on dataset avg AHT of {aht_secs}s — "
                 f"scale by your actual AHT ÷ {aht_secs} for a live deployment estimate.</p>",
                 unsafe_allow_html=True,
             )
         else:
-            st.markdown('<div class="callout">Run the pipeline to populate the agent roadmap.</div>',
-                        unsafe_allow_html=True)
+            st.markdown(
+                '<div class="callout">Run the pipeline to populate the agent roadmap.</div>',
+                unsafe_allow_html=True,
+            )
 
         # ═══════════════════════════════════════════════════════════════
         # ROI CALCULATOR
@@ -2101,52 +2341,59 @@ def main():
         )
         rc1, rc2, rc3 = st.columns(3)
         with rc1:
-            roi_vol = st.slider("Monthly call volume", 10_000, 2_000_000, vol, step=10_000, format="%d")
+            roi_vol = st.slider(
+                "Monthly call volume", 10_000, 2_000_000, vol, step=10_000, format="%d"
+            )
         with rc2:
-            roi_cpp = st.slider("Cost per call ($)", 3.0, 20.0, float(cpp), step=0.25, format="$%.2f")
+            roi_cpp = st.slider(
+                "Cost per call ($)", 3.0, 20.0, float(cpp), step=0.25, format="$%.2f"
+            )
         with rc3:
             roi_defl = st.slider(
-                "Deflection rate achieved (%)", 10, 90,
-                int(round(min(total_auto * 0.8, 80))), step=5,
+                "Deflection rate achieved (%)",
+                10,
+                90,
+                int(round(min(total_auto * 0.8, 80))),
+                step=5,
             )
-        roi_base     = roi_vol * roi_cpp
+        roi_base = roi_vol * roi_cpp
         roi_deflected = roi_vol * roi_defl / 100
-        roi_saving   = roi_deflected * roi_cpp
-        roi_annual   = roi_saving * 12
-        roi_pct      = roi_saving / roi_base * 100 if roi_base else 0
+        roi_saving = roi_deflected * roi_cpp
+        roi_annual = roi_saving * 12
+        roi_pct = roi_saving / roi_base * 100 if roi_base else 0
         st.markdown(
             f'<div class="roi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px;">'
             f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
             f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #0F172A;">'
             f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Baseline Monthly Cost</div>'
-            f'<div style="font-size:2rem;font-weight:900;color:#0F172A;letter-spacing:-0.03em;">${roi_base/1000:.0f}K</div>'
+            f'<div style="font-size:2rem;font-weight:900;color:#0F172A;letter-spacing:-0.03em;">${roi_base / 1000:.0f}K</div>'
             f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">{roi_vol:,} calls × ${roi_cpp:.2f}</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
             f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #7C3AED;">'
             f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Calls Deflected / Month</div>'
             f'<div style="font-size:2rem;font-weight:900;color:#7C3AED;letter-spacing:-0.03em;">{roi_deflected:,.0f}</div>'
             f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">{roi_defl}% of {roi_vol:,}</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
             f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #059669;">'
             f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Monthly Saving</div>'
-            f'<div style="font-size:2rem;font-weight:900;color:#059669;letter-spacing:-0.03em;">${roi_saving/1000:.0f}K</div>'
+            f'<div style="font-size:2rem;font-weight:900;color:#059669;letter-spacing:-0.03em;">${roi_saving / 1000:.0f}K</div>'
             f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">{roi_pct:.0f}% of baseline</div>'
-            f'</div>'
+            f"</div>"
             f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 20px;'
             f'box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #CD040B;">'
             f'<div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:8px;">Annual Recovery</div>'
-            f'<div style="font-size:2rem;font-weight:900;color:#CD040B;letter-spacing:-0.03em;">${roi_annual/1e6:.1f}M</div>'
+            f'<div style="font-size:2rem;font-weight:900;color:#CD040B;letter-spacing:-0.03em;">${roi_annual / 1e6:.1f}M</div>'
             f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px;">at {roi_defl}% deflection rate</div>'
-            f'</div>'
-            f'</div>'
+            f"</div>"
+            f"</div>"
             f'<div class="data-footnote" style="margin-top:10px;">'
-            f'Deflection rate = share of contacts resolved without a live human agent. '
-            f'Industry benchmark: 30–50% IVR/digital; 60–70% with full agentic AI. '
-            f'This dataset classification ({total_auto:.0f}% addressable) is the theoretical ceiling. '
-            f'Default is set at 80% of that ceiling as a realistic first-year target.'
-            f'</div>',
+            f"Deflection rate = share of contacts resolved without a live human agent. "
+            f"Industry benchmark: 30–50% IVR/digital; 60–70% with full agentic AI. "
+            f"This dataset classification ({total_auto:.0f}% addressable) is the theoretical ceiling. "
+            f"Default is set at 80% of that ceiling as a realistic first-year target."
+            f"</div>",
             unsafe_allow_html=True,
         )
 
@@ -2155,14 +2402,14 @@ def main():
         # ═══════════════════════════════════════════════════════════════
         _sec("6 — Issue Tree: Call Type, Agent Activity & Build Order")
 
-        ib          = data.get("issue_breakdown", {"categories": [], "build_queue": []})
-        categories  = ib.get("categories", [])
+        ib = data.get("issue_breakdown", {"categories": [], "build_queue": []})
+        categories = ib.get("categories", [])
         queue_items = ib.get("build_queue", [])
 
         if not categories:
             st.markdown(
                 '<div class="callout">Issue-tree breakdown requires <code>issue_breakdown</code> in '
-                '<code>summary.json</code> — run <code>python merge_outputs.py</code> to regenerate.</div>',
+                "<code>summary.json</code> — run <code>python merge_outputs.py</code> to regenerate.</div>",
                 unsafe_allow_html=True,
             )
         else:
@@ -2187,19 +2434,19 @@ def main():
                     f'<div class="it-queue">'
                     f'<div class="it-queue-title">Recommended Build Order</div>'
                     f'<div class="it-queue-sub">Top {len(queue_items)} Prevent / Automate opportunities '
-                    f'across all call types, ranked by monthly $ impact at {vol:,} calls/month</div>'
-                    f'{queue_rows_html}'
+                    f"across all call types, ranked by monthly $ impact at {vol:,} calls/month</div>"
+                    f"{queue_rows_html}"
                     f'<div class="it-queue-total">'
                     f'<div class="it-queue-total-label">Top {len(queue_items)} combined</div>'
-                    f'<div class="it-queue-total-value">${total_dollars/1000:.0f}K/mo'
-                    f'<small>{total_pct}% of baseline</small></div>'
-                    f'</div>'
+                    f'<div class="it-queue-total-value">${total_dollars / 1000:.0f}K/mo'
+                    f"<small>{total_pct}% of baseline</small></div>"
+                    f"</div>"
                     f'<div class="data-footnote" style="margin-top:10px;">'
-                    f'* Monthly $ impact based on dataset avg AHT of {aht_secs}s. '
-                    f'At enterprise AHT of 600–1,100s these figures scale 4–7×. '
-                    f'Segment classifications (Prevent / Automate / Human) are AHT-independent.'
-                    f'</div>'
-                    f'</div>',
+                    f"* Monthly $ impact based on dataset avg AHT of {aht_secs}s. "
+                    f"At enterprise AHT of 600–1,100s these figures scale 4–7×. "
+                    f"Segment classifications (Prevent / Automate / Human) are AHT-independent."
+                    f"</div>"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -2207,16 +2454,16 @@ def main():
             st.markdown(
                 f'<div class="it-overview">'
                 f'<div class="it-overview-title">Full Picture &mdash; All {n_calls:,} Calls</div>'
-                f'<div class="it-overview-sub">How the ${base/1000:.0f}K/mo baseline splits across '
-                f'Prevent / Automate / Human</div>'
-                f'{_overview_bar_html(prevent_pct, automate_pct, human_pct, selfserve_pct, agentic_pct, base)}'
+                f'<div class="it-overview-sub">How the ${base / 1000:.0f}K/mo baseline splits across '
+                f"Prevent / Automate / Human</div>"
+                f"{_overview_bar_html(prevent_pct, automate_pct, human_pct, selfserve_pct, agentic_pct, base)}"
                 f'<div class="it-legend">'
                 f'<span><span class="it-dot it-dot-simple"></span>Simple / deterministic '
-                f'(agent action, self-serve guidance)</span>'
+                f"(agent action, self-serve guidance)</span>"
                 f'<span><span class="it-dot it-dot-complex"></span>Complex / judgment '
-                f'(escalated, workaround, unresolved)</span>'
-                f'</div>'
-                f'</div>',
+                f"(escalated, workaround, unresolved)</span>"
+                f"</div>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -2230,8 +2477,8 @@ def main():
                 st.markdown(
                     f'<div class="it-compact-card">'
                     f'<div class="it-compact-title">Other Call Types</div>'
-                    f'{compact_rows_html}'
-                    f'</div>',
+                    f"{compact_rows_html}"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -2241,12 +2488,42 @@ def main():
         _sec("5 — Actual Performance")
 
         perf_metrics = [
-            ("First Call Resolution",  f"{kpis.get('fcr_rate_pct', 0):.0f}%",       GREEN,  "Calls resolved without a repeat contact"),
-            ("Avg Handle Time",        f"{kpis.get('avg_handle_time_minutes', 0):.1f} min", AMBER, "Average duration per call"),
-            ("Escalation Rate",        f"{kpis.get('escalation_rate_pct', 0):.0f}%", RED,    "Calls requiring senior / specialist escalation"),
-            ("Issues Resolved",        f"{kpis.get('all_issues_resolved_pct', 0):.0f}%", GREEN, "Calls where all customer issues were resolved"),
-            ("Sentiment Improved",     f"{kpis.get('sentiment_improved_pct', 0):.0f}%", GREEN, "Calls where customer sentiment improved"),
-            ("Avoidable Call Rate",    f"{kpis.get('avoidable_call_rate_pct', 0):.0f}%", PURPLE,"Contacts that didn't need to reach care"),
+            (
+                "First Call Resolution",
+                f"{kpis.get('fcr_rate_pct', 0):.0f}%",
+                GREEN,
+                "Calls resolved without a repeat contact",
+            ),
+            (
+                "Avg Handle Time",
+                f"{kpis.get('avg_handle_time_minutes', 0):.1f} min",
+                AMBER,
+                "Average duration per call",
+            ),
+            (
+                "Escalation Rate",
+                f"{kpis.get('escalation_rate_pct', 0):.0f}%",
+                RED,
+                "Calls requiring senior / specialist escalation",
+            ),
+            (
+                "Issues Resolved",
+                f"{kpis.get('all_issues_resolved_pct', 0):.0f}%",
+                GREEN,
+                "Calls where all customer issues were resolved",
+            ),
+            (
+                "Sentiment Improved",
+                f"{kpis.get('sentiment_improved_pct', 0):.0f}%",
+                GREEN,
+                "Calls where customer sentiment improved",
+            ),
+            (
+                "Avoidable Call Rate",
+                f"{kpis.get('avoidable_call_rate_pct', 0):.0f}%",
+                PURPLE,
+                "Contacts that didn't need to reach care",
+            ),
         ]
 
         cols = st.columns(len(perf_metrics))
@@ -2257,7 +2534,7 @@ def main():
                     f'<div class="scard-label">{label}</div>'
                     f'<div class="scard-val" style="color:{color};">{val}</div>'
                     f'<div class="scard-note">{note}</div>'
-                    f'</div>',
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -2269,20 +2546,38 @@ def main():
 
         # ── Pipeline run summary ──────────────────────────────────
         _sec("Pipeline Run — Model & Inference")
-        total_tokens  = tu.get("total_tokens", 0)
-        total_cost    = tu.get("total_cost_usd", 0)
-        avg_tokens    = tu.get("avg_total_tokens_per_call", 0)
+        total_tokens = tu.get("total_tokens", 0)
+        total_cost = tu.get("total_cost_usd", 0)
+        avg_tokens = tu.get("avg_total_tokens_per_call", 0)
         avg_cost_call = tu.get("avg_cost_per_call_usd", 0)
         calls_w_usage = tu.get("calls_with_usage", n_calls)
-        prompt_tok    = tu.get("total_prompt_tokens", 0)
+        prompt_tok = tu.get("total_prompt_tokens", 0)
         completion_tok = tu.get("total_completion_tokens", 0)
 
         p1, p2, p3, p4 = st.columns(4)
         pipe_cards = [
-            (p1, "Calls Processed",    f"{calls_w_usage:,}",         "#0F172A",  f"of {n_calls:,} total"),
-            (p2, "Total Tokens Used",  f"{total_tokens/1000:.0f}K",  "#7C3AED",  f"{avg_tokens:,.0f} avg / call"),
-            (p3, "Total Inference Cost", f"${total_cost:.3f}",       "#059669",  f"${avg_cost_call*100:.3f}¢ / call"),
-            (p4, "Model",              meta.get("model", "—")[:22],  "#0F172A",  meta.get("inference_provider", "")),
+            (p1, "Calls Processed", f"{calls_w_usage:,}", "#0F172A", f"of {n_calls:,} total"),
+            (
+                p2,
+                "Total Tokens Used",
+                f"{total_tokens / 1000:.0f}K",
+                "#7C3AED",
+                f"{avg_tokens:,.0f} avg / call",
+            ),
+            (
+                p3,
+                "Total Inference Cost",
+                f"${total_cost:.3f}",
+                "#059669",
+                f"${avg_cost_call * 100:.3f}¢ / call",
+            ),
+            (
+                p4,
+                "Model",
+                meta.get("model", "—")[:22],
+                "#0F172A",
+                meta.get("inference_provider", ""),
+            ),
         ]
         for col, label, val, color, note in pipe_cards:
             with col:
@@ -2291,31 +2586,31 @@ def main():
                     f'<div class="scard-label">{label}</div>'
                     f'<div class="scard-val" style="color:{color};font-size:1.8rem;">{val}</div>'
                     f'<div class="scard-note">{note}</div>'
-                    f'</div>',
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
         if prompt_tok and completion_tok:
             tok_total = prompt_tok + completion_tok or 1
-            prompt_pct  = prompt_tok  / tok_total * 100
-            compl_pct   = completion_tok / tok_total * 100
+            prompt_pct = prompt_tok / tok_total * 100
+            compl_pct = completion_tok / tok_total * 100
             st.markdown(
                 f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 26px;'
                 f'box-shadow:0 1px 4px rgba(15,23,42,.08);margin-top:18px;">'
                 f'<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:14px;">Token Split — Prompt vs. Completion</div>'
                 f'<div style="display:flex;height:36px;border-radius:8px;overflow:hidden;margin-bottom:12px;">'
                 f'<div style="background:#7C3AED;width:{prompt_pct:.1f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">'
-                f'Prompt {prompt_pct:.0f}%</div>'
+                f"Prompt {prompt_pct:.0f}%</div>"
                 f'<div style="background:#A78BFA;width:{compl_pct:.1f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">'
-                f'Completion {compl_pct:.0f}%</div>'
-                f'</div>'
+                f"Completion {compl_pct:.0f}%</div>"
+                f"</div>"
                 f'<div style="display:flex;gap:24px;font-size:0.78rem;color:#64748B;font-weight:600;">'
                 f'<span>Prompt: <strong style="color:#7C3AED;">{prompt_tok:,} tokens</strong></span>'
                 f'<span>Completion: <strong style="color:#A78BFA;">{completion_tok:,} tokens</strong></span>'
-                f'<span>Price input: <strong>${tu.get("price_input_per_mtok_usd", 0):.2f}/Mtok</strong></span>'
-                f'<span>Price output: <strong>${tu.get("price_output_per_mtok_usd", 0):.2f}/Mtok</strong></span>'
-                f'</div>'
-                f'</div>',
+                f"<span>Price input: <strong>${tu.get('price_input_per_mtok_usd', 0):.2f}/Mtok</strong></span>"
+                f"<span>Price output: <strong>${tu.get('price_output_per_mtok_usd', 0):.2f}/Mtok</strong></span>"
+                f"</div>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -2347,19 +2642,43 @@ def main():
                 unsafe_allow_html=True,
             )
 
-            n_merged  = qa_summary.get("n_merged_total", 0)
+            n_merged = qa_summary.get("n_merged_total", 0)
             n_trusted = qa_summary.get("n_trusted_for_aggregation", 0)
             n_dq_fail = qa_summary.get("data_quality_n_failed", 0)
-            n_low_qa  = qa_summary.get("n_low_qa_grade", 0)
-            dq_rate   = qa_summary.get("data_quality_pass_rate_pct", 0)
+            n_low_qa = qa_summary.get("n_low_qa_grade", 0)
+            dq_rate = qa_summary.get("data_quality_pass_rate_pct", 0)
             breakdown = qa_summary.get("data_quality_failure_breakdown", {})
 
             f1, f2, f3, f4 = st.columns(4)
             funnel_cards = [
-                (f1, "Calls Processed",       f"{n_merged:,}",              "#0F172A",  "total merged across all batches"),
-                (f2, "Verified & Trusted",    f"{n_trusted:,}",             "#059669",  f"{dq_rate:.1f}% — meets the success criterion"),
-                (f3, "Excluded — Data Quality", f"{n_dq_fail:,}",           "#DC2626",  "phase / timestamp / truncation"),
-                (f4, "Excluded — Low QA Grade", f"{n_low_qa:,}",            "#D97706",  "below the 100-pt QA rubric floor"),
+                (
+                    f1,
+                    "Calls Processed",
+                    f"{n_merged:,}",
+                    "#0F172A",
+                    "total merged across all batches",
+                ),
+                (
+                    f2,
+                    "Verified & Trusted",
+                    f"{n_trusted:,}",
+                    "#059669",
+                    f"{dq_rate:.1f}% — meets the success criterion",
+                ),
+                (
+                    f3,
+                    "Excluded — Data Quality",
+                    f"{n_dq_fail:,}",
+                    "#DC2626",
+                    "phase / timestamp / truncation",
+                ),
+                (
+                    f4,
+                    "Excluded — Low QA Grade",
+                    f"{n_low_qa:,}",
+                    "#D97706",
+                    "below the 100-pt QA rubric floor",
+                ),
             ]
             for col, label, val, color, note in funnel_cards:
                 with col:
@@ -2368,7 +2687,7 @@ def main():
                         f'<div class="scard-label">{label}</div>'
                         f'<div class="scard-val" style="color:{color};font-size:1.8rem;">{val}</div>'
                         f'<div class="scard-note">{note}</div>'
-                        f'</div>',
+                        f"</div>",
                         unsafe_allow_html=True,
                     )
 
@@ -2378,7 +2697,11 @@ def main():
                     "color:#94A3B8;margin:22px 0 4px;'>Why calls were excluded</div>",
                     unsafe_allow_html=True,
                 )
-                st.plotly_chart(chart_dq_failure_breakdown(breakdown), use_container_width=True, key="dq_breakdown")
+                st.plotly_chart(
+                    chart_dq_failure_breakdown(breakdown),
+                    use_container_width=True,
+                    key="dq_breakdown",
+                )
                 st.markdown(
                     "<div style='font-size:0.78rem;color:#94A3B8;line-height:1.6;margin-top:-8px;'>"
                     "<b>Mitigations, not excuses:</b> phase-reconciliation misses route to human QA review before "
@@ -2401,14 +2724,14 @@ def main():
 
         # (metric_label, achieved_val, benchmark_val, unit, higher_is_better)
         benchmarks = [
-            ("First Call Resolution",      kpis.get("fcr_rate_pct", 0),              70.0,  "%",     True),
-            ("All Issues Resolved",        kpis.get("all_issues_resolved_pct", 0),   70.0,  "%",     True),
-            ("Escalation Rate",            kpis.get("escalation_rate_pct", 0),       15.0,  "%",     False),
-            ("Sentiment Improved",         kpis.get("sentiment_improved_pct", 0),    60.0,  "%",     True),
-            ("Avoidable Call Rate",        kpis.get("avoidable_call_rate_pct", 0),   35.0,  "%",     False),
-            ("Upsell Conversion",          kpis.get("upsell_conversion_pct", 0),     50.0,  "%",     True),
-            ("Agent Tool Struggle",        kpis.get("agent_tool_struggle_pct", 0),   10.0,  "%",     False),
-            ("Agentic AI Resolvable",      kpis.get("agentic_ai_resolvable_pct", 0), 30.0,  "%",     True),
+            ("First Call Resolution", kpis.get("fcr_rate_pct", 0), 70.0, "%", True),
+            ("All Issues Resolved", kpis.get("all_issues_resolved_pct", 0), 70.0, "%", True),
+            ("Escalation Rate", kpis.get("escalation_rate_pct", 0), 15.0, "%", False),
+            ("Sentiment Improved", kpis.get("sentiment_improved_pct", 0), 60.0, "%", True),
+            ("Avoidable Call Rate", kpis.get("avoidable_call_rate_pct", 0), 35.0, "%", False),
+            ("Upsell Conversion", kpis.get("upsell_conversion_pct", 0), 50.0, "%", True),
+            ("Agent Tool Struggle", kpis.get("agent_tool_struggle_pct", 0), 10.0, "%", False),
+            ("Agentic AI Resolvable", kpis.get("agentic_ai_resolvable_pct", 0), 30.0, "%", True),
         ]
 
         bench_html = '<div class="bench-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">'
@@ -2423,11 +2746,11 @@ def main():
                 near = -10 <= gap < 0
 
             dot_color = "#059669" if good else ("#D97706" if near else "#DC2626")
-            bar_pct   = min(achieved / max(benchmark * 1.5, 1) * 100, 100)
-            bm_pct    = min(benchmark / max(benchmark * 1.5, 1) * 100, 100)
+            bar_pct = min(achieved / max(benchmark * 1.5, 1) * 100, 100)
+            bm_pct = min(benchmark / max(benchmark * 1.5, 1) * 100, 100)
             direction = "↑ above" if gap > 0 else ("↓ below" if gap < 0 else "= at")
-            gap_text  = f"{abs(gap):.0f}{unit} {direction} benchmark"
-            status    = "On target" if good else ("Near target" if near else "Below target")
+            gap_text = f"{abs(gap):.0f}{unit} {direction} benchmark"
+            status = "On target" if good else ("Near target" if near else "Below target")
 
             bench_html += (
                 f'<div style="background:#FFFFFF;border-radius:14px;padding:18px 22px;'
@@ -2436,31 +2759,31 @@ def main():
                 f'<div style="font-size:0.82rem;font-weight:700;color:#0F172A;">{label}</div>'
                 f'<div style="font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:12px;'
                 f'background:{dot_color}22;color:{dot_color};">{status}</div>'
-                f'</div>'
+                f"</div>"
                 f'<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;">'
                 f'<div style="font-size:1.6rem;font-weight:900;color:{dot_color};letter-spacing:-0.03em;">{achieved:.0f}{unit}</div>'
                 f'<div style="font-size:0.75rem;color:#94A3B8;font-weight:600;">{gap_text}</div>'
-                f'</div>'
+                f"</div>"
                 f'<div style="position:relative;height:6px;background:#F1F5F9;border-radius:3px;overflow:visible;">'
                 f'<div style="height:6px;background:{dot_color};border-radius:3px;width:{bar_pct:.0f}%;opacity:0.7;"></div>'
                 f'<div style="position:absolute;top:-4px;left:{bm_pct:.0f}%;width:2px;height:14px;background:#0F172A;border-radius:1px;" title="Benchmark {benchmark}{unit}"></div>'
-                f'</div>'
+                f"</div>"
                 f'<div style="font-size:0.68rem;color:#94A3B8;margin-top:6px;">Industry benchmark: {benchmark}{unit}</div>'
-                f'</div>'
+                f"</div>"
             )
-        bench_html += '</div>'
+        bench_html += "</div>"
         st.markdown(bench_html, unsafe_allow_html=True)
 
         # ── Agent quality signals ─────────────────────────────────
         _sec("Agent Quality Signals")
         skill_dist = dist.get("agent_skill", {})
-        disp_dist  = dist.get("agent_disproportionate_phase", {})
+        disp_dist = dist.get("agent_disproportionate_phase", {})
 
         aq1, aq2 = st.columns(2)
         with aq1:
             if skill_dist:
-                prof  = float(skill_dist.get("proficient", 0))
-                adeq  = float(skill_dist.get("adequate", 0))
+                prof = float(skill_dist.get("proficient", 0))
+                adeq = float(skill_dist.get("adequate", 0))
                 needs = float(skill_dist.get("needs_improvement", 0))
                 st.markdown(
                     f'<div style="background:#FFFFFF;border-radius:14px;padding:22px 26px;'
@@ -2470,18 +2793,20 @@ def main():
                     f'<div style="background:#059669;width:{prof:.0f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">Proficient {prof:.0f}%</div>'
                     f'<div style="background:#D97706;width:{adeq:.0f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">Adequate {adeq:.0f}%</div>'
                     f'<div style="background:#DC2626;width:{needs:.0f}%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;font-weight:700;">Needs improvement {needs:.0f}%</div>'
-                    f'</div>'
+                    f"</div>"
                     f'<div style="font-size:0.8rem;color:#334155;line-height:1.6;">'
                     f'<strong style="color:#DC2626;">{needs:.0f}%</strong> of agents show knowledge or tool gaps '
-                    f'— primary targets for AI-assisted agent tooling and coaching programmes.'
-                    f'</div>'
-                    f'</div>',
+                    f"— primary targets for AI-assisted agent tooling and coaching programmes."
+                    f"</div>"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
         with aq2:
             if disp_dist:
-                phase_overruns = {k: float(v) for k, v in disp_dist.items() if k != "none" and float(v) > 0}
+                phase_overruns = {
+                    k: float(v) for k, v in disp_dist.items() if k != "none" and float(v) > 0
+                }
                 none_pct = float(disp_dist.get("none", 0))
                 overrun_rows = "".join(
                     f'<div style="display:flex;justify-content:space-between;align-items:center;'
@@ -2491,7 +2816,7 @@ def main():
                     f'<div style="width:100px;height:6px;background:#F1F5F9;border-radius:3px;overflow:hidden;">'
                     f'<div style="height:6px;background:#F97316;border-radius:3px;width:{pct:.0f}%;"></div></div>'
                     f'<span style="font-size:0.88rem;font-weight:800;color:#F97316;width:36px;text-align:right;">{pct:.0f}%</span>'
-                    f'</div></div>'
+                    f"</div></div>"
                     for phase, pct in sorted(phase_overruns.items(), key=lambda x: -x[1])
                 )
                 st.markdown(
@@ -2499,21 +2824,21 @@ def main():
                     f'box-shadow:0 1px 4px rgba(15,23,42,.08);">'
                     f'<div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#94A3B8;margin-bottom:16px;">Phase Overrun — Calls with Disproportionate Phase Time</div>'
                     f'<div style="font-size:0.82rem;color:#64748B;margin-bottom:12px;">'
-                    f'{none_pct:.0f}% of calls showed no phase overrun · {100-none_pct:.0f}% had an agent overrunning one phase</div>'
-                    f'{overrun_rows}'
+                    f"{none_pct:.0f}% of calls showed no phase overrun · {100 - none_pct:.0f}% had an agent overrunning one phase</div>"
+                    f"{overrun_rows}"
                     f'<div style="font-size:0.78rem;color:#94A3B8;margin-top:12px;line-height:1.55;">'
-                    f'Phase overrun = call where an agent spent disproportionate time in a single phase vs. the dataset average. '
-                    f'High diagnosis overrun signals knowledge gaps; high discovery overrun signals intent-capture friction.'
-                    f'</div>'
-                    f'</div>',
+                    f"Phase overrun = call where an agent spent disproportionate time in a single phase vs. the dataset average. "
+                    f"High diagnosis overrun signals knowledge gaps; high discovery overrun signals intent-capture friction."
+                    f"</div>"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
         if not tu:
             st.markdown(
                 '<div class="callout" style="margin-top:14px;">'
-                'Token usage and pipeline cost data not found in <code>summary.json</code>. '
-                'Run the full pipeline to populate this tab.</div>',
+                "Token usage and pipeline cost data not found in <code>summary.json</code>. "
+                "Run the full pipeline to populate this tab.</div>",
                 unsafe_allow_html=True,
             )
 
@@ -2538,9 +2863,9 @@ def main():
             f'<div style="font-size:0.65rem;font-weight:700;letter-spacing:0.14em;'
             f'text-transform:uppercase;color:#94A3B8;margin-bottom:10px;">Demo Transcript — Billing Duplicate Charge</div>'
             f'<div style="font-size:0.82rem;color:#334155;line-height:1.75;'
-            f'font-family:\"JetBrains Mono\",monospace;white-space:pre-wrap;">'
-            f'{html.escape(DEMO_TRANSCRIPT)}</div>'
-            f'</div>',
+            f'font-family:"JetBrains Mono",monospace;white-space:pre-wrap;">'
+            f"{html.escape(DEMO_TRANSCRIPT)}</div>"
+            f"</div>",
             unsafe_allow_html=True,
         )
 
@@ -2552,7 +2877,7 @@ def main():
         # Pipeline diagram and terminal output are BELOW the button so the
         # user sees the animation without needing to scroll up.
         pipe_ph = st.empty()
-        out_ph  = st.empty()
+        out_ph = st.empty()
 
         if not run_clicked:
             pipe_ph.markdown(_pipeline_html(["pending"] * 7, [None] * 7), unsafe_allow_html=True)
@@ -2560,7 +2885,7 @@ def main():
 
         if run_clicked:
             statuses = ["pending"] * 7
-            timings  = [None] * 7
+            timings = [None] * 7
 
             # ── Agent 1: Data Ingestion ────────────────────────────
             statuses[0] = "running"

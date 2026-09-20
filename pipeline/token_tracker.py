@@ -33,11 +33,26 @@ from pipeline.config import EXTRACTION_MODEL
 
 _PRICING: dict[str, tuple[float, float, str, str]] = {
     # prefix → (input_per_mtok, output_per_mtok, provider_label, tier_note)
-    "claude-haiku": (1.00, 5.00, "Anthropic (Claude)", "Paid tier pricing — no free tier for Claude Haiku."),
-    "claude":       (1.00, 5.00, "Anthropic (Claude)", "Paid tier pricing."),
-    "gemini-2.5":   (0.10, 0.40, "Google AI Studio",   "Free up to 500 req/day. Paid tier pricing shown."),
-    "gemini-2.0":   (0.10, 0.40, "Google AI Studio",   "Free up to 1500 req/day. Paid tier pricing shown."),
-    "gemini":       (0.10, 0.40, "Google AI Studio",   "Paid tier pricing shown."),
+    "claude-haiku": (
+        1.00,
+        5.00,
+        "Anthropic (Claude)",
+        "Paid tier pricing — no free tier for Claude Haiku.",
+    ),
+    "claude": (1.00, 5.00, "Anthropic (Claude)", "Paid tier pricing."),
+    "gemini-2.5": (
+        0.10,
+        0.40,
+        "Google AI Studio",
+        "Free up to 500 req/day. Paid tier pricing shown.",
+    ),
+    "gemini-2.0": (
+        0.10,
+        0.40,
+        "Google AI Studio",
+        "Free up to 1500 req/day. Paid tier pricing shown.",
+    ),
+    "gemini": (0.10, 0.40, "Google AI Studio", "Paid tier pricing shown."),
 }
 
 # Prompt-cache pricing multipliers, relative to PRICE_INPUT_PER_MTOK.
@@ -45,7 +60,7 @@ _PRICING: dict[str, tuple[float, float, str, str]] = {
 # batch run); read pricing is fixed regardless of which TTL wrote the cache.
 CACHE_WRITE_MULTIPLIER_1H = 2.0
 CACHE_WRITE_MULTIPLIER_5M = 1.25
-CACHE_READ_MULTIPLIER     = 0.1
+CACHE_READ_MULTIPLIER = 0.1
 
 
 def _resolve_pricing(model: str) -> tuple[float, float, str, str]:
@@ -55,7 +70,9 @@ def _resolve_pricing(model: str) -> tuple[float, float, str, str]:
     return (0.10, 0.40, "Unknown provider", "Pricing unknown — defaulting to Gemini rates.")
 
 
-PRICE_INPUT_PER_MTOK, PRICE_OUTPUT_PER_MTOK, PROVIDER, _TIER_NOTE = _resolve_pricing(EXTRACTION_MODEL)
+PRICE_INPUT_PER_MTOK, PRICE_OUTPUT_PER_MTOK, PROVIDER, _TIER_NOTE = _resolve_pricing(
+    EXTRACTION_MODEL
+)
 MODEL = EXTRACTION_MODEL
 
 
@@ -79,10 +96,10 @@ def cost_usd(
     (prompt_tokens, completion_tokens) are unaffected.
     """
     return (
-        prompt_tokens          / 1_000_000 * PRICE_INPUT_PER_MTOK +
-        completion_tokens      / 1_000_000 * PRICE_OUTPUT_PER_MTOK +
-        cache_creation_tokens  / 1_000_000 * PRICE_INPUT_PER_MTOK * CACHE_WRITE_MULTIPLIER_1H +
-        cache_read_tokens      / 1_000_000 * PRICE_INPUT_PER_MTOK * CACHE_READ_MULTIPLIER
+        prompt_tokens / 1_000_000 * PRICE_INPUT_PER_MTOK
+        + completion_tokens / 1_000_000 * PRICE_OUTPUT_PER_MTOK
+        + cache_creation_tokens / 1_000_000 * PRICE_INPUT_PER_MTOK * CACHE_WRITE_MULTIPLIER_1H
+        + cache_read_tokens / 1_000_000 * PRICE_INPUT_PER_MTOK * CACHE_READ_MULTIPLIER
     )
 
 
@@ -102,14 +119,14 @@ def token_summary(results: list[dict]) -> dict:
     if n == 0:
         return {"error": "no results to summarise"}
 
-    total_prompt         = sum(r.get("_prompt_tokens",         0) for r in results)
-    total_completion     = sum(r.get("_completion_tokens",     0) for r in results)
+    total_prompt = sum(r.get("_prompt_tokens", 0) for r in results)
+    total_completion = sum(r.get("_completion_tokens", 0) for r in results)
     total_cache_creation = sum(r.get("_cache_creation_tokens", 0) for r in results)
-    total_cache_read     = sum(r.get("_cache_read_tokens",     0) for r in results)
-    total_tokens         = total_prompt + total_completion + total_cache_creation + total_cache_read
-    total_cost           = cost_usd(total_prompt, total_completion, total_cache_creation, total_cache_read)
-    missing              = sum(1 for r in results if "_prompt_tokens" not in r)
-    calls_with_usage     = n - missing
+    total_cache_read = sum(r.get("_cache_read_tokens", 0) for r in results)
+    total_tokens = total_prompt + total_completion + total_cache_creation + total_cache_read
+    total_cost = cost_usd(total_prompt, total_completion, total_cache_creation, total_cache_read)
+    missing = sum(1 for r in results if "_prompt_tokens" not in r)
+    calls_with_usage = n - missing
 
     # What those cache reads would have cost at the full input rate, minus what
     # they actually cost — the concrete dollar saving prompt caching produced.
@@ -118,27 +135,33 @@ def token_summary(results: list[dict]) -> dict:
     )
 
     return {
-        "model":                          MODEL,
-        "provider":                       PROVIDER,
-        "calls_with_usage":               calls_with_usage,
-        "calls_missing_usage":            missing,
+        "model": MODEL,
+        "provider": PROVIDER,
+        "calls_with_usage": calls_with_usage,
+        "calls_missing_usage": missing,
         # ── Totals ──────────────────────────────────────────────────
-        "total_prompt_tokens":            total_prompt,
-        "total_completion_tokens":        total_completion,
-        "total_cache_creation_tokens":    total_cache_creation,
-        "total_cache_read_tokens":        total_cache_read,
-        "total_tokens":                   total_tokens,
+        "total_prompt_tokens": total_prompt,
+        "total_completion_tokens": total_completion,
+        "total_cache_creation_tokens": total_cache_creation,
+        "total_cache_read_tokens": total_cache_read,
+        "total_tokens": total_tokens,
         # ── Per-call averages ────────────────────────────────────────
-        "avg_prompt_tokens_per_call":     round(total_prompt     / calls_with_usage, 0) if calls_with_usage else 0,
-        "avg_completion_tokens_per_call": round(total_completion / calls_with_usage, 0) if calls_with_usage else 0,
-        "avg_total_tokens_per_call":      round(total_tokens     / calls_with_usage, 0) if calls_with_usage else 0,
+        "avg_prompt_tokens_per_call": round(total_prompt / calls_with_usage, 0)
+        if calls_with_usage
+        else 0,
+        "avg_completion_tokens_per_call": round(total_completion / calls_with_usage, 0)
+        if calls_with_usage
+        else 0,
+        "avg_total_tokens_per_call": round(total_tokens / calls_with_usage, 0)
+        if calls_with_usage
+        else 0,
         # ── Cost ────────────────────────────────────────────────────
-        "total_cost_usd":                 round(total_cost, 4),
-        "avg_cost_per_call_usd":          round(total_cost / calls_with_usage, 6) if calls_with_usage else 0,
-        "cache_read_savings_usd":         cache_read_savings_usd,
+        "total_cost_usd": round(total_cost, 4),
+        "avg_cost_per_call_usd": round(total_cost / calls_with_usage, 6) if calls_with_usage else 0,
+        "cache_read_savings_usd": cache_read_savings_usd,
         # ── Pricing metadata ─────────────────────────────────────────
-        "price_input_per_mtok_usd":       PRICE_INPUT_PER_MTOK,
-        "price_output_per_mtok_usd":      PRICE_OUTPUT_PER_MTOK,
+        "price_input_per_mtok_usd": PRICE_INPUT_PER_MTOK,
+        "price_output_per_mtok_usd": PRICE_OUTPUT_PER_MTOK,
         "pricing_note": (
             f"{MODEL} · {_TIER_NOTE} "
             f"At 100K calls/mo avg {round(total_tokens / calls_with_usage if calls_with_usage else 0):,} tokens/call, "

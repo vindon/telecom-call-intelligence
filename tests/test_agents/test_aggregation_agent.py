@@ -11,7 +11,7 @@ from pipeline.agents.aggregation_agent import AggregationAgent
 class TestAggregationAgent:
     def test_outputs_metrics_and_token_usage(self, make_record):
         state = {
-            "analysis_results":  [make_record(call_id="c1"), make_record(call_id="c2")],
+            "analysis_results": [make_record(call_id="c1"), make_record(call_id="c2")],
             "qa_passed_results": [make_record(call_id="c1"), make_record(call_id="c2")],
         }
         out = AggregationAgent().run(state)
@@ -20,7 +20,7 @@ class TestAggregationAgent:
 
     def test_prefers_qa_passed_subset(self, make_record):
         state = {
-            "analysis_results":  [make_record(call_id=f"c{i}") for i in range(3)],
+            "analysis_results": [make_record(call_id=f"c{i}") for i in range(3)],
             "qa_passed_results": [make_record(call_id="c0")],
         }
         out = AggregationAgent().run(state)
@@ -30,7 +30,7 @@ class TestAggregationAgent:
 
     def test_falls_back_to_full_results_when_qa_skipped(self, make_record):
         state = {
-            "analysis_results":  [make_record(call_id=f"c{i}") for i in range(3)],
+            "analysis_results": [make_record(call_id=f"c{i}") for i in range(3)],
             "qa_passed_results": [],
         }
         out = AggregationAgent().run(state)

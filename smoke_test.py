@@ -65,16 +65,19 @@ def _check(label: str, ok: bool, detail: str = "") -> bool:
 
 # ── Free checks ──────────────────────────────────────────────────────
 
+
 def check_env_vars() -> bool:
     print("\n── Environment ──")
     has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
     ok = _check(
-        "ANTHROPIC_API_KEY set", has_anthropic,
+        "ANTHROPIC_API_KEY set",
+        has_anthropic,
         "" if has_anthropic else "required — extraction will fail without it",
     )
     has_nvidia = bool(os.environ.get("NVIDIA_API_KEY"))
     _check(
-        "NVIDIA_API_KEY set (optional)", True,
+        "NVIDIA_API_KEY set (optional)",
+        True,
         "present" if has_nvidia else "absent — insights will use Claude fallback directly",
     )
     return ok
@@ -86,11 +89,13 @@ def check_config_sanity() -> bool:
     ok &= _check("BUDGET_USD > 0", BUDGET_USD > 0, f"${BUDGET_USD:.2f}")
     ok &= _check(
         "EXTRACTION_API_TIMEOUT_S is set and reasonable",
-        0 < EXTRACTION_API_TIMEOUT_S <= 120, f"{EXTRACTION_API_TIMEOUT_S}s",
+        0 < EXTRACTION_API_TIMEOUT_S <= 120,
+        f"{EXTRACTION_API_TIMEOUT_S}s",
     )
     ok &= _check(
         "INSIGHTS_API_TIMEOUT_S is set and reasonable",
-        0 < INSIGHTS_API_TIMEOUT_S <= 120, f"{INSIGHTS_API_TIMEOUT_S}s",
+        0 < INSIGHTS_API_TIMEOUT_S <= 120,
+        f"{INSIGHTS_API_TIMEOUT_S}s",
     )
     return ok
 
@@ -99,7 +104,9 @@ def check_unit_tests() -> bool:
     print("\n── Unit test suite ──")
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "tests/", "-q"],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
     ok = result.returncode == 0
     tail = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else ""
@@ -116,9 +123,13 @@ def check_offset_disjointness(start_offset: int, batches: int, n: int, seed: int
     the actual regression that caused only 136/200 unique calls to be
     produced on 2026-08-09.
     """
-    print(f"\n── Offset disjointness (start_offset={start_offset}, batches={batches}, n={n}, seed={seed}) ──")
+    print(
+        f"\n── Offset disjointness (start_offset={start_offset}, batches={batches}, n={n}, seed={seed}) ──"
+    )
     if not LOCAL_CSV_PATH.exists():
-        print("  [SKIP] LOCAL_CSV_PATH not found — cannot verify without a HuggingFace network fetch")
+        print(
+            "  [SKIP] LOCAL_CSV_PATH not found — cannot verify without a HuggingFace network fetch"
+        )
         return True
 
     import pandas as pd
@@ -136,13 +147,18 @@ def check_offset_disjointness(start_offset: int, batches: int, n: int, seed: int
         overlap = ids & seen
         if overlap:
             ok = False
-            print(f"  [✗ FAIL] offset={offset}: {len(overlap)} duplicate ID(s) vs earlier batches in this plan")
+            print(
+                f"  [✗ FAIL] offset={offset}: {len(overlap)} duplicate ID(s) vs earlier batches in this plan"
+            )
         seen |= ids
 
-    return _check(f"{batches} batches × n={n} — zero duplicates across {len(seen)} conversations", ok)
+    return _check(
+        f"{batches} batches × n={n} — zero duplicates across {len(seen)} conversations", ok
+    )
 
 
 # ── Live check (costs real money — opt-in only via --live) ────────────
+
 
 def check_live_pipeline(seed: int) -> bool:
     """
@@ -169,11 +185,20 @@ def check_live_pipeline(seed: int) -> bool:
         # here fails fast instead of reproducing the original incident.
         result = subprocess.run(
             [
-                sys.executable, "run_pipeline.py",
-                "--n", "1", "--offset", str(_LIVE_SMOKE_OFFSET),
-                "--seed", str(seed), "--budget", "0.10",
+                sys.executable,
+                "run_pipeline.py",
+                "--n",
+                "1",
+                "--offset",
+                str(_LIVE_SMOKE_OFFSET),
+                "--seed",
+                str(seed),
+                "--budget",
+                "0.10",
             ],
-            capture_output=True, text=True, timeout=150,
+            capture_output=True,
+            text=True,
+            timeout=150,
         )
         elapsed = time.monotonic() - t0
         timed_out = False
@@ -190,7 +215,8 @@ def check_live_pipeline(seed: int) -> bool:
 
     if timed_out:
         _check(
-            "Live pipeline completes within 150s", False,
+            "Live pipeline completes within 150s",
+            False,
             "TIMED OUT — this is the exact failure mode from 2026-08-09; "
             "check for a client with no explicit timeout",
         )
@@ -221,10 +247,16 @@ def check_live_pipeline(seed: int) -> bool:
             manifest.get("insights_source", "MISSING"),
         )
         tu = manifest.get("token_usage", {})
-        cache_used = (tu.get("total_cache_read_tokens", 0) or 0) + (tu.get("total_cache_creation_tokens", 0) or 0)
+        cache_used = (tu.get("total_cache_read_tokens", 0) or 0) + (
+            tu.get("total_cache_creation_tokens", 0) or 0
+        )
         _check("prompt caching engaged (cache tokens > 0)", cache_used > 0, f"{cache_used} tokens")
     else:
-        ok = _check("run_manifest written", False, "no manifest found — pipeline likely failed before export")
+        ok = _check(
+            "run_manifest written",
+            False,
+            "no manifest found — pipeline likely failed before export",
+        )
 
     # Clean up every throwaway artifact this call created — it has no
     # business in the real merged dataset.
@@ -242,13 +274,27 @@ def check_live_pipeline(seed: int) -> bool:
 
 # ── Main ──────────────────────────────────────────────────────────────
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Pre-flight smoke test — run before any paid batch")
-    parser.add_argument("--start-offset", type=int, default=0, help="Planned start_offset for the real run (default: 0)")
-    parser.add_argument("--batches", type=int, default=5, help="Planned number of batches (default: 5)")
+    parser = argparse.ArgumentParser(
+        description="Pre-flight smoke test — run before any paid batch"
+    )
+    parser.add_argument(
+        "--start-offset",
+        type=int,
+        default=0,
+        help="Planned start_offset for the real run (default: 0)",
+    )
+    parser.add_argument(
+        "--batches", type=int, default=5, help="Planned number of batches (default: 5)"
+    )
     parser.add_argument("--n", type=int, default=20, help="Planned calls per batch (default: 20)")
     parser.add_argument("--seed", type=int, default=42, help="Planned seed (default: 42)")
-    parser.add_argument("--live", action="store_true", help="Also run one real ~$0.01-0.02 API call through the full pipeline")
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Also run one real ~$0.01-0.02 API call through the full pipeline",
+    )
     parser.add_argument("--skip-tests", action="store_true", help="Skip the pytest run")
     args = parser.parse_args()
 
@@ -272,7 +318,9 @@ def main() -> None:
     if all(results):
         print("  ALL CHECKS PASSED — safe to proceed with the real batch run.")
         if not args.live:
-            print("  Live API path was NOT tested — strongly recommend --live before a large/expensive run.")
+            print(
+                "  Live API path was NOT tested — strongly recommend --live before a large/expensive run."
+            )
         print("═" * 60)
         sys.exit(0)
     else:

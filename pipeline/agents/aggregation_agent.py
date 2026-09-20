@@ -36,7 +36,7 @@ class AggregationAgent:
 
         # Prefer QA-filtered results; fall back to full set if QA was skipped
         qa_passed = state.get("qa_passed_results")
-        results   = qa_passed or state["analysis_results"]
+        results = qa_passed or state["analysis_results"]
         used_qa_filtered = bool(qa_passed)
 
         if not results:
@@ -50,8 +50,8 @@ class AggregationAgent:
             decision=f"Aggregating {len(results)} records (qa_filtered={used_qa_filtered})",
             reason=(
                 f"Using QA-passed subset ({len(results)} records) — LOW-grade exclusions protect KPI accuracy"
-                if used_qa_filtered else
-                "QA step was skipped; aggregating full analysis_results set"
+                if used_qa_filtered
+                else "QA step was skipped; aggregating full analysis_results set"
             ),
             evidence={
                 "n_records": len(results),
@@ -63,7 +63,7 @@ class AggregationAgent:
 
         log.info("[%s] Aggregating %d results", self.name, len(results))
 
-        metrics       = aggregate_metrics(results)
+        metrics = aggregate_metrics(results)
         usage_summary = token_summary(results)
 
         kpis = metrics["kpis"]
@@ -96,6 +96,6 @@ class AggregationAgent:
         return {
             **state,
             "aggregated_metrics": metrics,
-            "token_usage":        usage_summary,
-            "decision_log":       dl.finalize(),
+            "token_usage": usage_summary,
+            "decision_log": dl.finalize(),
         }

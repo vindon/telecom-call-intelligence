@@ -49,6 +49,7 @@ log = get_logger(__name__)
 
 # ── Embedding backends ────────────────────────────────────────────────
 
+
 def _embed_gemini(texts: list[str]) -> np.ndarray:
     """Embed a list of texts using Gemini text-embedding-004 (768-dim)."""
     from pipeline.config import EXTRACTION_API_TIMEOUT_S
@@ -65,7 +66,9 @@ def _embed_gemini(texts: list[str]) -> np.ndarray:
     return np.array(vectors, dtype=np.float32)
 
 
-def _embed_tfidf(texts: list[str], vocab: dict[str, int] | None = None) -> tuple[np.ndarray, dict[str, int]]:
+def _embed_tfidf(
+    texts: list[str], vocab: dict[str, int] | None = None
+) -> tuple[np.ndarray, dict[str, int]]:
     """
     Lightweight TF-IDF bag-of-words embedding — offline / test fallback.
     Returns (matrix, vocab) so the same vocab can be reused across calls.
@@ -102,6 +105,7 @@ def _cosine_similarity(query: np.ndarray, corpus: np.ndarray) -> np.ndarray:
 
 # ── Vector store ──────────────────────────────────────────────────────
 
+
 class VectorMemoryStore:
     """
     Persistent semantic memory store backed by numpy arrays.
@@ -114,12 +118,12 @@ class VectorMemoryStore:
     """
 
     def __init__(self, store_dir: Path) -> None:
-        self._dir      = store_dir
+        self._dir = store_dir
         self._vec_path = store_dir / "vectors.npy"
         self._idx_path = store_dir / "index.json"
-        self._vectors: np.ndarray | None = None   # (N, D) float32
-        self._index:   list[dict]         = []    # parallel list of metadata dicts
-        self._vocab:   dict[str, int]     = {}    # TF-IDF vocab (offline mode)
+        self._vectors: np.ndarray | None = None  # (N, D) float32
+        self._index: list[dict] = []  # parallel list of metadata dicts
+        self._vocab: dict[str, int] = {}  # TF-IDF vocab (offline mode)
 
     # ── Persistence ───────────────────────────────────────────────────
 
@@ -134,7 +138,8 @@ class VectorMemoryStore:
                 self._vocab = data.get("vocab", {})
                 log.info(
                     "[VectorMemory] Loaded %d run vectors (dim=%d)",
-                    len(self._index), self._vectors.shape[1] if self._vectors.ndim > 1 else 0,
+                    len(self._index),
+                    self._vectors.shape[1] if self._vectors.ndim > 1 else 0,
                 )
             except Exception as exc:
                 log.warning("[VectorMemory] Load failed (%s) — starting fresh", exc)
@@ -183,13 +188,15 @@ class VectorMemoryStore:
         vec = vec.astype(np.float32).reshape(1, -1)
         self._vectors = vec if self._vectors is None else np.vstack([self._vectors, vec])
 
-        self._index.append({
-            "run_id":    run_id,
-            "text":      kpi_text,
-            "timestamp": datetime.now(UTC).isoformat(),
-            "_backend":  backend,
-            **metadata,
-        })
+        self._index.append(
+            {
+                "run_id": run_id,
+                "text": kpi_text,
+                "timestamp": datetime.now(UTC).isoformat(),
+                "_backend": backend,
+                **metadata,
+            }
+        )
         log.debug("[VectorMemory] Added run %s (total=%d)", run_id, len(self._index))
 
     # ── Query ─────────────────────────────────────────────────────────
@@ -206,7 +213,7 @@ class VectorMemoryStore:
         # Determine the backend used by stored vectors to avoid silent
         # dimension mismatches that produce meaningless similarity scores.
         stored_backends = {r.get("_backend", "gemini") for r in self._index}
-        stored_backend  = stored_backends.pop() if len(stored_backends) == 1 else "mixed"
+        stored_backend = stored_backends.pop() if len(stored_backends) == 1 else "mixed"
 
         # Embed query using the matching backend
         try:
@@ -225,7 +232,8 @@ class VectorMemoryStore:
             log.warning(
                 "[VectorMemory] Backend mismatch: query=%s stored=%s — returning empty results "
                 "to avoid corrupted similarity scores.",
-                query_backend, stored_backend,
+                query_backend,
+                stored_backend,
             )
             return []
 
@@ -233,18 +241,16 @@ class VectorMemoryStore:
         if q_vec.shape[0] != stored_dim:
             log.warning(
                 "[VectorMemory] Dimension mismatch query=%d stored=%d — skipping query",
-                q_vec.shape[0], stored_dim,
+                q_vec.shape[0],
+                stored_dim,
             )
             return []
 
         scores = _cosine_similarity(q_vec, self._vectors)
-        k      = min(top_k, len(self._index))
+        k = min(top_k, len(self._index))
         top_idx = np.argsort(scores)[::-1][:k]
 
-        return [
-            {**self._index[i], "similarity": float(scores[i])}
-            for i in top_idx
-        ]
+        return [{**self._index[i], "similarity": float(scores[i])} for i in top_idx]
 
     def format_context(self, query_text: str, top_k: int = 3) -> str:
         """

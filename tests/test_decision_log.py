@@ -7,7 +7,6 @@ All tests are pure Python — no API calls, no filesystem writes.
 Expected: all tests pass in < 1 second.
 """
 
-
 from pipeline.decision_log import (
     DecisionLogger,
     DecisionRecord,
@@ -15,6 +14,7 @@ from pipeline.decision_log import (
 )
 
 # ── DecisionRecord ────────────────────────────────────────────────────
+
 
 class TestDecisionRecord:
     def test_required_fields_present(self):
@@ -24,10 +24,10 @@ class TestDecisionRecord:
             decision="Did the thing",
             reason="Because the score was low",
         )
-        assert rec.agent         == "TestAgent"
+        assert rec.agent == "TestAgent"
         assert rec.decision_type == "test_type"
-        assert rec.decision      == "Did the thing"
-        assert rec.reason        == "Because the score was low"
+        assert rec.decision == "Did the thing"
+        assert rec.reason == "Because the score was low"
 
     def test_record_id_is_8_chars(self):
         rec = DecisionRecord("A", "t", "d", "r")
@@ -40,9 +40,9 @@ class TestDecisionRecord:
 
     def test_defaults_are_safe(self):
         rec = DecisionRecord("A", "t", "d", "r")
-        assert rec.evidence     == {}
-        assert rec.call_id      is None
-        assert rec.confidence   is None
+        assert rec.evidence == {}
+        assert rec.call_id is None
+        assert rec.confidence is None
         assert rec.alternatives == []
 
     def test_reason_truncated_at_500(self):
@@ -62,9 +62,18 @@ class TestDecisionRecord:
             alternatives=["Include with flag"],
         )
         d = rec.to_dict()
-        for key in ("record_id", "agent", "decision_type", "timestamp",
-                    "decision", "reason", "evidence", "call_id",
-                    "confidence", "alternatives"):
+        for key in (
+            "record_id",
+            "agent",
+            "decision_type",
+            "timestamp",
+            "decision",
+            "reason",
+            "evidence",
+            "call_id",
+            "confidence",
+            "alternatives",
+        ):
             assert key in d, f"Missing key: {key}"
 
     def test_to_dict_evidence_is_dict(self):
@@ -78,6 +87,7 @@ class TestDecisionRecord:
 
 
 # ── DecisionLogger ────────────────────────────────────────────────────
+
 
 class TestDecisionLogger:
     def _empty_state(self) -> dict:
@@ -105,9 +115,9 @@ class TestDecisionLogger:
         dl.log("test_type", "Did X", "Because Y")
         result = dl.finalize()
         assert len(result) == 1
-        assert result[0]["agent"]         == "TestAgent"
+        assert result[0]["agent"] == "TestAgent"
         assert result[0]["decision_type"] == "test_type"
-        assert result[0]["decision"]      == "Did X"
+        assert result[0]["decision"] == "Did X"
 
     def test_multiple_logs_accumulate(self):
         dl = DecisionLogger("QualityAgent", self._empty_state())
@@ -155,12 +165,13 @@ class TestDecisionLogger:
             alternatives=["Claude fallback", "Rule-based"],
         )
         rec = dl.finalize()[0]
-        assert rec["confidence"]   == "high"
+        assert rec["confidence"] == "high"
         assert rec["alternatives"] == ["Claude fallback", "Rule-based"]
         assert rec["evidence"]["passes"] == 3
 
 
 # ── summarize_decisions ───────────────────────────────────────────────
+
 
 class TestSummarizeDecisions:
     def _make_log(self, specs: list[tuple[str, str]]) -> list[dict]:
@@ -172,70 +183,77 @@ class TestSummarizeDecisions:
 
     def test_empty_log(self):
         summary = summarize_decisions([])
-        assert summary["total_decisions"]   == 0
-        assert summary["by_agent"]          == {}
-        assert summary["by_type"]           == {}
+        assert summary["total_decisions"] == 0
+        assert summary["by_agent"] == {}
+        assert summary["by_type"] == {}
         assert summary["notable_decisions"] == []
 
     def test_total_count(self):
-        log = self._make_log([
-            ("DataIngestionAgent", "transcript_skip"),
-            ("QualityAgent", "qa_exclusion"),
-            ("InsightsAgent", "provider_selected"),
-        ])
+        log = self._make_log(
+            [
+                ("DataIngestionAgent", "transcript_skip"),
+                ("QualityAgent", "qa_exclusion"),
+                ("InsightsAgent", "provider_selected"),
+            ]
+        )
         summary = summarize_decisions(log)
         assert summary["total_decisions"] == 3
 
     def test_by_agent_counts(self):
-        log = self._make_log([
-            ("QualityAgent", "qa_exclusion"),
-            ("QualityAgent", "quality_gate_outcome"),
-            ("InsightsAgent", "provider_selected"),
-        ])
+        log = self._make_log(
+            [
+                ("QualityAgent", "qa_exclusion"),
+                ("QualityAgent", "quality_gate_outcome"),
+                ("InsightsAgent", "provider_selected"),
+            ]
+        )
         summary = summarize_decisions(log)
-        assert summary["by_agent"]["QualityAgent"]   == 2
-        assert summary["by_agent"]["InsightsAgent"]  == 1
+        assert summary["by_agent"]["QualityAgent"] == 2
+        assert summary["by_agent"]["InsightsAgent"] == 1
 
     def test_by_type_counts(self):
-        log = self._make_log([
-            ("DataIngestionAgent", "transcript_skip"),
-            ("DataIngestionAgent", "transcript_skip"),
-            ("QualityAgent", "qa_exclusion"),
-        ])
+        log = self._make_log(
+            [
+                ("DataIngestionAgent", "transcript_skip"),
+                ("DataIngestionAgent", "transcript_skip"),
+                ("QualityAgent", "qa_exclusion"),
+            ]
+        )
         summary = summarize_decisions(log)
         assert summary["by_type"]["transcript_skip"] == 2
-        assert summary["by_type"]["qa_exclusion"]    == 1
+        assert summary["by_type"]["qa_exclusion"] == 1
 
     def test_notable_decisions_includes_exclusions(self):
-        log = self._make_log([
-            ("QualityAgent",      "qa_exclusion"),
-            ("GraphRouter",       "routing_decision"),
-            ("AggregationAgent",  "aggregation_scope"),  # not notable
-        ])
+        log = self._make_log(
+            [
+                ("QualityAgent", "qa_exclusion"),
+                ("GraphRouter", "routing_decision"),
+                ("AggregationAgent", "aggregation_scope"),  # not notable
+            ]
+        )
         summary = summarize_decisions(log)
         notable_types = {n["decision_type"] for n in summary["notable_decisions"]}
-        assert "qa_exclusion"     in notable_types
+        assert "qa_exclusion" in notable_types
         assert "routing_decision" in notable_types
         assert "aggregation_scope" not in notable_types
 
     def test_notable_decisions_capped_at_20(self):
-        log = self._make_log([
-            ("DataIngestionAgent", "transcript_skip")
-            for _ in range(30)
-        ])
+        log = self._make_log([("DataIngestionAgent", "transcript_skip") for _ in range(30)])
         summary = summarize_decisions(log)
         assert len(summary["notable_decisions"]) <= 20
 
     def test_notable_decision_fields(self):
         rec = DecisionRecord(
-            "InsightsAgent", "provider_selected",
-            "NVIDIA selected", "API key present",
+            "InsightsAgent",
+            "provider_selected",
+            "NVIDIA selected",
+            "API key present",
             confidence="high",
         )
         summary = summarize_decisions([rec.to_dict()])
         notable = summary["notable_decisions"][0]
-        assert "record_id"     in notable
-        assert "agent"         in notable
+        assert "record_id" in notable
+        assert "agent" in notable
         assert "decision_type" in notable
-        assert "decision"      in notable
-        assert "confidence"    in notable
+        assert "decision" in notable
+        assert "confidence" in notable

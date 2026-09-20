@@ -49,11 +49,12 @@ from pipeline.logger import get_logger
 
 log = get_logger(__name__)
 
-DATASET   = "talkmap/telecom-conversation-corpus"
-_BUFFER_X = 6   # Over-sample factor to handle uneven conversation lengths
+DATASET = "talkmap/telecom-conversation-corpus"
+_BUFFER_X = 6  # Over-sample factor to handle uneven conversation lengths
 
 
 # ── Shared transcript builder ─────────────────────────────────────────
+
 
 def _build_transcripts(df_sel: pd.DataFrame, selected_ids: list[str]) -> list[dict]:
     """Convert a filtered, timestamp-sorted DataFrame into the transcript list the pipeline expects."""
@@ -63,14 +64,16 @@ def _build_transcripts(df_sel: pd.DataFrame, selected_ids: list[str]) -> list[di
         conv_df = df_sel[df_sel["conversation_id"] == conv_id].reset_index(drop=True)
 
         if conv_df.empty or len(conv_df) < 4:
-            log.debug("Skipped %s — only %d turns after timestamp parse", conv_id[:12], len(conv_df))
+            log.debug(
+                "Skipped %s — only %d turns after timestamp parse", conv_id[:12], len(conv_df)
+            )
             continue
 
         lines: list[str] = []
         for _, row in conv_df.iterrows():
             speaker = "AGENT" if str(row["speaker"]).lower() == "agent" else "CUSTOMER"
-            ts      = row["date_time"].strftime("%H:%M:%S")
-            text    = str(row.get("text", "")).strip()
+            ts = row["date_time"].strftime("%H:%M:%S")
+            text = str(row.get("text", "")).strip()
             if text and text != "nan":
                 lines.append(f"[{ts}] {speaker}: {text}")
 
@@ -78,27 +81,31 @@ def _build_transcripts(df_sel: pd.DataFrame, selected_ids: list[str]) -> list[di
             continue
 
         start_dt = conv_df["date_time"].iloc[0]
-        end_dt   = conv_df["date_time"].iloc[-1]
+        end_dt = conv_df["date_time"].iloc[-1]
 
-        transcripts.append({
-            "call_id":         conv_id,
-            "call_date":       start_dt.strftime("%Y-%m-%d"),
-            "transcript_text": "\n".join(lines),
-            "turn_count":      len(conv_df),
-            "agent_turns":     int((conv_df["speaker"] == "agent").sum()),
-            "customer_turns":  int((conv_df["speaker"] == "client").sum()),
-            "raw_start":       start_dt.strftime("%H:%M:%S"),
-            "raw_end":         end_dt.strftime("%H:%M:%S"),
-            # Computed from the datetimes directly (not the HH:MM:SS strings
-            # above, which lose date info and can't be safely re-subtracted
-            # downstream) — ground truth for qa_audit.check_timestamp_ground_truth().
-            "raw_duration_seconds": (end_dt - start_dt).total_seconds(),
-        })
+        transcripts.append(
+            {
+                "call_id": conv_id,
+                "call_date": start_dt.strftime("%Y-%m-%d"),
+                "transcript_text": "\n".join(lines),
+                "turn_count": len(conv_df),
+                "agent_turns": int((conv_df["speaker"] == "agent").sum()),
+                "customer_turns": int((conv_df["speaker"] == "client").sum()),
+                "raw_start": start_dt.strftime("%H:%M:%S"),
+                "raw_end": end_dt.strftime("%H:%M:%S"),
+                # Computed from the datetimes directly (not the HH:MM:SS strings
+                # above, which lose date info and can't be safely re-subtracted
+                # downstream) — ground truth for qa_audit.check_timestamp_ground_truth().
+                "raw_duration_seconds": (end_dt - start_dt).total_seconds(),
+            }
+        )
 
     return transcripts
 
 
-def _select_ids(all_ids_ordered: list[str], n: int, seed: int, offset: int, source: str) -> list[str]:
+def _select_ids(
+    all_ids_ordered: list[str], n: int, seed: int, offset: int, source: str
+) -> list[str]:
     """
     Deterministically select n conversation IDs for this (seed, offset) batch,
     guaranteed disjoint from any other batch whose offset differs by a
@@ -119,19 +126,22 @@ def _select_ids(all_ids_ordered: list[str], n: int, seed: int, offset: int, sour
     random.Random(seed).shuffle(shuffled)
 
     start = offset * _BUFFER_X
-    end   = (offset + n) * _BUFFER_X
+    end = (offset + n) * _BUFFER_X
     window = shuffled[start:end]
 
     if len(window) < n:
         log.warning(
             "%s shuffled window has only %d conv IDs (wanted ≥%d). Returning all available.",
-            source, len(window), n,
+            source,
+            len(window),
+            n,
         )
 
     return window[:n]
 
 
 # ── Local CSV path ────────────────────────────────────────────────────
+
 
 def _load_from_csv(n: int, seed: int, offset: int) -> list[dict]:
     """Load transcripts from the local CSV file defined by LOCAL_CSV_PATH."""
@@ -141,7 +151,9 @@ def _load_from_csv(n: int, seed: int, offset: int) -> list[dict]:
         LOCAL_CSV_PATH,
         dtype={"conversation_id": str, "speaker": str, "text": str},
     )
-    log.info("CSV loaded: %d turns across %d conversations", len(df), df["conversation_id"].nunique())
+    log.info(
+        "CSV loaded: %d turns across %d conversations", len(df), df["conversation_id"].nunique()
+    )
 
     all_ids_ordered = sorted(df["conversation_id"].dropna().unique().tolist())
     selected_ids = _select_ids(all_ids_ordered, n, seed, offset, source="CSV")
@@ -152,11 +164,14 @@ def _load_from_csv(n: int, seed: int, offset: int) -> list[dict]:
     df_sel = df_sel.sort_values(["conversation_id", "date_time"])
 
     transcripts = _build_transcripts(df_sel, selected_ids)
-    log.info("Built %d/%d transcripts from CSV (offset=%d, seed=%d)", len(transcripts), n, offset, seed)
+    log.info(
+        "Built %d/%d transcripts from CSV (offset=%d, seed=%d)", len(transcripts), n, offset, seed
+    )
     return transcripts[:n]
 
 
 # ── HuggingFace streaming path ────────────────────────────────────────
+
 
 def _load_from_huggingface(n: int, seed: int, offset: int) -> list[dict]:
     """Stream transcripts from HuggingFace (fallback when local CSV is absent)."""
@@ -211,6 +226,7 @@ def _load_from_huggingface(n: int, seed: int, offset: int) -> list[dict]:
 
 
 # ── Public entry point ────────────────────────────────────────────────
+
 
 def load_telecom_transcripts(
     n: int = 100,

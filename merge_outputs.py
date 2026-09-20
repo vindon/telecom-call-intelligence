@@ -30,6 +30,7 @@ from qa_audit import check_data_quality
 
 # ── Discovery ─────────────────────────────────────────────────────────
 
+
 def discover_batch_files(pattern: str = "full_results_[0-9]*.json") -> list[Path]:
     """
     Find all per-batch full_results JSON files, excluding the combined output.
@@ -42,6 +43,7 @@ def discover_batch_files(pattern: str = "full_results_[0-9]*.json") -> list[Path
 
 # ── Merge ─────────────────────────────────────────────────────────────
 
+
 def merge_results(files: list[Path]) -> tuple[list[dict], dict]:
     """
     Load, deduplicate, and merge results from a list of batch files.
@@ -50,7 +52,7 @@ def merge_results(files: list[Path]) -> tuple[list[dict], dict]:
         (merged_results, provenance)
         provenance maps file path → number of unique records contributed.
     """
-    seen:      dict[str, dict] = {}   # call_id → result (last write wins)
+    seen: dict[str, dict] = {}  # call_id → result (last write wins)
     provenance: dict[str, int] = {}
 
     for path in files:
@@ -62,11 +64,10 @@ def merge_results(files: list[Path]) -> tuple[list[dict], dict]:
             call_id = str(record.get("call_id", ""))
             if call_id and call_id not in seen:
                 new_ids += 1
-            seen[call_id] = record   # last file wins on duplicate
+            seen[call_id] = record  # last file wins on duplicate
 
         provenance[str(path)] = new_ids
-        print(f"  Loaded {len(batch):>4} records from {path.name}  "
-              f"(+{new_ids} new unique)")
+        print(f"  Loaded {len(batch):>4} records from {path.name}  (+{new_ids} new unique)")
 
     merged = list(seen.values())
     return merged, provenance
@@ -74,16 +75,18 @@ def merge_results(files: list[Path]) -> tuple[list[dict], dict]:
 
 # ── Main ──────────────────────────────────────────────────────────────
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Telecom Call Intelligence — batch output merger"
-    )
+    parser = argparse.ArgumentParser(description="Telecom Call Intelligence — batch output merger")
     parser.add_argument(
-        "--pattern", type=str, default="full_results_[0-9]*.json",
+        "--pattern",
+        type=str,
+        default="full_results_[0-9]*.json",
         help="Glob pattern for batch files inside outputs/ (default: full_results_[0-9]*.json)",
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Show which files would be merged without writing any output.",
     )
     args = parser.parse_args()
@@ -140,7 +143,7 @@ def main() -> None:
     for r in merged:
         dq = check_data_quality(r)
         r["_dq_gate_passed"] = dq["passed"]
-        r["_dq_failures"]    = dq["failures"]
+        r["_dq_failures"] = dq["failures"]
         if not r["_dq_gate_passed"]:
             n_dq_failed += 1
             for failure_type in dq["failures"]:
@@ -154,9 +157,11 @@ def main() -> None:
     trusted = [r for r in merged if r.get("_qa_grade") != "LOW" and r.get("_dq_gate_passed")]
     n_low = sum(1 for r in merged if r.get("_qa_grade") == "LOW")
 
-    print(f"\n  Data quality gate: {dq_pass_rate}% passed ({n_dq_failed}/{n} failed) — "
-          f"{len(trusted)}/{n} records trusted for KPI aggregation "
-          f"({n_low} LOW QA grade, {n_dq_failed} failed data quality)")
+    print(
+        f"\n  Data quality gate: {dq_pass_rate}% passed ({n_dq_failed}/{n} failed) — "
+        f"{len(trusted)}/{n} records trusted for KPI aggregation "
+        f"({n_low} LOW QA grade, {n_dq_failed} failed data quality)"
+    )
 
     if not trusted:
         print("\n  ✗ No records pass both QA and the data quality gate — cannot aggregate KPIs.")
@@ -170,18 +175,19 @@ def main() -> None:
 
     from pipeline.aggregator import aggregate_metrics
     from pipeline.token_tracker import token_summary
+
     load_dotenv()
 
-    metrics      = aggregate_metrics(trusted)
+    metrics = aggregate_metrics(trusted)
     usage_summary = token_summary(trusted)
     metrics["token_usage"] = usage_summary
     metrics["qa_summary"] = {
-        "data_quality_pass_rate_pct":      dq_pass_rate,
-        "data_quality_n_failed":           n_dq_failed,
-        "data_quality_failure_breakdown":  dq_failure_breakdown,
-        "n_low_qa_grade":                  n_low,
-        "n_trusted_for_aggregation":       len(trusted),
-        "n_merged_total":                  n,
+        "data_quality_pass_rate_pct": dq_pass_rate,
+        "data_quality_n_failed": n_dq_failed,
+        "data_quality_failure_breakdown": dq_failure_breakdown,
+        "n_low_qa_grade": n_low,
+        "n_trusted_for_aggregation": len(trusted),
+        "n_merged_total": n,
     }
     if dq_pass_rate < QUALITY_WARN_RATE * 100:
         metrics["aht_disclaimer"] = (
@@ -193,11 +199,15 @@ def main() -> None:
         )
 
     kpis = metrics["kpis"]
-    print(f"  ✓ Total calls    : {kpis['total_calls_analyzed']}  (of {n} merged, {n - len(trusted)} excluded)")
+    print(
+        f"  ✓ Total calls    : {kpis['total_calls_analyzed']}  (of {n} merged, {n - len(trusted)} excluded)"
+    )
     print(f"  ✓ FCR rate       : {kpis['fcr_rate_pct']}%")
     print(f"  ✓ Avg AHT        : {kpis['avg_handle_time_minutes']} min")
     print(f"  ✓ Agentic AI oppty: {kpis['agentic_ai_resolvable_pct']}%")
-    print(f"  ✓ Savings oppty  : ${metrics['cost_levers']['total_savings_opportunity_usd']:,.0f}/mo")
+    print(
+        f"  ✓ Savings oppty  : ${metrics['cost_levers']['total_savings_opportunity_usd']:,.0f}/mo"
+    )
     if usage_summary:
         print(f"  ✓ Total tokens   : {usage_summary.get('total_tokens', 0):,}")
         print(f"  ✓ Inference cost : ${usage_summary.get('total_cost_usd', 0):.4f} USD")
@@ -217,20 +227,19 @@ def main() -> None:
 
     # Merge manifest for audit
     manifest = {
-        "merge_timestamp":  ts,
-        "source_files":     [str(f) for f in files],
-        "total_records":    len(merged),
-        "provenance":       provenance,
-        "duplicates_removed": sum(
-            len(json.load(open(f, encoding="utf-8"))) for f in files
-        ) - len(merged),
+        "merge_timestamp": ts,
+        "source_files": [str(f) for f in files],
+        "total_records": len(merged),
+        "provenance": provenance,
+        "duplicates_removed": sum(len(json.load(open(f, encoding="utf-8"))) for f in files)
+        - len(merged),
         "data_quality_pass_rate_pct": dq_pass_rate,
-        "n_dq_failed":                n_dq_failed,
-        "n_low_qa_grade":             n_low,
-        "n_trusted_for_aggregation":  len(trusted),
+        "n_dq_failed": n_dq_failed,
+        "n_low_qa_grade": n_low,
+        "n_trusted_for_aggregation": len(trusted),
         "output_files": {
-            "combined_json":  str(combined_path),
-            "summary_json":   str(summary_path),
+            "combined_json": str(combined_path),
+            "summary_json": str(summary_path),
         },
     }
     manifest_path = OUTPUT_DIR / f"merge_manifest_{ts}.json"
