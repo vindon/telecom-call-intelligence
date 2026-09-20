@@ -22,6 +22,10 @@ repos:
         exclude: ^outputs/
       - id: trailing-whitespace
         exclude: ^outputs/
+        # Markdown hard line-breaks are exactly 2 trailing spaces (e.g.
+        # CLAUDE_CODE_COST_ANALYSIS.md) — without this, the hook strips them
+        # and silently collapses intentional line breaks into soft-wraps.
+        args: [--markdown-linebreak-ext=md]
       - id: detect-private-key
       - id: no-commit-to-branch
         args: [--branch, main]   # require PRs for main
@@ -31,3 +35,23 @@ repos:
     rev: v4.6.0
     hooks:
       - id: check-case-conflict
+
+  # Security static analysis (SAST) — secrets and injection/security
+  # anti-patterns ruff doesn't check for. Runs in its own isolated
+  # pip-installed environment, never this repo's venv: installing semgrep
+  # alongside project deps downgrades opentelemetry and breaks the
+  # Langfuse tracing integration (pipeline/tracing.py).
+  #
+  # Uses semgrep/pre-commit (a small hook-only repo), not semgrep/semgrep
+  # directly — the main repo drags in unrelated git submodules over SSH
+  # (tree-sitter grammars) that fail to clone without SSH access configured.
+  - repo: https://github.com/semgrep/pre-commit
+    rev: v1.177.0
+    hooks:
+      - id: semgrep
+        args:
+          - --config=p/security-audit
+          - --config=p/secrets
+          - --error
+          - --disable-version-check
+          - --quiet

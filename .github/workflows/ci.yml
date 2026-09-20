@@ -7,6 +7,22 @@ on:
     branches: [main]
 
 jobs:
+  semgrep:
+    name: Semgrep security scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      # Isolated container image, not the `test` job's Python env: installing
+      # semgrep alongside project deps downgrades opentelemetry and breaks
+      # the Langfuse tracing integration (pipeline/tracing.py). --error makes
+      # this fail the build on any finding — verified locally that without
+      # it, semgrep exits 0 regardless of findings.
+      - name: Run semgrep
+        run: semgrep scan --config=p/security-audit --config=p/secrets --error
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
