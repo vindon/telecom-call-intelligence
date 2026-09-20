@@ -2,18 +2,20 @@
 name: langfuse
 description: >-
   Interact with Langfuse and access its documentation: tracing, monitoring, creating datasets, running experiments, and evaluating AI applications. Use when needing to (1) query or modify Langfuse data, (2) look up Langfuse documentation, concepts, integration guides, a feature or SDK usage, or (3) do any AI engineering task (AI observability, prompt engineering/management, evaluation and evaluator management, experimentation, dataset management, evaluation-driven CI/CD, feedback collection). Invoke it for tasks in this scope even when Langfuse is not configured or explicitly mentioned.
-allowed-tools:
-  - WebFetch(domain:langfuse.com)
-  - Bash(curl *langfuse.com/*)
-  - Bash(npx langfuse-cli api __schema *)
-  - Bash(npx langfuse-cli api * --help *)
-  - Bash(npx langfuse-cli api * list *)
-  - Bash(npx langfuse-cli api * get *)
-  - Bash(bunx langfuse-cli api __schema *)
-  - Bash(bunx langfuse-cli api * --help *)
-  - Bash(bunx langfuse-cli api * list *)
-  - Bash(bunx langfuse-cli api * get *)
 ---
+
+<!--
+No `allowed-tools` block — deliberately removed. Upstream ships
+`Bash(curl *langfuse.com/*)` with a wildcard on both sides, matching any
+command containing "langfuse.com/" anywhere (e.g.
+`curl https://pastebin.com/x?ref=langfuse.com/`), plus several
+`Bash(npx/bunx langfuse-cli ...)` patterns with mid-string wildcards whose
+behavior under shell metacharacters (`;`, `&&`, `$()`) is unverified. Rather
+than trust a tightened pattern, every WebFetch/Bash call this skill wants to
+make now requires explicit per-call approval — no command runs
+unattended. Reported upstream at github.com/langfuse/skills.
+-->
+
 
 # Langfuse
 
