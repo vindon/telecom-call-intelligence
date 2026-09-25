@@ -6,6 +6,40 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.8.0] — 2026-09-25
+
+### Added — Drift detection + golden-set eval harness
+
+Closes a gap found during the 2026-09-25 engineering-standards/portfolio
+audit: the project's documentation implied "drift detection" and "evals"
+were enforced capabilities; neither existed. Full design:
+`docs/superpowers/specs/2026-09-25-drift-eval-design.md`.
+
+- **`pipeline/drift.py`** — `DriftGuard` compares each run's KPIs
+  (`fcr_rate_pct`, `aht_minutes`, `qa_avg_score`, `data_quality_pass_rate_pct`)
+  against a rolling mean/stdev baseline built from `AgentMemory`'s existing
+  run history. A metric drifts only if it clears `max(2σ, 10% relative)` —
+  deliberately biased toward few false alarms given ~20 historical runs.
+  Wired into `ExportAgent`, before the current run is recorded into its own
+  baseline. Detection/reporting only — never blocks export.
+- **`eval_golden_set.py`** + **`evals/golden_set.json`** — a 15-case
+  golden-set regression eval. Ground truth is frozen from a past run that
+  scored HIGH QA + passed the Data Quality Gate (not hand-labeled), built
+  via `scripts/build_golden_set.py`. Diffs a fresh extraction against the
+  frozen expected values (exact match for categorical/boolean fields, ±15%
+  tolerance for duration). `make eval-golden` — real API calls (~$0.11),
+  never wired into CI.
+- `pipeline/memory.py::record_run()` now persists `data_quality_pass_rate_pct`
+  (previously computed but not carried into `AgentMemory`).
+- Fixed a second, independent instance of the version-drift pattern this
+  changelog already flagged twice before: `export_agent.py`'s hardcoded
+  `"pipeline_version": "4.5.0"` manifest literal had gone stale after the
+  4.7.0 bump. `scripts/check_docs_sync.py` now checks this literal too.
+
+Net: +39 tests (464 → 503).
+
+---
+
 ## [4.7.0] — 2026-09-25
 
 ### Fixed — Engineering-standards audit: doc drift, CI gaps, dependency pinning, coverage gaps

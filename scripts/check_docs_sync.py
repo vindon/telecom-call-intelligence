@@ -11,10 +11,20 @@ history. This script makes it a CI/pre-commit gate instead of a habit.
 
 Checks:
   1. pyproject.toml's version == the top [X.Y.Z] heading in CHANGELOG.md
-  2. every "<N> tests"/"<N> unit tests"/badge test-count mention in README.md
-     and CONTRIBUTING.md == the number of tests pytest actually collects
+  2. every "<N> tests"/"<N> unit tests"/badge test-count mention in README.md,
+     CONTRIBUTING.md, and CLAUDE.md == the number of tests pytest actually
+     collects
   3. every "vX.Y" pipeline-version banner in README.md/ARCHITECTURE.md matches
      pyproject.toml's major.minor (banners omit the patch component)
+  4. CLAUDE.md's own hyphenated ("<N>-test suite") and pytest-output-style
+     ("<N> passed") count mentions also match — added after CLAUDE.md was
+     found still saying "399-test suite"/"**399 passed**" during the
+     2026-09-25 drift/eval audit, phrasings the original BADGE_RE/COUNT_RE
+     didn't match
+  5. `pipeline/agents/export_agent.py`'s hardcoded `"pipeline_version"`
+     manifest literal matches pyproject.toml's version — added after that
+     literal was found stale (still "4.5.0" after a 4.7.0 bump) in the same
+     audit
 
 Deliberately does NOT touch CHANGELOG.md's body — historical entries
 ("Net: 399 tests (was 404...)") are a record of the past, not a claim about
@@ -30,11 +40,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-DOCS_TO_CHECK = ["README.md", "CONTRIBUTING.md"]
+DOCS_TO_CHECK = ["README.md", "CONTRIBUTING.md", "CLAUDE.md"]
 VERSION_BANNER_DOCS = ["README.md", "ARCHITECTURE.md"]
 
 BADGE_RE = re.compile(r"Tests-(\d+)%20passing")
 COUNT_RE = re.compile(r"\b(\d{2,4})(?:%20| )(?:unit )?tests?\b", re.IGNORECASE)
+HYPHEN_COUNT_RE = re.compile(r"\b(\d{2,4})-tests?\b", re.IGNORECASE)
+PASSED_RE = re.compile(r"\b(\d{2,4}) passed\b")
 VERSION_BANNER_RE = re.compile(r"\bv(\d+\.\d+)\b")
 
 
@@ -113,7 +125,12 @@ def check_test_count_sync(actual: int) -> list[str]:
             continue
         text = path.read_text()
         for lineno, line in enumerate(text.splitlines(), start=1):
-            for m in list(BADGE_RE.finditer(line)) + list(COUNT_RE.finditer(line)):
+            for m in (
+                list(BADGE_RE.finditer(line))
+                + list(COUNT_RE.finditer(line))
+                + list(HYPHEN_COUNT_RE.finditer(line))
+                + list(PASSED_RE.finditer(line))
+            ):
                 claimed = int(m.group(1))
                 if claimed != actual:
                     errors.append(
@@ -123,12 +140,31 @@ def check_test_count_sync(actual: int) -> list[str]:
     return errors
 
 
+def check_export_agent_version_sync(pyproject_version: str) -> list[str]:
+    """pipeline/agents/export_agent.py hardcodes 'pipeline_version' into
+    run_manifest_*.json — was already stale once (found during the
+    2026-09-25 drift/eval audit) before check_docs_sync.py could catch it."""
+    errors = []
+    path = ROOT / "pipeline" / "agents" / "export_agent.py"
+    text = path.read_text()
+    m = re.search(r'"pipeline_version":\s*"([^"]+)"', text)
+    if not m:
+        return [f'{path}: could not find a `"pipeline_version": "..."` line']
+    if m.group(1) != pyproject_version:
+        errors.append(
+            f"pipeline/agents/export_agent.py: pipeline_version literal is "
+            f"{m.group(1)!r}, but pyproject.toml is {pyproject_version!r}"
+        )
+    return errors
+
+
 def main() -> int:
     pyproject_version = _pyproject_version()
     errors = check_version_sync(pyproject_version)
     errors += check_version_banner_sync(pyproject_version)
     actual = live_test_count()
     errors += check_test_count_sync(actual)
+    errors += check_export_agent_version_sync(pyproject_version)
 
     if errors:
         print("check_docs_sync: FAILED\n")

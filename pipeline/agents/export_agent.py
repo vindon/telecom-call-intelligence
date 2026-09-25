@@ -213,7 +213,7 @@ class ExportAgent:
 
         manifest = {
             "run_timestamp": ts,
-            "pipeline_version": "4.7.0",
+            "pipeline_version": "4.8.0",
             "agents_executed": agents_executed,
             "offset": state.get("offset", 0),
             "seed": state.get("seed", 42),

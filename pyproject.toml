@@ -1,6 +1,6 @@
 [project]
 name = "telecom-call-intelligence"
-version = "4.7.0"
+version = "4.8.0"
 description = "Multi-agent telecom call intelligence pipeline — LangGraph + Claude Haiku + NVIDIA NIM"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
@@ -29,7 +29,15 @@ quote-style = "double"
 
 # ── Mypy ───────────────────────────────────────────────────────────────
 [tool.mypy]
-python_version         = "3.11"
+# 3.12, not 3.11 despite requires-python>=3.11 above: numpy's bundled .pyi
+# stubs (as pinned in requirements.lock) use `type X = ...` (PEP 695,
+# 3.12-only) — mypy crashes parsing them under a 3.11 target before checking
+# a single line of our own code. `follow_imports = "skip"` on numpy doesn't
+# help (pandas pulls its stubs in transitively regardless). The real 3.11
+# syntax-compatibility guarantee is CI's actual `python-version: ["3.11",
+# "3.12"]` pytest matrix — a 3.12-only construct in our own code would fail
+# that job's collection with a real SyntaxError, independent of mypy.
+python_version         = "3.12"
 ignore_missing_imports = true
 warn_unused_ignores    = false
 warn_return_any        = false

@@ -59,6 +59,8 @@ system rather than re-deriving the reasoning from code.
 | Type-check | `mypy pipeline/ --ignore-missing-imports`, `check_untyped_defs=true` | CI, `make type-check` (added to CI in [4.7.0] — previously local-only) |
 | SAST / secrets | `semgrep --config=p/security-audit --config=p/secrets` | CI, pre-commit (isolated env — see `.pre-commit-config.yaml` comments on why) |
 | Docs/version drift | `scripts/check_docs_sync.py` | CI, pre-commit (added in [4.7.0]) |
+| Cross-run KPI drift | `pipeline/drift.py` (`DriftGuard`), tested in `tests/test_drift.py` | Wired into `ExportAgent`, every run — detection/reporting only, not a CI gate (added in [4.8.0]) |
+| Golden-set extraction eval | `make eval-golden` (`eval_golden_set.py`, `evals/golden_set.json`), tested in `tests/test_eval_golden_set.py` | Manual only — real API calls (~$0.11), never wired into CI (added in [4.8.0]) |
 
 **Coverage is uneven by design, not by accident.** Pure-logic modules
 (`governance.py`, `config.py`, `memory.py`, `circuit_breaker.py`) sit at

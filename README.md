@@ -46,7 +46,7 @@ Local CSV (telecom_200k.csv — primary) · HuggingFace stream (fallback, 3.7M t
                             │
                             ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│              LangGraph StateGraph  ·  Multi-Agent Pipeline v4.7           │
+│              LangGraph StateGraph  ·  Multi-Agent Pipeline v4.8           │
 │                                                                           │
 │  ┌─────────────────────┐    ┌──────────────────────────────────────────┐  │
 │  │  DataIngestion      │───▶│  Extraction Agent  (2/7)                 │  │
@@ -417,7 +417,7 @@ The 7-node architecture is designed for this. Only `data_agent.py` changes when 
 
 **Vinoth N** — AI systems engineer with hands-on experience designing and shipping production-grade autonomous agentic AI systems.
 
-This project demonstrates complete ownership of a v4.7 agentic AI system aligned with Anthropic's agentic AI framework: ReAct control loops, Chain-of-Thought prompting, self-reflective deliberation, decision traceability, semantic vector memory, multi-layer security, plug-and-play model architecture, LangGraph orchestration, LLM prompt engineering, quality assurance, governance, observability, and developer tooling — built at the standard a production agentic AI company would actually ship.
+This project demonstrates complete ownership of a v4.8 agentic AI system aligned with Anthropic's agentic AI framework: ReAct control loops, Chain-of-Thought prompting, self-reflective deliberation, decision traceability, semantic vector memory, multi-layer security, plug-and-play model architecture, LangGraph orchestration, LLM prompt engineering, quality assurance, governance, observability, and developer tooling — built at the standard a production agentic AI company would actually ship.
 
 **Open to partnerships in building the agentic AI future:**
 

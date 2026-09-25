@@ -47,6 +47,7 @@ Key files:
 - `pipeline/llm_clients.py` — single seam for constructing Anthropic/Gemini/NVIDIA clients (timeout/max_retries policy lives here, not at each call site)
 - `pipeline/tracing.py` — Langfuse LLM observability (opt-in via `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY`); one trace per `call_id` for extraction+gap-fill, one per run for insights; redacts raw transcript content before export
 - `pipeline/circuit_breaker.py` — shared provider-unavailability breaker (Gemini quota exhaustion, NVIDIA timeout)
+- `pipeline/drift.py` — `DriftGuard`, cross-run KPI drift detection against `AgentMemory`'s history; wired into `ExportAgent`, detection/reporting only
 - `pipeline/agents/` — one file per agent
 
 ---
@@ -55,13 +56,14 @@ Key files:
 
 ```bash
 make install-dev    # install all deps (prod + dev)
-make test           # run 399-test suite
+make test           # run 503-test suite
 make test-fast      # skip @slow and @integration tests
 make lint           # ruff linter
 make check          # lint + type-check + test (full gate)
 make run            # 3-call smoke test
 make run-batches    # 100-call production run (5×20 batches)
 make dashboard      # Streamlit dashboard on localhost:8501
+make eval-golden    # golden-set extraction-accuracy eval (~$0.11, real API calls — never run without confirming cost first)
 ```
 
 > **Screenshotting the dashboard:** headless Chrome `--screenshot` captures before React hydrates → blank frame. Use Playwright instead:
@@ -132,11 +134,11 @@ Use the `new-agent` skill (`.claude/skills/new-agent`) — it scaffolds the file
 ## Running Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -v              # all 399 tests
+.venv/bin/python -m pytest tests/ -v              # all 503 tests
 .venv/bin/python -m pytest tests/ -m "not slow"   # skip API tests
 ```
 
-Expected: **399 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
+Expected: **503 passed** in < 7 seconds. If a test fails, check whether `config.py` constants changed or a governance threshold was adjusted.
 
 ---
 

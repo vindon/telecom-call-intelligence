@@ -51,7 +51,7 @@ repos:
         entry: .venv/bin/python scripts/check_docs_sync.py
         language: system
         pass_filenames: false
-        files: ^(README\.md|CONTRIBUTING\.md|CHANGELOG\.md|ARCHITECTURE\.md|pyproject\.toml|tests/.*)$
+        files: ^(README\.md|CONTRIBUTING\.md|CHANGELOG\.md|ARCHITECTURE\.md|CLAUDE\.md|pyproject\.toml|pipeline/agents/export_agent\.py|tests/.*)$
 
   # Security static analysis (SAST) — secrets and injection/security
   # anti-patterns ruff doesn't check for. Runs in its own isolated
