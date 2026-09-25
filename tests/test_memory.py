@@ -92,6 +92,18 @@ class TestAgentMemoryRecordRun:
         first_offset = tmp_memory._data["run_history"][0]["offset"]
         assert first_offset == 5
 
+    def test_record_run_persists_data_quality_pass_rate(self, tmp_memory, sample_run_summary):
+        tmp_memory.record_run({**sample_run_summary, "data_quality_pass_rate_pct": 92.5})
+        history = tmp_memory.get_run_history(last_n=1)
+        assert history[0]["data_quality_pass_rate_pct"] == 92.5
+
+    def test_record_run_defaults_data_quality_pass_rate_when_absent(
+        self, tmp_memory, sample_run_summary
+    ):
+        tmp_memory.record_run(sample_run_summary)  # fixture doesn't set this key
+        history = tmp_memory.get_run_history(last_n=1)
+        assert history[0]["data_quality_pass_rate_pct"] == 0
+
 
 class TestAgentMemorySaveLoad:
     def test_save_creates_file(self, tmp_memory):
