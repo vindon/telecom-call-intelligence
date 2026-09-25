@@ -143,3 +143,11 @@ DRIFT_BASELINE_WINDOW = 10  # how many prior runs form the rolling baseline
 DRIFT_Z_THRESHOLD = 2.0  # standard deviations from baseline mean
 DRIFT_PCT_THRESHOLD = 0.10  # relative-deviation floor (10%) — see drift.py for why both exist
 DRIFT_METRICS = ("fcr_rate_pct", "aht_minutes", "qa_avg_score", "data_quality_pass_rate_pct")
+
+# ── Eval harness (golden-set regression) ───────────────────────────────
+# eval_golden_set.py — real-API-call regression check, run manually via
+# `make eval-golden`, never in CI (see docs/superpowers/specs/
+# 2026-09-25-drift-eval-design.md for why).
+EVAL_PASS_THRESHOLD_PCT = 85.0  # minimum aggregate field-accuracy to pass
+EVAL_DURATION_TOLERANCE_PCT = 0.15  # total_duration_seconds tolerance band
+EVAL_DURATION_FIELD = "total_duration_seconds"
