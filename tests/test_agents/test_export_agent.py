@@ -88,6 +88,16 @@ class TestFullExport:
         assert history[0]["n_analyzed"] == 2
         assert history[0]["fcr_rate_pct"] == 75.0
 
+    def test_data_quality_pass_rate_recorded_in_agent_memory(self, make_record):
+        # Regression: this call site must feed data_quality_pass_rate_pct into
+        # MEMORY.record_run() too, or every real run persists it as 0 (memory.py's
+        # default) and DriftGuard's baseline for this metric permanently trends to 0.
+        state = _full_state(make_record)
+        state["qa_report"]["summary"]["data_quality_pass_rate_pct"] = 87.5
+        ExportAgent().run(state)
+        history = exp_mod.MEMORY.get_run_history(last_n=1)
+        assert history[0]["data_quality_pass_rate_pct"] == 87.5
+
     def test_export_decision_included_in_artifacts(self, isolate, make_record):
         out = ExportAgent().run(_full_state(make_record))
         decisions = json.loads(open(out["export_paths"]["decisions"]).read())

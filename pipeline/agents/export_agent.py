@@ -276,6 +276,9 @@ class ExportAgent:
                 "avg_handle_time_minutes": kpis.get("avg_handle_time_minutes", 0),
                 "qa_avg_score": qa_report.get("summary", {}).get("avg_score", 0),
                 "qa_verdict": qa_report.get("dataset_verdict", "N/A"),
+                "data_quality_pass_rate_pct": qa_report.get("summary", {}).get(
+                    "data_quality_pass_rate_pct", 100.0
+                ),
                 "total_tokens": usage.get("total_tokens", 0),
                 "total_cost_usd": usage.get("total_cost_usd", 0),
                 "model": usage.get("model", "unknown"),
