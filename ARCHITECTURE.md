@@ -191,6 +191,7 @@ Every autonomous decision made by any agent is captured as a `DecisionRecord` wi
 | `InsightsAgent` | `deliberation_outcome` | 3-pass deliberation completed with critique quality |
 | `ApprovalGate` | `approval_decision` | Human approved / rejected / auto-approved |
 | `GraphRouter` | `routing_decision` | Quality gate failure → emergency export routing |
+| `ExportAgent` | `drift_check` | Cross-run KPI drift check against `AgentMemory`'s rolling baseline (`pipeline/drift.py`) |
 
 ### Output
 
@@ -445,6 +446,14 @@ KPIs computed: FCR rate, AHT, escalation rate, avoidable call rate, agentic AI r
 
 **Outputs:** `export_paths`
 
+Also runs the cross-run KPI drift check (`pipeline/drift.py`'s `DriftGuard`)
+against `AgentMemory`'s rolling baseline before recording this run into that
+same history, and embeds the result as `drift_report` in `summary.json`.
+Detection/reporting only — never blocks export. A separate, manually-run
+golden-set extraction eval (`eval_golden_set.py`, `make eval-golden`) checks
+extraction-quality regression against frozen ground truth; real API calls,
+never wired into CI.
+
 ---
 
 ## State Schema
@@ -549,6 +558,7 @@ telecom-call-intelligence/
 │   ├── llm_clients.py         ← Single seam for Anthropic/Gemini/NVIDIA client construction
 │   ├── circuit_breaker.py     ← Shared provider-unavailability breaker (Gemini quota, NVIDIA timeout)
 │   ├── analyzer.py            ← Claude/Gemini client (CoT, ReAct, checkpoint, backoff)
+│   ├── drift.py                ← DriftGuard: cross-run KPI drift detection, wired into ExportAgent
 │   ├── aggregator.py          ← KPI computation + cost-lever estimates + issue_breakdown (category × segment × resolution-method cross-tab)
 │   ├── hf_loader.py           ← CSV loader + HuggingFace streaming + offset batching
 │   ├── token_tracker.py       ← Model-aware token cost accounting
@@ -572,7 +582,8 @@ telecom-call-intelligence/
 ├── run_pipeline.py            ← Single-batch entry point (model-aware key validation)
 ├── run_batches.py             ← Multi-batch orchestrator (delegates to Orchestrator)
 ├── merge_outputs.py           ← Merge batch JSONs → combined dataset
-└── qa_audit.py                ← Standalone QA scoring tool
+├── qa_audit.py                ← Standalone QA scoring tool
+└── eval_golden_set.py         ← Golden-set extraction-accuracy eval (make eval-golden)
 ```
 
 ---

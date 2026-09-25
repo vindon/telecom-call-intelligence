@@ -156,3 +156,11 @@ class TestRunEval:
         assert by_id["c1"].status == "scored"
         assert by_id["c1"].accuracy_pct == 100.0
         assert by_id["c2"].status == "failed"
+
+    def test_missing_golden_set_raises_friendly_error(self, tmp_path):
+        # Finding 1: evals/golden_set.json doesn't exist yet (a deliberately
+        # deferred, human-run step) — running the eval must not crash with a
+        # bare traceback.
+        missing_path = tmp_path / "golden_set.json"
+        with pytest.raises(FileNotFoundError, match="build-golden-set"):
+            run_eval(missing_path)

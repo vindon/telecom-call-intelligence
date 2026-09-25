@@ -71,11 +71,11 @@ test-cov:
 
 lint:
 	$(RUFF) check pipeline/ tests/ api/ run_pipeline.py run_batches.py \
-		merge_outputs.py qa_audit.py dashboard/
+		merge_outputs.py qa_audit.py dashboard/ eval_golden_set.py scripts/
 
 format:
 	$(RUFF) format pipeline/ tests/ api/ run_pipeline.py run_batches.py \
-		merge_outputs.py qa_audit.py dashboard/
+		merge_outputs.py qa_audit.py dashboard/ eval_golden_set.py scripts/
 
 type-check:
 	$(MYPY) pipeline/ --ignore-missing-imports

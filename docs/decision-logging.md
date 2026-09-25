@@ -21,4 +21,4 @@ def run(self, state: dict) -> dict:
 
 ## Named decision types
 
-`transcript_skip`, `pii_redaction`, `react_trigger`, `react_gap_fill_outcome`, `qa_exclusion`, `qa_grade_assignment`, `quality_gate_outcome`, `aggregation_scope`, `cost_model_applied`, `provider_selected`, `deliberation_outcome`, `routing_decision`, `approval_decision`, `export_scope`, `data_quality_gate_outcome`, `phase_reconciliation_failure`, `timestamp_ground_truth_mismatch`, `transcript_truncation_detected`.
+`transcript_skip`, `pii_redaction`, `react_trigger`, `react_gap_fill_outcome`, `qa_exclusion`, `qa_grade_assignment`, `quality_gate_outcome`, `aggregation_scope`, `cost_model_applied`, `provider_selected`, `deliberation_outcome`, `routing_decision`, `approval_decision`, `export_scope`, `data_quality_gate_outcome`, `phase_reconciliation_failure`, `timestamp_ground_truth_mismatch`, `transcript_truncation_detected`, `drift_check`.

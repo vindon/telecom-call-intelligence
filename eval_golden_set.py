@@ -12,6 +12,15 @@ for the full golden set at current pricing). Run manually via
 `make eval-golden`, always after confirming the cost with whoever's
 paying for it.
 
+Known limitation — first-pass extraction only: this eval calls
+pipeline.analyzer.analyze_batch() directly, which performs first-pass
+extraction only — it does not run ExtractionAgent's ReAct gap-fill loop.
+The golden set's frozen `expected` values were captured from the full
+pipeline (including gap-fill), so a golden case whose original extraction
+needed gap-fill to reach its correct values may show a false regression
+here. This is an accepted, documented limitation, not a bug — wiring in
+the ReAct loop is a bigger change with its own design tradeoffs.
+
 Usage:
     .venv/bin/python eval_golden_set.py
     make eval-golden
@@ -162,6 +171,12 @@ def build_eval_report(cases: list[CaseResult]) -> EvalReport:
 
 
 def run_eval(golden_set_path: Path = GOLDEN_SET_PATH) -> EvalReport:
+    if not golden_set_path.exists():
+        raise FileNotFoundError(
+            f"{golden_set_path} not found — the golden set hasn't been generated yet. "
+            "Run `make build-golden-set SOURCE=<path>` first (a one-time step; see "
+            "docs/engineering-standards.md)."
+        )
     golden = json.loads(golden_set_path.read_text())
     cases_data = golden["cases"]
 
@@ -196,7 +211,11 @@ def _print_report(report: EvalReport) -> None:
 
 
 def main() -> None:
-    report = run_eval()
+    try:
+        report = run_eval()
+    except FileNotFoundError as exc:
+        print(f"\n✗ {exc}\n")
+        sys.exit(1)
     _print_report(report)
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")

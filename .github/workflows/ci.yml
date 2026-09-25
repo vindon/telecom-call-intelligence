@@ -60,7 +60,7 @@ jobs:
       - name: Ruff lint — pipeline modules
         run: |
           ruff check pipeline/ run_pipeline.py run_batches.py \
-            merge_outputs.py qa_audit.py dashboard/
+            merge_outputs.py qa_audit.py dashboard/ eval_golden_set.py scripts/
 
       - name: Ruff lint — tests
         run: ruff check tests/
@@ -87,6 +87,7 @@ jobs:
             pipeline/llm_clients.py \
             pipeline/circuit_breaker.py \
             pipeline/tracing.py \
+            pipeline/drift.py \
             pipeline/orchestrator.py \
             pipeline/security.py \
             pipeline/vector_memory.py \

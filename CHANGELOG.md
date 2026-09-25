@@ -22,13 +22,21 @@ were enforced capabilities; neither existed. Full design:
   deliberately biased toward few false alarms given ~20 historical runs.
   Wired into `ExportAgent`, before the current run is recorded into its own
   baseline. Detection/reporting only — never blocks export.
-- **`eval_golden_set.py`** + **`evals/golden_set.json`** — a 15-case
-  golden-set regression eval. Ground truth is frozen from a past run that
-  scored HIGH QA + passed the Data Quality Gate (not hand-labeled), built
-  via `scripts/build_golden_set.py`. Diffs a fresh extraction against the
-  frozen expected values (exact match for categorical/boolean fields, ±15%
-  tolerance for duration). `make eval-golden` — real API calls (~$0.11),
-  never wired into CI.
+- **`eval_golden_set.py`** — the golden-set regression eval harness. Diffs a
+  fresh extraction against a golden case's frozen `expected` values (exact
+  match for categorical/boolean fields, ±15% tolerance for duration) via
+  `scripts/build_golden_set.py`, which freezes ground truth from a past run
+  that scored HIGH QA + passed the Data Quality Gate (not hand-labeled).
+  `make eval-golden` — real API calls (~$0.11), never wired into CI. The
+  harness is ready but **`evals/golden_set.json` itself has not been
+  generated yet** — that's a one-time, deliberately-deferred step requiring
+  a human decision on source-dataset licensing/PII review; running
+  `make eval-golden` today prints a clear message telling you to run
+  `make build-golden-set SOURCE=<path>` first, rather than crashing. Also
+  note: the harness scores first-pass extraction only (no ReAct gap-fill
+  pass), so a golden case whose original run needed gap-fill to reach its
+  frozen expected values may show a false regression here — a known,
+  accepted limitation, not a bug.
 - `pipeline/memory.py::record_run()` now persists `data_quality_pass_rate_pct`
   (previously computed but not carried into `AgentMemory`).
 - Fixed a second, independent instance of the version-drift pattern this
@@ -36,7 +44,10 @@ were enforced capabilities; neither existed. Full design:
   `"pipeline_version": "4.5.0"` manifest literal had gone stale after the
   4.7.0 bump. `scripts/check_docs_sync.py` now checks this literal too.
 
-Net: +39 tests (464 → 503).
+Net: +46 tests (464 → 510) — includes the 7 tests added in the post-review
+fix wave that closed the gaps above (emergency-run baseline pollution,
+missing drift-check error handling, missing-golden-set crash, small-batch
+drift-sensitivity filter).
 
 ---
 

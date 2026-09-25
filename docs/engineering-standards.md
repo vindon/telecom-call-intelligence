@@ -60,7 +60,7 @@ system rather than re-deriving the reasoning from code.
 | SAST / secrets | `semgrep --config=p/security-audit --config=p/secrets` | CI, pre-commit (isolated env — see `.pre-commit-config.yaml` comments on why) |
 | Docs/version drift | `scripts/check_docs_sync.py` | CI, pre-commit (added in [4.7.0]) |
 | Cross-run KPI drift | `pipeline/drift.py` (`DriftGuard`), tested in `tests/test_drift.py` | Wired into `ExportAgent`, every run — detection/reporting only, not a CI gate (added in [4.8.0]) |
-| Golden-set extraction eval | `make eval-golden` (`eval_golden_set.py`, `evals/golden_set.json`), tested in `tests/test_eval_golden_set.py` | Manual only — real API calls (~$0.11), never wired into CI (added in [4.8.0]) |
+| Golden-set extraction eval | `make eval-golden` (`eval_golden_set.py`), tested in `tests/test_eval_golden_set.py` | Manual only — real API calls (~$0.11), never wired into CI (added in [4.8.0]). **Harness is ready; `evals/golden_set.json` itself has not been generated yet** — a one-time, deliberately-deferred human decision (dataset licensing/PII review); run `make build-golden-set SOURCE=<path>` first, or `make eval-golden` prints a clear message instead of crashing. Also scores first-pass extraction only (no ReAct gap-fill pass) — a golden case whose original run needed gap-fill may show a false regression, a known limitation. |
 
 **Coverage is uneven by design, not by accident.** Pure-logic modules
 (`governance.py`, `config.py`, `memory.py`, `circuit_breaker.py`) sit at
@@ -135,8 +135,9 @@ no changes needed.
 - **Numbers in prose are traced, not typed from memory.** `CLAUDE.md`:
   "never write a number into a doc without tracing it to
   `outputs/summary.json` or a fresh computation" — the [4.7.0] audit is a
-  direct example: the "464 tests" now in `README.md`/`CONTRIBUTING.md` is
-  `pytest --collect-only`'s actual output, not a hand-typed guess, and
+  direct example: the "464 tests" figure that was *then* in
+  `README.md`/`CONTRIBUTING.md` was `pytest --collect-only`'s actual output
+  at that time, not a hand-typed guess, and
   `scripts/check_docs_sync.py` now makes that mechanically true forever
   instead of true-until-the-next-drift.
 - **Every agent emits a `DecisionLogger` trace** (`decision_type`, `reason`,
@@ -167,6 +168,18 @@ no changes needed.
   banners) only — it does not (yet) check agent-count or model-name
   mentions, the other two drift classes `CLAUDE.md` asks a human/assistant
   to check manually each session.
+- **The drift check's real-world sensitivity is limited by small per-batch
+  sample sizes.** A real-data check against 28 actual historical runs found
+  `fcr_rate_pct`'s baseline standard deviation, at 20-call-batch granularity
+  (worsened by a few 3-call smoke-test runs mixed into the same history),
+  is large enough that the drift threshold only fires outside roughly
+  [24.5%, 113.5%] — effectively never, for a percentage metric. The
+  threshold formula (`pipeline/drift.py`) is correctly implemented per
+  spec; this is real-world sensitivity, not a bug. Mitigated in [4.8.0]'s
+  fix wave by `DRIFT_MIN_CALLS_PER_RUN` (excludes small/noisy runs from
+  both the baseline and the current-run verdict), but the proper future
+  fix is running the drift check on the full orchestrated ~100-call run
+  rather than per-20-call-batch.
 
 ---
 

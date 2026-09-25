@@ -104,6 +104,16 @@ class TestAgentMemoryRecordRun:
         history = tmp_memory.get_run_history(last_n=1)
         assert history[0]["data_quality_pass_rate_pct"] == 0
 
+    def test_record_run_persists_is_emergency(self, tmp_memory, sample_run_summary):
+        tmp_memory.record_run({**sample_run_summary, "is_emergency": True})
+        history = tmp_memory.get_run_history(last_n=1)
+        assert history[0]["is_emergency"] is True
+
+    def test_record_run_defaults_is_emergency_when_absent(self, tmp_memory, sample_run_summary):
+        tmp_memory.record_run(sample_run_summary)  # fixture doesn't set this key
+        history = tmp_memory.get_run_history(last_n=1)
+        assert history[0]["is_emergency"] is False
+
 
 class TestAgentMemorySaveLoad:
     def test_save_creates_file(self, tmp_memory):

@@ -29,15 +29,29 @@ quote-style = "double"
 
 # ── Mypy ───────────────────────────────────────────────────────────────
 [tool.mypy]
-# 3.12, not 3.11 despite requires-python>=3.11 above: numpy's bundled .pyi
-# stubs (as pinned in requirements.lock) use `type X = ...` (PEP 695,
-# 3.12-only) — mypy crashes parsing them under a 3.11 target before checking
-# a single line of our own code. `follow_imports = "skip"` on numpy doesn't
-# help (pandas pulls its stubs in transitively regardless). The real 3.11
-# syntax-compatibility guarantee is CI's actual `python-version: ["3.11",
-# "3.12"]` pytest matrix — a 3.12-only construct in our own code would fail
-# that job's collection with a real SyntaxError, independent of mypy.
-python_version         = "3.12"
+# No explicit python_version pin here (deliberately): mypy infers it from
+# whichever interpreter actually runs it. CI's mypy step already runs
+# inside both legs of the `python-version: ["3.11", "3.12"]` test matrix,
+# so letting it float gives real per-version coverage instead of always
+# pretending to be one fixed version.
+#
+# This used to be hardcoded to python_version="3.12" as a workaround: the
+# requirements*.lock files resolve a *different* numpy per Python version
+# (numpy 2.4.x for <3.12, numpy 2.5.3 for >=3.12), and only the >=3.12
+# numpy's bundled .pyi stubs use `type X = ...` (PEP 695, 3.12-only) —
+# mypy would crash parsing those stubs before checking a single line of
+# our own code if its inferred target version was below 3.12. Hardcoding
+# 3.12 avoided the crash but meant the 3.11 CI leg's mypy run never
+# actually checked anything at 3.11 semantics. Now that we know the
+# breakage is specific to the >=3.12 numpy build, floating the version
+# works correctly on both legs: the 3.11 leg installs the 2.4.x numpy
+# (no PEP 695 stubs, nothing to crash on) and the 3.12 leg's inferred
+# target matches the 2.5.3 numpy it actually has installed.
+# `follow_imports = "skip"` on numpy doesn't help either way (pandas pulls
+# its stubs in transitively regardless). The real 3.11 syntax-compatibility
+# guarantee remains CI's actual pytest matrix — a 3.12-only construct in
+# our own code would fail that job's collection with a real SyntaxError,
+# independent of mypy.
 ignore_missing_imports = true
 warn_unused_ignores    = false
 warn_return_any        = false

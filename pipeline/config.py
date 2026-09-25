@@ -143,6 +143,9 @@ DRIFT_BASELINE_WINDOW = 10  # how many prior runs form the rolling baseline
 DRIFT_Z_THRESHOLD = 2.0  # standard deviations from baseline mean
 DRIFT_PCT_THRESHOLD = 0.10  # relative-deviation floor (10%) — see drift.py for why both exist
 DRIFT_METRICS = ("fcr_rate_pct", "aht_minutes", "qa_avg_score", "data_quality_pass_rate_pct")
+DRIFT_MIN_CALLS_PER_RUN = 10  # a run/history entry needs >= this many analyzed calls to be
+# trusted for drift comparison — below this, per-batch binomial noise dominates (see
+# docs/engineering-standards.md §7 for the real-data finding that motivated this).
 
 # ── Eval harness (golden-set regression) ───────────────────────────────
 # eval_golden_set.py — real-API-call regression check, run manually via

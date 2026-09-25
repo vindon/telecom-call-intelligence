@@ -115,7 +115,7 @@ class AgentMemory:
             run_timestamp, n_analyzed, n_failed, fcr_rate_pct,
             avg_handle_time_minutes, qa_avg_score, qa_verdict,
             total_tokens, total_cost_usd, model, insights_source,
-            offset, seed, n_calls
+            offset, seed, n_calls, is_emergency
         """
         self._data["total_runs"] += 1
 
@@ -136,6 +136,7 @@ class AgentMemory:
             "total_cost_usd": run_summary.get("total_cost_usd", 0),
             "model": run_summary.get("model", "unknown"),
             "insights_source": run_summary.get("insights_source", "unknown"),
+            "is_emergency": run_summary.get("is_emergency", False),
         }
         # Keep last RUN_HISTORY_LIMIT runs
         self._data["run_history"].append(entry)
