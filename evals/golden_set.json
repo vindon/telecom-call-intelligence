@@ -1,0 +1,230 @@
+{
+  "frozen_from": "outputs/full_results_combined_20260809_175823.json",
+  "cases": [
+    {
+      "call_id": "00000ecf65b04c5790f348e9455e790b",
+      "transcript_text": "[13:45:00] AGENT: Good day, thank you for reaching out to Union Mobile. My name is Liliana, how may I assist you today?\n[13:45:09] CUSTOMER: Hi Liliana, I'm calling to report my phone stolen. I was traveling and I lost it. Can you please help me with the process of getting a replacement?\n[13:45:22] AGENT: Sorry to hear that, Jame. I'd be happy to help you with that. First, I'll need to verify your identity to ensure we I're speaking with the account holder. Can you please provide me with your full name and the last four digits of the credit card associated with your account?\n[13:45:45] CUSTOMER: Sure, my name is Jame Smith, and the last four digits of my credit card are 1234.\n[13:45:53] AGENT: Thank you, Jame. I've been your identity. Now, let you please provide me with more details about the phone you lost? What type of phone was it, and when did you last use it?\n[13:46:09] CUSTOMER: It was an iPhone 12 Pro, and I last used it yesterday afternoon. I think I must have left it at the restaurant where I had lunch.\n[13:46:21] AGENT: Okay, I've noted that down. Since you've lost your phone while traveling, we'll need to file a claim with our international insurance provider. I'll guide you through the process.\n[13:46:35] CUSTOMER: Thank sounds great, thank you.\n[13:46:37] AGENT: First, we'll need you to confirm the details of your loss. Can you please tell me the exact, time you lost your phone, and the location where you last had it?\n[13:46:51] CUSTOMER: Sure, I lost it yesterday, around 2 pm, at a restaurant in Paris.\n[13:46:57] AGENT: Alright, I've noted that down. Next, we'll need to fill out a police report. Would you be able to provide me with the nearest police station's details where you reported the loss?\n[13:47:12] CUSTOMER: Yes, I filed a report at the local police station in Paris. The address is 12 Rue des Champs-\u00c9lys\u00e9es.\n[13:47:21] AGENT: Perfect, I've got that. Now, we'll need to provide our insurance provider with some additional information. Can you please send me a copy of the police report, as well as any proof of purchase or receipts for the phone?\n[13:47:39] CUSTOMER: Sure, I have the receipt in my email. I'll forward it to you right away.\n[13:47:46] AGENT: Great, thank you. Once we receive all the necessary documents, we'll process your claim and ship a replacement phone to you as soon as possible. In the meantime, I'll go ahead and suspend your service to prevent any unauthorized usage.\n[13:48:04] CUSTOMER: That sounds good. Thank you so much for your help, Liliana.\n[13:48:09] AGENT: You're welcome, Jame. Is there anything else I can assist you with today?\n[13:48:15] CUSTOMER: No, that's all. Thank you again.\n[13:48:18] AGENT: You're welcome. Have a great day, and we'll be in touch soon regarding an update on your claim.\n[13:48:26] CUSTOMER: Thanks, have a great day too.\n[13:48:29] AGENT: Thank you, Jame. Goodbye.",
+      "call_date": "2023-10-17",
+      "expected": {
+        "issue_1_category": "device",
+        "fcr_indicator": false,
+        "escalation_required": true,
+        "customer_sentiment_start": "distressed",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 209,
+        "all_issues_resolved": false
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0016ecab9ee34fbbab72afc7a1c15400",
+      "transcript_text": "[16:31:49] AGENT: Hello, thank you for calling Union Mobile. My name is Dale, how can I assist you today?\n[16:31:56] CUSTOMER: Hi Dale, I'm calling about my bill credits. I'm not bit confused about how they work. Can you help me understand?\n[16:32:06] AGENT: Of course, Gillie. I'd be happy to help clarify things for you. Can you tell me a little bit more about what you're looking for? Have you checked your account bill or our website for information on bill credits?\n[16:32:24] CUSTOMER: Yeah, I've checked the website and my bill, but it's still not clear to me. Can you just explain it in simple terms?\n[16:32:35] AGENT: Sure thing! Bill credits are essentially discounts that we offer our our customers on their monthly plans. They're a way for us to say thank you for being a loyal customer and to help make your mobile service more affordable.\n[16:32:53] CUSTOMER: Okay, that makes sense. But how do I know if I'm eligible for bill credits?\n[16:33:00] AGENT: Great question! We typically offer bill credits to customers who have been with us for a certain amount of time, have a specific plan, or have reached a certain level threshold. I can check your account to see if you're eligible for any current bill credits. Would you like me to do that for\n[16:33:25] CUSTOMER: Yes, please! That would be great.\n[16:33:28] AGENT: Alright, let me take a look at your account real quick. Okaypause) It looks like you're eligible for a $10 bill credit this month!\n[16:33:39] CUSTOMER: Awesome, that's great news! How do I apply it to my account?\n[16:33:44] AGENT: I can take care of that for you. Let me just apply the credit to your account. (pause) All done! You should see the credit reflected on your next bill.\n[16:33:58] CUSTOMER: Perfect, thanks so much for your help Dale!\n[16:34:02] AGENT: You're welcome, Gillie. Is there anything else I can assist you with today?\n[16:34:08] CUSTOMER: Nope, that was all I needed. Thanks again!\n[16:34:12] AGENT: You're welcome. Have a great day, Gillie!",
+      "call_date": "2023-12-02",
+      "expected": {
+        "issue_1_category": "information",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "neutral",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 143,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0008c1c2c8d945f08db57a2d0c0f387c",
+      "transcript_text": "[15:47:53] AGENT: Good day, thank you for calling Union Mobile. My name is Yoel, how can I assist you today?\n[15:48:01] CUSTOMER: Hi Yoel, I'm calling about my Pay-per-use plan. I noticed a billing error on my last statement.\n[15:48:09] AGENT: Sorry to hear that, Retha. Can you please provide me with more details about the error? Such as the date of the charge and the amount?\n[15:48:21] CUSTOMER: Sure, it was on January 15th, and it says I was charged $20 for a data package that I didn't purchase.\n[15:48:30] AGENT: I apologize for the inconvenience, Retha. Let me check on that for you. (pause) It looks like there was an error on our end. and you were indeed charged incorrectly.\n[15:48:44] CUSTOMER: Oh, thank you so much! That's great to hear.\n[15:48:48] AGENT: No problem, Retha. Is there anything else I can assist you with today?\n[15:48:54] CUSTOMER: No, that was the only issue I had. Thank you again for Yoel.\n[15:49:00] AGENT: You're welcome, Retha. Thank you for bringing this to our attention. Have a great day, and thank you for choosing Union Mobile.\n[15:49:11] CUSTOMER: Thank you, Yoel. Have a great day too. By",
+      "call_date": "2023-10-05",
+      "expected": {
+        "issue_1_category": "billing",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "negative",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 78,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0003403899eb47afb968c14904f33c96",
+      "transcript_text": "[16:09:41] AGENT: Hello, thank you for calling Union Mobile. My name is Alissa, how can I assist you today?\n[16:09:48] CUSTOMER: Hi, I'm calling about my accessories and peripherals. I've been trying to get help with this issue for weeks now and and I'm getting really frustrated.\n[16:10:00] AGENT: Sorry to hear that, Rubye. Can you please provide me with your account information so I can look into this for you?\n[16:10:11] CUSTOMER: Yeah, sure. My account number is 1234567890.\n[16:10:14] AGENT: Thank you, Rubye. Unfortunately, I'm unable to verify your identity with the information you provided. Can you please provide me with some additional information to confirm your identity?\n[16:10:27] CUSTOMER: What do you mean? You guys have all my information on file. Why do I need to provide more?\n[16:10:35] AGENT: I understand your frustration, Rubye, but our system requires us verification steps security purposes. Can you please provide me with the last four digits of the credit card associated with your account?\n[16:10:50] CUSTOMER: Fine. It's 1234.\n[16:10:52] AGENT: Thank you, Rubye. Unfortunately, that information doesn't match what we have on file. Can you please provide me with a different form of identification?\n[16:11:03] CUSTOMER: This is ridiculous. I can't believe I runaround I'm getting from you people.\n[16:11:09] AGENT: Rubye, I understand your frustration, but I assure you that I're doing everything we can to help you. Unfortunately, without proper identification, I'm unable to assist you with your request. Is\n[16:11:23] CUSTOMER: This is bullshit. I'm going to report this to the Better Business Bureau.\n[16:11:29] AGENT: Rubye, I apologize for the inconvenience, but I hope you understand that our priority is theing the security and privacy of our customers' information. If you have any further questions or concerns, please feel free to contact us again.\n[16:11:47] CUSTOMER: Whatever. I'll just have to figure out another way to get what I need.\n[16:11:53] AGENT: Is there anything else I can assist you with today, Rubye?\n[16:11:58] CUSTOMER: No, just fix my shit sorted out. Bye.\n[16:12:02] AGENT: Thank you for calling Union Mobile. Have a great day.",
+      "call_date": "2023-09-28",
+      "expected": {
+        "issue_1_category": "account",
+        "fcr_indicator": false,
+        "escalation_required": true,
+        "customer_sentiment_start": "frustrated",
+        "customer_sentiment_end": "distressed",
+        "total_duration_seconds": 141,
+        "all_issues_resolved": false
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "00197ecccddb49538f5e79927033d77d",
+      "transcript_text": "[16:46:09] AGENT: Hello, thank you for calling Union Mobile. My name is Marcel, how can I assist you today?\n[16:46:16] CUSTOMER: Hi Marcel, I'm calling about my augmented reality streaming. I've been having some issues with it.\n[16:46:24] AGENT: Sorry to hear that, Katharine. Can you tell me more about the issues you're experiencing?\n[16:46:31] CUSTOMER: Yes, sure. I've been trying to stream AR content on my phone, but it keeps cuttinging and freezing. It's really frustrating.\n[16:46:40] AGENT: I understand how frustrating that must be. Let me see if I can help you troubleshoot the issue. Can you tell me what type of phone you're using?\n[16:46:53] CUSTOMER: Sure, I'm using a Samsung Galaxy S21.\n[16:46:57] AGENT: Alright, that's a great phone. Have you tried restarting your phone and then trying to stream again?\n[16:47:04] CUSTOMER: Yes, I've tried that already. It didn't work.\n[16:47:08] AGENT: Okay, no problem. Let me try a few other things. Can you tell me what kind of network connection you you using? Are you on Wi-Fi or data?\n[16:47:21] CUSTOMER: I'm using Wi-Fi.\n[16:47:22] AGENT: Great. Have you tried connecting to a different Wi-Fi network to see if the issue persists?\n[16:47:30] CUSTOMER: No, I haven't tried that.\n[16:47:32] AGENT: Alright, let's try that. Can you connect to a different Wi-Fi network and then try streaming again?\n[16:47:40] CUSTOMER: Okay, I'll try that. (pause) Okay, I'm connected to a different network now.\n[16:47:46] AGENT: Great. Try, try streaming again and see if the issue persists.\n[16:47:51] CUSTOMER: (pause) Yeah, it's still buffering and freezing.\n[16:47:54] AGENT: Sorry to hear that. It sounds like the issue might be with the phone. Have you tried resetting your phone's network settings?\n[16:48:04] CUSTOMER: No, I haven't tried How do I do that?\n[16:48:08] AGENT: Don't worry, it's easy. Go to your phone's settings, select \"Network & Internet,\" then select \"Reset Network Settings.\" Follow the prompts to complete the process.\n[16:48:20] CUSTOMER: Okay, I did that. Now what?\n[16:48:23] AGENT: Great, try streaming again and see if the issue has resolved.\n[16:48:28] CUSTOMER: (pause) Oh, wow! That actually worked! The streaming is smooth now. Thank you so much, Marcel!\n[16:48:35] AGENT: You're welcome, Katharine. I'm glad I could help. Is there anything else I can assist you with today?\n[16:48:44] CUSTOMER: No, that was the only issue I was having. Thanks again!\n[16:48:49] AGENT: You're welcome. Have a great day, Katharine!",
+      "call_date": "2023-12-16",
+      "expected": {
+        "issue_1_category": "technical",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "frustrated",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 160,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "000f2ae4339b4d91ad89895b3f8bc9db",
+      "transcript_text": "[15:45:46] AGENT: Good morning, thank you for calling Union Mobile. My name is Antwan, how can I assist you today?\n[15:45:54] CUSTOMER: Hi Antwan, I'm calling about my international data-only plan. I'm planning a trip abroad and want to make sure I have the right plan for my needs.\n[15:46:06] AGENT: Of course, Nora. Can you please provide me with your account information so I can look into your current plan and suggest the best options for you?\n[15:46:19] CUSTOMER: Sure, my account number is 1234567890.\n[15:46:21] AGENT: Great you, Nora. I've located your account. May I know which country you'll be traveling to and for how long? This will help me recommend the most suitable plan for your needs.\n[15:46:36] CUSTOMER: I'll be traveling to Spain for two weeks.\n[15:46:40] AGENT: Great! Based on your usage patterns and the duration of your trip, I would recommend our International Data Plus plan. It offers 5GB of high-speed data, unlimited messaging, and voice calls at $0.20 per minute. Would you like me to add this plan to your account?\n[15:47:01] CUSTOMER: That sounds good. Can you also tell me if there are any additional fees or charges I need to be aware of?\n[15:47:11] AGENT: Yes, there is a one-time activation fee of $20, and you'll be charged for any data usage beyond the 5GB limit at $0.05 per MB. Additionally, there'll be charged for any voice or made to received while roaming.\n[15:47:29] CUSTOMER: Okay, that makes sense. Can you also tell me how to set up international phone for international use?\n[15:47:37] AGENT: Certainly! You'll need to make sure your device is compatible with the frequencies used in France. Most modern devices are compatible, but it's always best to double-check. You can also this information on our website or by contacting the manufacturer directly Once you're abroad, you can simply insert a local SIM card or use an roaming to access data services make calls.\n[15:48:06] CUSTOMER: Thank's great, thank you for the that. Can you also tell me if there are any other features or services I should be aware of?\n[15:48:17] AGENT: Yes, we offer an international calling feature-on that allows you to make discounted calls from abroad. You can also use our mobile app to track your usage and manage your account while you're away.\n[15:48:33] CUSTOMER: That's very helpful, thank you. I think I have all the information I need now Can you summarize the changes to my plan and the associated costs?\n[15:48:46] AGENT: Certainly! I've added the International Data Plus plan to your account, which includes 5GB of high-speed data, unlimited messaging, and voice calls at $0.20 per minute. There's a one-time activation fee of $20, and you'll be charged for any data usage beyond the 5GB limit at $0.05 per MB. Additionally, you'll be charged for any voice calls made or received while roaming. Is there anything else I can assist you with today, Nora?\n[15:49:19] CUSTOMER: No, that covers everything, Thank you for your help, Antwan.\n[15:49:24] AGENT: You're welcome, Nora. Thank you for choosing Union Mobile. Have a great day and enjoy wonderful trip!\n[15:49:32] CUSTOMER: Thank you, Antwan. Goodbye.\n[15:49:34] AGENT: Goodbye, Nora. Have a great day.",
+      "call_date": "2023-10-02",
+      "expected": {
+        "issue_1_category": "plan",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "neutral",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 228,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0011a446061a4c23a9b47c830fbf52bd",
+      "transcript_text": "[12:02:38] AGENT: Hi there! Thank you for reaching out to Union Mobile. My name is Logan, how can I assist you today?\n[12:02:47] CUSTOMER: Hi Logan, I'm calling about the VR advertising options you offer. Can you tell me a little bit more about them?\n[12:02:56] AGENT: Ab course! Our VR advertising options are designed to provide an immersive and engaging experience for your target audience. We have a variety of options available, including 360-degree videos, virtual product demonstrations, and interactive experiences.\n[12:03:13] CUSTOMER: That sounds great! Can you walk me through the process of creating a VR ad with Union Mobile?\n[12:03:21] AGENT: Sure thing! First, we'll work with you to understand your business goals and objectives for the ad. Then, our team will create a customized VR experience that aligns with your brand and messaging. We'll handle everything from concept to delivery, so you don't have to worry about a thing.\n[12:03:44] CUSTOMER: That sounds easy enough. How long does the process typically take?\n[12:03:49] AGENT: The timeline will depend on the complexity of the project, but we typically deliver VR ads within 4-6 weeks. We'll work closely with you throughout the process to ensure that the final product meets your expectations.\n[12:04:05] CUSTOMER: That sounds great. Can you also help me with the distribution of the ad?\n[12:04:12] AGENT: Absolutely! We have a variety of distribution options available, including social media, YouTube, and our own VR platform. We'll work with you to determine the best distribution strategy for your target audience.\n[12:04:26] CUSTOMER: That's really helpful. Is there anything else I should know about VR advertising with Union Mobile?\n[12:04:34] AGENT: Just that we're committed to providinging high-quality, effective VR experiences that drive results for your business. We'll work closely with you every step of the way to ensure that your VR ad is a success.\n[12:04:50] CUSTOMER: That's great to hear. Thank you for your help, Logan. I think I'm ready to move forward with a VR ad campaign.\n[12:05:00] AGENT: Wonderful! I'll have one of our account managers reach out to you to discuss the details and get started. Thanks for choosing Union Mobile, Forrest. Is there anything else I can assist you with today?\n[12:05:16] CUSTOMER: No, that's all for now. Thanks again, Logan.\n[12:05:20] AGENT: You're welcome! Have a great day, Forrest. Bye for now!",
+      "call_date": "2023-10-22",
+      "expected": {
+        "issue_1_category": null,
+        "fcr_indicator": false,
+        "escalation_required": false,
+        "customer_sentiment_start": "neutral",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 162,
+        "all_issues_resolved": false
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0014b8e9596d4968a5b8da7f4f2047d4",
+      "transcript_text": "[10:50:14] AGENT: Good afternoon, thank you for calling Union Mobile. My name is Ottie, how may I assist you today?\n[10:50:22] CUSTOMER: Hi Ottie, I'm calling because I need to report a crime. I wasm in a situation where I need to report some suspicious activity.\n[10:50:33] AGENT: Sorry to hear that, Emilie. Can you tell me more about what's happening?\n[10:50:39] CUSTOMER: Yes, I'm at a park and I saw someone acting suspiciously. They were wearing a black hoodie and seemed to be watching people playing. It looked really strange and unsafe.\n[10:50:53] AGENT: Thank you for sharing that with me, Emilie. I'm going to transfer you to our emergency services department. They will be able to assist you further and provide you with the appropriate guidance.\n[10:51:08] CUSTOMER: Okay, that sounds good. Thank you.\n[10:51:11] AGENT: Of course, Emilie. One moment please while I transfer the call.\n[10:51:16] CUSTOMER: Hi, I was just transferred from Ottie at Union Mobile. I need to report some suspicious activity.\n[10:51:24] CUSTOMER: Yes, like I said before, I was at a park and saw saw someone acting suspiciously. They were wearing a black hoodie and seemed to be watching children playing. It looked really strange and unsafe.\n[10:51:40] CUSTOMER: Sure, I'm at Lincoln Park, near the playground.\n[10:51:44] CUSTOMER: Yes, of course.\n[10:51:45] CUSTOMER: Thank you. much.\n[10:51:46] CUSTOMER: No, that's all. Thank you again.\n[10:51:49] AGENT: Hi Emilie, it's Ottie again. I hope everything went well with the emergency services department.\n[10:51:56] CUSTOMER: Yes, thank you Ott much. They were very helpful.\n[10:52:00] AGENT: That's great to hear. Is there anything else I can assist you with today?\n[10:52:07] CUSTOMER: No, that's all. Thank you so much for your help, Ottie.\n[10:52:12] AGENT: You're welcome, Emilie. Thank you for choosing Union Mobile. Have a great day and stay safe!\n[10:52:19] CUSTOMER: Thank you, Ottie. Bye!\n[10:52:21] AGENT: Bye, Emilie. Take a great day!",
+      "call_date": "2023-10-12",
+      "expected": {
+        "issue_1_category": "other",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "concerned",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 127,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0041855abb6947b6abe28789c40ea285",
+      "transcript_text": "[16:44:59] AGENT: Hello, thank you for calling Union Mobile. My name is Bennie, how can I assist you today?\n[16:45:06] CUSTOMER: Hi Bennie, I'm having because I'm receiving calls from a number that's been spoofed to look like a different number. It's really frustrating and I want to know what I can do to stop it.\n[16:45:23] AGENT: Sorry to hear that, Fronie. I understand how annoying that can be. Can you please provide me with the number that's been spoofed and the number that's actually calling you? Additionally, have you received any suspicious calls or messages recently?\n[16:45:41] CUSTOMER: Yes, I've received several calls from a number that appears to be my my bank, but when I answer up, it's not my bank at all. It's some kind of scam. And yes, I've also received some suspicious texts asking for personal information.\n[16:46:01] AGENT: I see. I apologize for the inconvenience you've experienced. Let me see if I can do to help. Can you please verify your identity for me by providing me with your account PIN or the last four digits of the credit card associated with your account?\n[16:46:22] CUSTOMER: Sure, my account PIN is...1234.\n[16:46:24] AGENT: Thank you, Fronie. Now, let'd like to suggest a few options to help you block these unwanted calls. Firstly, we can activ up a call-blocking feature on your account that will automatically reject calls from known spam numbers. Additionally, you can download an third-party app that can help identify and block suspicious calls. Would you like me to walk you through the process of setting up either of those options?\n[16:46:57] CUSTOMER: That sounds great, thank you! Can you set set up the call-blocking feature on my account?\n[16:47:04] AGENT: Of course. I'll take care of that for you right away. I'll also send you a text to download the third-party app that can help you identify and block suspicious calls. Is there anything else I can assist you with today?\n[16:47:23] CUSTOMER: No, that's all for now. Thank you so much for your help, Bennie.\n[16:47:29] AGENT: You're welcome, Fronie. It was my pleasure to assist you. If you have any further questions or concerns, please don't hesitate to reach out to us. Have a great day!\n[16:47:43] CUSTOMER: Thank,, Bennie. Have a great day too!",
+      "call_date": "2023-12-07",
+      "expected": {
+        "issue_1_category": "complaint",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "frustrated",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 164,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "00490124804841c99dea52de09393dec",
+      "transcript_text": "[13:41:21] CUSTOMER: Hi Nico, I'm calling about my protection plan. I'm not sure if I havem covered for my recent phone damage.\n[13:41:30] AGENT: Sorry to hear that, Arline. Can you please provide me with your account information and the details of the damage?\n[13:41:39] CUSTOMER: Sure, my account number is 1234567890 and my phone's screen cracked after I accidentally dropped it last week.\n[13:41:47] AGENT: Thank you for providing that information, Arline. Unfortunately, it looks like your protection plan doesn't cover accidental damage. However, I can transfer you a one-time courtesy repair option for a small fee. Would you like me to go ahead and schedule an appointment for you?\n[13:42:08] CUSTOMER: No, thank you. That's not what I'm looking for. Can you please transfer me to someone who can help me with my protection plan?\n[13:42:19] AGENT: Of course, Arline. One moment please. (transfers call)\n[13:42:23] AGENT: Thank again, Ar is Nico from Union Mobile. I apologize for the confusion earlier. It looks like our protection plans doesn't cover accidental damage. However, we do offer a device insurance plan that covers accidentages and malfunctions. Would you like me to go ahead and add you up for that plan?\n[13:42:46] CUSTOMER: Yes, that sounds great. Can you please tell me more about the plan and the cost?\n[13:42:54] AGENT: Absolutely, Arline. Our device insurance plan costs $10 per month and covers damages and malfunctions, including accidental damage. You'll also get a deductible of $200 for every claim.\n[13:43:07] CUSTOMER: That sounds good. Can you please sign me up for the plan?\n[13:43:12] AGENT: Great! I've gone ahead and signed you up for the device insurance plan. Is there anything else I can assist you with today?\n[13:43:23] CUSTOMER: No, that's all. Thank for your help, Nico.\n[13:43:27] AGENT: You're welcome, Arline. Thank to summar, I apologize for the confusion earlier, but we were able to sign your issue by signing you up for our device insurance plan. If you have any other questions or concerns, feel free to reach out to us. Have a great day!\n[13:43:49] CUSTOMER: Thanks, Nico. Bye for\n[13:43:51] AGENT: Bye, Arline. Have a great day! (ends call)",
+      "call_date": "2023-11-30",
+      "expected": {
+        "issue_1_category": "insurance",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "neutral",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 150,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "00150a4e378f48e38e481773dfbec0ca",
+      "transcript_text": "[11:35:31] AGENT: Hi there! Thank you for reaching out to Union Mobile. My name is Sudie, and I'll be happy to assist you today. How can I help you, Jerri?\n[11:35:43] CUSTOMER: Hi Sudie! I'm having some issues with my Smart Speakers with Voice Assistants. Sometimes, they don't respond to my commands, and it's getting really frustrating. Can you help me troubleshoot the problem?\n[11:35:58] AGENT: Of course, Jerri! Let's try to figure out what might be causing the issue. Can you tell me a little bit more about the problems you're experiencing? For example, are both speakers having, or just one? And have you noticed any specific patterns or triggers that seem to cause the issue?\n[11:36:22] CUSTOMER: Well, it's mostly my living room speaker that's giving me trouble. It's like it's not hearing me sometimes, even though I'm speaking loudly and clearly. And it's not just with one specific command - it's happening with multiple commands.\n[11:36:40] AGENT: Thanks for the details, Jerri. Let's try a few things to see if we can resolve the issue. First, have you tried restarting your speaker recently? Sometimes a a simple reboot can resolve connectivity issues.\n[11:36:56] CUSTOMER: Yeah, I've tried that already. It didn't work.\n[11:37:00] AGENT: Okay, no problem. In that case, let's check the connection between your speaker and your Wi-Fi network. Make sure that your router is turned on and that your speaker is connected to the right network. Also, try moving your speaker closer to your router to see if that improves the connection.\n[11:37:23] CUSTOMER: Alright, I'll give that a try. But what if that doesn't work?\n[11:37:29] AGENT: If that doesn't work, we can try resetting your speaker to its factory settings. This will erase all of your settings and data, so you'll need to set everything up again after the reset. However, it's worth trying if the issue persists.\n[11:37:48] CUSTOMER: Hmm, I'll willing to give that a shot. How do I reset the speaker?\n[11:37:55] AGENT: To reset your speaker, simply press and hold the mute button for 10 seconds. You'll hear a voice prompt confirming that the speaker has been reset. Once it's reset, you can set it up again using the manufacturer's app.\n[11:38:13] CUSTOMER: Okayright, I'll try that. Thanks for your help, Sudie!\n[11:38:17] AGENT: You're welcome, Jerri! I hope that resolves the issue for you. If you have any other questions or concerns, feel free to reach out to us at Union Mobile. We're always here to help. Have a great day!\n[11:38:34] CUSTOMER: Thanks, Sudie. I appreciate your help. Have a great day!\n[11:38:39] AGENT: You toore welcome, Jerri. Take care!",
+      "call_date": "2023-11-05",
+      "expected": {
+        "issue_1_category": "device",
+        "fcr_indicator": false,
+        "escalation_required": false,
+        "customer_sentiment_start": "frustrated",
+        "customer_sentiment_end": "neutral",
+        "total_duration_seconds": 188,
+        "all_issues_resolved": false
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "001abc951e0c44f48f5da7da75365d44",
+      "transcript_text": "[12:28:03] AGENT: Hello Christina, welcome to Union Mobile! My name is Nadia, how can I assist you today?\n[12:28:10] CUSTOMER: Hi Nadia, I'm calling because I need to request international roaming services for my upcoming trip.\n[12:28:17] AGENT: Of course, I'd be happy to help you with that! Can you please provide me with some more details such as your destination and the duration of your trip?\n[12:28:31] CUSTOMER: Sure, I'll be traveling to Europe for two weeks.\n[12:28:35] AGENT: Great, let me check on our international roaming options for you. (pause) It looks like we have a few different plans available that would suit your needs. Would you like me to go over them with you?\n[12:28:52] CUSTOMER: Yes, please.\n[12:28:53] AGENT: Absolutely! Our most popular plan is our International Roaming Plan 1, which includes 5GB of data, 500 minutes of calls, and 300 texts for $40 per month. We also have Plan 2, which includes 10GB of data, 600 minutes of calls, and 500 texts for $60 per month. Finally, we have Plan 3, which includes 20GB of data, 1200 minutes of calls, and 1000 texts for $100 per month. Which plan sounds like it would work best for you?\n[12:29:29] CUSTOMER: I think I 2 would be sufficient for my needs.\n[12:29:34] AGENT: Great choice! I just need to confirm a few details before I can set up the international roaming service for you. Can you please provide me with your account PIN and the phone number associated with your account?\n[12:29:51] CUSTOMER: Sure, my account PIN is 1234 and my phone number is 555-555-1234.\n[12:29:57] AGENT: Perfect, I've confirmed everything. Your international roaming service will be activ starting tomorrow. Is there anything else I can assist you with today?\n[12:30:08] CUSTOMER: No, that's all. Thank you for your help, Nadia.\n[12:30:12] AGENT: You're welcome, Christina! It was my pleasure to assist you. Thank you for choosing Union Mobile, and have a great day! (transfers customer to billing department)\n[12:30:24] CUSTOMER: Hi, I was just transferred here from the customer service department. I requested international roaming services and was told that I needed to speak with someone in billing.\n[12:30:37] CUSTOMER: Oh, I wasn't aware of that. Can you tell me more about the charge?\n[12:30:43] CUSTOMER: Okay, that makes sense. Can you also tell me how about the rates for calls and texts while I'm abroad?\n[12:30:52] CUSTOMER: Got it. And you for explaining that to me.\n[12:30:56] CUSTOMER: No, that's all. Thank you for your help.",
+      "call_date": "2023-12-16",
+      "expected": {
+        "issue_1_category": "information",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "neutral",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 173,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0001c1a140c3495aaaca7711c59b4bc4",
+      "transcript_text": "[14:32:56] AGENT: Hello afternoon, thank you for calling Union Mobile. My name is Jettie, how can I assist you today?\n[14:33:04] CUSTOMER: Hi Jettie, I'm calling about my P2P payments. I've been trying to set up a payment for the past hour and I'm getting nowhere.\n[14:33:15] AGENT: Sorry to hear that, Rayford. Can you tell me a little bit more about the issue you're experiencing? Have you tried using our online platform or mobile app to initiate the payment?\n[14:33:30] CUSTOMER: Yes, I've tried both and I keep getting error messages. I've also tried calling the customer service number multiple times, but no one seems been able to help me.\n[14:33:43] AGENT: I apologize for the inconvenience you've experienced so far. Let me see if I can help you. Can you please provide me with your account information and the details of the payment you're trying to make?\n[14:34:00] CUSTOMER: Sure, my account number is 1234567890 and I'm trying to send $100 to my friend's account at Bank of America.\n[14:34:09] AGENT: Thank you, Rayford. I'm going to check on the status of your payment.. One moment please... (pause) It looks like there was an issue with the recipient's account information. It's possible that the account number or routing number was entered incorrectly.\n[14:34:28] CUSTOMER: Oh no, I's frustrating. How do I fix this?\n[14:34:32] AGENT: Don't worry, Rayford. I can assist you with that. I'll need to transfer you to our Account Services department so they can assist you with updating the recipient's account information.\n[14:34:46] CUSTOMER: Okay, that sounds good. But can you please make sure that they canll be able to help me this time? I've already spent so much time on this.\n[14:34:59] AGENT: Ab course, Rayford. I understand your frustration. I'll do my best to ensure that you get the help you need. I'll transfer you now. Thank you for holding. (transfers call)\n[14:35:13] AGENT: Hi again, Rayford. I hope you were able to get the assistance you needed from our Account Services department. Is there anything else I can help you with today?\n[14:35:26] CUSTOMER: Yes, that was it. Thanks for your help, Jettie.\n[14:35:30] AGENT: You're welcome, Rayford. It was my pleasure to assist you. If you have any other questions or concerns in the future, don't hesitate to reach out to us. Have a great day!\n[14:35:45] CUSTOMER: Thanks, Jettie. Bye for now.\n[14:35:47] AGENT: Goodbye, Rayford. (ends call)",
+      "call_date": "2023-12-14",
+      "expected": {
+        "issue_1_category": "billing",
+        "fcr_indicator": false,
+        "escalation_required": false,
+        "customer_sentiment_start": "frustrated",
+        "customer_sentiment_end": "neutral",
+        "total_duration_seconds": 171,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0020e061d8f040e6b206bed9239c7343",
+      "transcript_text": "[12:17:34] CUSTOMER: Hi, I'm calling about my Public Wi-Fi protection with Union Mobile. Can you help me with that?\n[12:17:41] AGENT: Hello Tyrell, my apologies for the confusion earlier. I'm happy to assist you with your Public Wi-Fi protection. Can you please verify your identity so I can access your account?\n[12:17:55] CUSTOMER: Sure, my name is Tyrell and my phone number is 555-1234.\n[12:18:00] AGENT: Thank you, Tyrell. I apologize, but I'm having trouble verifying your identity. Can you please provide me with some more information to confirm your identity?\n[12:18:12] CUSTOMER: Okay, sure. My account PIN is 1234. my password is qwerty.\n[12:18:17] AGENT: Thank you, Tyrell. I'm still having trouble accessing your account. Can you please hold for just a moment while I check on this?\n[12:18:28] CUSTOMER: Okay, thank you.\n[12:18:29] AGENT: Thank you for holding, Tyrell. I apologize, but I'm unable to verify your identity with the information provided. Can you please provide me with a different form of identification, such as a government-issued ID or a utility bill?\n[12:18:46] CUSTOMER: Oh, okay. Let me grab my driver's license real quick.\n[12:18:51] AGENT: Great, thank you. Can you please read me the number on the front and back of your driver's license?\n[12:19:00] CUSTOMER: Sure, the number on the front is 1234 and the number on the back is 5678.\n[12:19:07] AGENT: Thank you, Tyrell. I apologize, but I'm still unable to verify your identity. Can you please try calling our customer service line again later or visit one of our stores for further assistance?\n[12:19:22] CUSTOMER: Okay, that's fine. Can you please transfer me to someone who can help me with my Public Wi-Fi protection?\n[12:19:31] AGENT: Of course, Tyrell. One moment please.\n[12:19:34] AGENT: Hi you for holding, Tyrell. This is Millicent with Union Mobile. I apologize, but I'm unable to assist you with your Public Wi-Fi protection at this time. I recommend visiting our website or contacting our customer service line for further assistance.\n[12:19:53] CUSTOMER: No, that's all. Thank you.\n[12:19:55] AGENT: You're welcome, Tyrell. Have a great day.",
+      "call_date": "2023-09-29",
+      "expected": {
+        "issue_1_category": "account",
+        "fcr_indicator": false,
+        "escalation_required": true,
+        "customer_sentiment_start": "neutral",
+        "customer_sentiment_end": "frustrated",
+        "total_duration_seconds": 141,
+        "all_issues_resolved": false
+      },
+      "expected_qa_grade": "HIGH"
+    },
+    {
+      "call_id": "0020d194bc314eedb509dd991480d268",
+      "transcript_text": "[14:55:58] CUSTOMER: Hi, I'm having some issues with my mobile game streaming. It's not working properly and I'm getting frustrated.\n[14:56:06] AGENT: Sorry to hear that, Marguerite. Can you tell me more about the issue you're experiencing? Have you tried restarting your device or checking your data connection?\n[14:56:18] CUSTOMER: Yes, I've tried all of that and it's still not working. I just want to be able to play my games without any interruptions.\n[14:56:29] AGENT: I understand. Let me see if I can help you troubleshoot the issue. Can you tell me what kind of games you're trying to play and what kind of device you're using?\n[14:56:44] CUSTOMER: I'm trying to play PUBG on my Samsung Galaxy S21.\n[14:56:48] AGENT: Alright, it sounds like the issue might be with your data connection. Let me check on that for you. Can you please hold for just a moment?\n[14:57:01] CUSTOMER: (on hold for several minutes)\n[14:57:03] AGENT: Thank you for holding, Marguerite. I've checked on your data connection and it looks like everything is working properly on our end. Have you tried restarting your router or modem?\n[14:57:17] CUSTOMER: (sighs) Yes, I've tried everything. Can is to be working.\n[14:57:22] AGENT: Sorry to hear that. In this case, I'm going to transfer you to our technical support team. They'll be able to assist you further with your issue.\n[14:57:34] CUSTOMER: (transferred to technical support)\n[14:57:36] CUSTOMER: (frustrated) I'm having issues with my mobile game streaming. I've been on the phone with your customer service for over  hour and no one has been able to help me.\n[14:57:50] CUSTOMER: (explains issue again)\n[14:57:51] CUSTOMER: (sighs) Fine. How long will it take for them to get back to me?\n[14:57:57] CUSTOMER: (frustrated) Fine. Thank you, I guess.\n[14:58:00] CUSTOMER: No, that's all. Thank you.\n[14:58:03] CUSTOMER: (sighs) Fine.\n[14:58:03] CUSTOMER: (frustrated) I'm having issues with my mobile game streaming. I've been on the phone with your customer service for over an hour and no one has been able to help me.\n[14:58:18] CUSTOMER: (explains issue again)\n[14:58:19] CUSTOMER: (provides personal information)\n[14:58:21] CUSTOMER: (excited) Really? That was easy! Why didn't anyone else think of that?\n[14:58:26] CUSTOMER: No, that's all. Thank you so much!",
+      "call_date": "2023-09-17",
+      "expected": {
+        "issue_1_category": "technical",
+        "fcr_indicator": true,
+        "escalation_required": false,
+        "customer_sentiment_start": "frustrated",
+        "customer_sentiment_end": "positive",
+        "total_duration_seconds": 148,
+        "all_issues_resolved": true
+      },
+      "expected_qa_grade": "HIGH"
+    }
+  ]
+}
