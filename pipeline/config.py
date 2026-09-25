@@ -134,3 +134,12 @@ VECTOR_MEMORY_TOP_K = 3  # top-K similar historical runs to retrieve
 MAX_TRANSCRIPT_CHARS = 50_000  # hard cap; beyond this is suspicious
 MAX_FIELD_STRING_LEN = 2_000  # per-field string limit in LLM output
 MAX_RESPONSE_BYTES = 32_768  # max LLM JSON response size (32 KB)
+
+# ── Drift detection ────────────────────────────────────────────────────────
+# Cross-run KPI drift check (pipeline/drift.py), wired into ExportAgent.
+# Detection/reporting only — never blocks export or the orchestrator.
+DRIFT_MIN_RUNS_FOR_BASELINE = 5  # need at least this many prior runs to compute a baseline
+DRIFT_BASELINE_WINDOW = 10  # how many prior runs form the rolling baseline
+DRIFT_Z_THRESHOLD = 2.0  # standard deviations from baseline mean
+DRIFT_PCT_THRESHOLD = 0.10  # relative-deviation floor (10%) — see drift.py for why both exist
+DRIFT_METRICS = ("fcr_rate_pct", "aht_minutes", "qa_avg_score", "data_quality_pass_rate_pct")
