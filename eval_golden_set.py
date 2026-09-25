@@ -19,14 +19,21 @@ Usage:
 
 from __future__ import annotations
 
+import json
+import sys
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 
+from pipeline.analyzer import analyze_batch
 from pipeline.config import (
     EVAL_DURATION_FIELD,
     EVAL_DURATION_TOLERANCE_PCT,
     EVAL_PASS_THRESHOLD_PCT,
 )
 from qa_audit import audit_record
+
+GOLDEN_SET_PATH = Path("evals/golden_set.json")
 
 
 @dataclass
@@ -152,3 +159,54 @@ def build_eval_report(cases: list[CaseResult]) -> EvalReport:
         regressions=regressions,
         passed=aggregate >= EVAL_PASS_THRESHOLD_PCT,
     )
+
+
+def run_eval(golden_set_path: Path = GOLDEN_SET_PATH) -> EvalReport:
+    golden = json.loads(golden_set_path.read_text())
+    cases_data = golden["cases"]
+
+    transcripts = [
+        {
+            "call_id": c["call_id"],
+            "call_date": c["call_date"],
+            "transcript_text": c["transcript_text"],
+        }
+        for c in cases_data
+    ]
+    actual_results = analyze_batch(transcripts, inter_call_delay=2.0)
+    actual_by_id = {r["call_id"]: r for r in actual_results if r.get("call_id")}
+
+    cases = [score_case(c, actual_by_id.get(c["call_id"])) for c in cases_data]
+    return build_eval_report(cases)
+
+
+def _print_report(report: EvalReport) -> None:
+    print(f"\n{'Call ID':<14} {'Status':<8} {'Accuracy':>9}  QA grade (expected → actual)")
+    print("-" * 60)
+    for c in report.cases:
+        grade_note = f"{c.expected_qa_grade} → {c.actual_qa_grade}" if c.status == "scored" else "-"
+        print(f"{c.call_id[:12]:<14} {c.status:<8} {c.accuracy_pct:>8.1f}%  {grade_note}")
+
+    print("-" * 60)
+    print(f"Aggregate accuracy: {report.aggregate_accuracy_pct:.1f}%")
+    print(f"Threshold:          {EVAL_PASS_THRESHOLD_PCT}%")
+    print(f"Verdict:            {'PASS' if report.passed else 'FAIL'}")
+    if report.regressions:
+        print(f"HIGH→lower regressions: {', '.join(c[:12] for c in report.regressions)}")
+
+
+def main() -> None:
+    report = run_eval()
+    _print_report(report)
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = Path("outputs") / f"eval_report_{ts}.json"
+    out_path.parent.mkdir(exist_ok=True)
+    out_path.write_text(json.dumps(report.to_dict(), indent=2))
+    print(f"\n✓ Report written → {out_path}")
+
+    sys.exit(0 if report.passed else 1)
+
+
+if __name__ == "__main__":
+    main()

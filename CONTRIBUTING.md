@@ -17,7 +17,7 @@ cp .env.example .env      # add ANTHROPIC_API_KEY (required) + optional NVIDIA_A
 Verify setup:
 
 ```bash
-make test          # 502 unit tests — should all pass in < 7 seconds
+make test          # 503 unit tests — should all pass in < 7 seconds
 make run           # 3-call smoke test (requires ANTHROPIC_API_KEY in .env)
 ```
 

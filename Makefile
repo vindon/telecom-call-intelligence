@@ -4,7 +4,8 @@
 # All targets assume the project virtualenv is activated (.venv/).
 
 .PHONY: help install install-dev lock test test-fast test-cov lint format \
-        type-check check run run-batches dashboard demo clean clean-outputs
+        type-check check run run-batches dashboard demo clean clean-outputs \
+        eval-golden build-golden-set
 
 PYTHON   := .venv/bin/python
 PIP      := .venv/bin/pip
@@ -33,6 +34,8 @@ help:
 	@echo "  dashboard       Start the Streamlit analytics dashboard"
 	@echo "  demo            Start the live demo app (localhost:8001)"
 	@echo "  clean           Remove __pycache__, .pyc, pytest cache"
+	@echo "  eval-golden     Run the golden-set extraction-accuracy eval (~\$$0.11, real API calls)"
+	@echo "  build-golden-set  Rebuild evals/golden_set.json (SOURCE=<path>)"
 	@echo ""
 
 # ── Install ────────────────────────────────────────────────────────────
@@ -83,6 +86,17 @@ type-check:
 # semgrep into that isolated env and is slower; later runs are cached.
 security-scan:
 	pre-commit run semgrep --all-files
+
+# Real-API-call regression check against evals/golden_set.json — ~$0.11
+# per run at current pricing. NEVER wired into CI or `make check`; run
+# manually, and always confirm the cost with whoever's paying first.
+eval-golden:
+	$(PYTHON) eval_golden_set.py
+
+# Rebuild evals/golden_set.json from a past run's verified-good output.
+# Usage: make build-golden-set SOURCE=outputs/full_results_combined_20260809_175823.json
+build-golden-set:
+	$(PYTHON) scripts/build_golden_set.py --source $(SOURCE)
 
 check: lint type-check test
 

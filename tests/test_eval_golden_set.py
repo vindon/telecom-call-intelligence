@@ -4,9 +4,12 @@ No dataset loading, no API calls, no golden_set.json dependency: all cases
 are synthetic dicts constructed in-line.
 """
 
+import json
+from unittest.mock import patch
+
 import pytest
 
-from eval_golden_set import build_eval_report, score_case
+from eval_golden_set import build_eval_report, run_eval, score_case
 
 # 6 of 7 expected fields matching, as a percentage — used by the two
 # single-field-mismatch tests below (one categorical, one duration).
@@ -113,3 +116,43 @@ class TestBuildEvalReport:
         assert "aggregate_accuracy_pct" in d
         assert d["cases"][0]["call_id"] == "c1"
         assert d["cases"][0]["fields"][0]["match"] is True
+
+
+class TestRunEval:
+    def test_matches_results_back_by_call_id(self, tmp_path):
+        golden_path = tmp_path / "golden_set.json"
+        golden_path.write_text(
+            json.dumps(
+                {
+                    "cases": [
+                        {
+                            "call_id": "c1",
+                            "transcript_text": "hello",
+                            "call_date": "2026-01-01",
+                            "expected": {"issue_1_category": "billing"},
+                            "expected_qa_grade": "HIGH",
+                        },
+                        {
+                            "call_id": "c2",
+                            "transcript_text": "hi",
+                            "call_date": "2026-01-01",
+                            "expected": {"issue_1_category": "technical"},
+                            "expected_qa_grade": "HIGH",
+                        },
+                    ]
+                }
+            )
+        )
+        # analyze_batch returns only c1 — c2's call "failed" and was dropped,
+        # exactly as pipeline.analyzer.analyze_batch already behaves for a
+        # permanent per-call failure.
+        with patch(
+            "eval_golden_set.analyze_batch",
+            return_value=[{"call_id": "c1", "issue_1_category": "billing"}],
+        ):
+            report = run_eval(golden_path)
+
+        by_id = {c.call_id: c for c in report.cases}
+        assert by_id["c1"].status == "scored"
+        assert by_id["c1"].accuracy_pct == 100.0
+        assert by_id["c2"].status == "failed"
