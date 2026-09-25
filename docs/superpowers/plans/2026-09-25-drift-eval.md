@@ -320,7 +320,7 @@ DRIFT_GUARD = DriftGuard()
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_drift.py -v`
-Expected: PASS — 9 tests
+Expected: PASS — 8 tests
 
 - [ ] **Step 6: Lint and commit**
 
@@ -1078,7 +1078,7 @@ def build_eval_report(cases: list[CaseResult]) -> EvalReport:
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_eval_golden_set.py -v`
-Expected: PASS — 11 tests
+Expected: PASS — 12 tests
 
 - [ ] **Step 6: Commit**
 
@@ -1512,7 +1512,7 @@ Add both to the `help` target's listing and the `.PHONY` line:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_eval_golden_set.py -v`
-Expected: PASS — 12 tests
+Expected: PASS — 13 tests (the 12 from Task 5 plus this task's new one)
 
 - [ ] **Step 5: Commit**
 
@@ -1540,9 +1540,27 @@ git commit -m "feat: add run_eval() end-to-end wiring and make eval-golden targe
 
 Run: `.venv/bin/python -m pytest tests/ -m "not slow and not integration" --collect-only -q`
 
-Note the printed count (will be 464 + the new tests from Tasks 1-7: 9 + 2 + 6 + 1 + 2 + 11 + 7 + 1 = 39 new tests → expect 503, but **use whatever number the command actually prints**, not this arithmetic — a step or fixture count may differ slightly from this estimate).
+Note the printed count (will be 464 + the new tests from Tasks 1-7: 8 + 2 + 6 + 2 + 12 + 7 + 1 = 38 new tests → expect 502, but **use whatever number the command actually prints**, not this arithmetic — a step or fixture count may differ slightly from this estimate).
 
-- [ ] **Step 2: Extend `scripts/check_docs_sync.py` to catch the manifest version literal**
+- [ ] **Step 2: Extend `scripts/check_docs_sync.py` to catch the manifest version literal and CLAUDE.md's own stale count**
+
+`CLAUDE.md` was found (while doing this task's Step 3) to still say `399-test suite` and `**399 passed**` — phrasings the current `COUNT_RE`/`BADGE_RE` don't match (no space between the number and "test", and "passed" isn't "tests" at all). Add `"CLAUDE.md"` to `DOCS_TO_CHECK` (currently `["README.md", "CONTRIBUTING.md"]`) and two new regexes so this can't drift a second time:
+
+```python
+HYPHEN_COUNT_RE = re.compile(r"\b(\d{2,4})-tests?\b", re.IGNORECASE)
+PASSED_RE = re.compile(r"\b(\d{2,4}) passed\b")
+```
+
+In `check_test_count_sync()`, extend the line that builds the match list:
+
+```python
+            for m in (
+                list(BADGE_RE.finditer(line))
+                + list(COUNT_RE.finditer(line))
+                + list(HYPHEN_COUNT_RE.finditer(line))
+                + list(PASSED_RE.finditer(line))
+            ):
+```
 
 In `scripts/check_docs_sync.py`, add a new check function:
 
@@ -1571,6 +1589,8 @@ In `main()`, add the call:
     errors += check_export_agent_version_sync(pyproject_version)
 ```
 
+Also update the module docstring's "Checks:" list (top of the file) to add a 4th bullet describing the CLAUDE.md/hyphenated/"passed" coverage and the `pipeline_version` manifest-literal check — the docstring is the first thing a future reader checks, and leaving it describing only 3 checks once there are 5 is exactly the kind of doc drift this script exists to prevent.
+
 - [ ] **Step 3: Update `CLAUDE.md`**
 
 Add to the "Key files" list (after `pipeline/circuit_breaker.py`'s line):
@@ -1584,6 +1604,8 @@ Add to "Development Commands":
 ```
 make eval-golden     # golden-set extraction-accuracy eval (~$0.11, real API calls — never run without confirming cost first)
 ```
+
+**Also fix a stale count found in CLAUDE.md itself while doing this edit** (pre-existing — missed in the prior engineering-standards session, which fixed README.md/CONTRIBUTING.md but not this file): replace both `make test           # run 399-test suite` and `Expected: **399 passed** in < 7 seconds` with the count from Step 1 of this task.
 
 - [ ] **Step 4: Update `docs/engineering-standards.md`**
 
