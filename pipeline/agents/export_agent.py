@@ -21,8 +21,15 @@ from datetime import datetime
 
 import pandas as pd
 
-from pipeline.config import OUTPUT_DIR, QUALITY_WARN_RATE, VECTOR_MEMORY_ENABLED
+from pipeline.config import (
+    DRIFT_BASELINE_WINDOW,
+    DRIFT_MIN_RUNS_FOR_BASELINE,
+    OUTPUT_DIR,
+    QUALITY_WARN_RATE,
+    VECTOR_MEMORY_ENABLED,
+)
 from pipeline.decision_log import DecisionLogger, summarize_decisions
+from pipeline.drift import DRIFT_GUARD, DriftReport
 from pipeline.governance import AUDIT_LOG
 from pipeline.logger import get_logger
 from pipeline.memory import MEMORY
@@ -62,6 +69,54 @@ class ExportAgent:
         # empty — overwriting summary.json then would blank the dashboard, so
         # the last good run's summary is preserved instead.
         emergency_run = not metrics.get("kpis")
+
+        # ── Drift check — compare this run's KPIs against the rolling
+        # baseline BEFORE this run is recorded into that same history (the
+        # MEMORY.record_run() call further below). Detection/reporting
+        # only — never blocks export. See pipeline/drift.py.
+        MEMORY.load()
+        kpis = metrics.get("kpis", {})
+        qa_summary_for_drift = qa_report.get("summary", {})
+        if emergency_run:
+            drift_report = DriftReport(baseline_run_count=0, sufficient_history=False)
+            drift_decision = "Skipped — emergency export has no aggregated KPIs to compare"
+            drift_reason = "Quality gate failure path: aggregated_metrics has no kpis"
+        else:
+            current_metrics = {
+                "fcr_rate_pct": kpis.get("fcr_rate_pct", 0),
+                "aht_minutes": kpis.get("avg_handle_time_minutes", 0),
+                "qa_avg_score": qa_summary_for_drift.get("avg_score", 0),
+                "data_quality_pass_rate_pct": qa_summary_for_drift.get(
+                    "data_quality_pass_rate_pct", 100.0
+                ),
+            }
+            history = MEMORY.get_run_history(last_n=DRIFT_BASELINE_WINDOW)
+            drift_report = DRIFT_GUARD.check(current=current_metrics, history=history)
+            if drift_report.sufficient_history:
+                drift_decision = (
+                    f"Drift check: {'DRIFTED' if drift_report.any_drifted else 'stable'} "
+                    f"({drift_report.baseline_run_count} prior run(s) in baseline)"
+                )
+                n_drifted = sum(1 for m in drift_report.metrics if m.drifted)
+                drift_reason = (
+                    f"{n_drifted} of {len(drift_report.metrics)} tracked metric(s) "
+                    "exceeded the drift threshold"
+                )
+            else:
+                drift_decision = "Insufficient history for drift baseline"
+                drift_reason = (
+                    f"Only {drift_report.baseline_run_count} prior run(s) recorded — "
+                    f"need {DRIFT_MIN_RUNS_FOR_BASELINE} to establish a baseline"
+                )
+        dl.log(
+            decision_type="drift_check",
+            decision=drift_decision,
+            reason=drift_reason,
+            evidence=drift_report.to_dict(),
+            confidence="high",
+            alternatives=["Block export on drift (rejected: detection/reporting only, per design)"],
+        )
+
         dl.log(
             decision_type="export_scope",
             decision=(
@@ -95,6 +150,7 @@ class ExportAgent:
             metrics["qa_summary"] = qa_report.get("summary", {})
             metrics["agent_insights"] = insights
             metrics["decision_summary"] = summarize_decisions(decision_log)
+            metrics["drift_report"] = drift_report.to_dict()
 
             # Run-specific AHT/phase-economics disclaimer — computed, not static,
             # so it lives in the actual report the business reads. Surfaced by
@@ -157,7 +213,7 @@ class ExportAgent:
 
         manifest = {
             "run_timestamp": ts,
-            "pipeline_version": "4.5.0",
+            "pipeline_version": "4.7.0",
             "agents_executed": agents_executed,
             "offset": state.get("offset", 0),
             "seed": state.get("seed", 42),
@@ -269,4 +325,9 @@ class ExportAgent:
             OUTPUT_DIR.resolve(),
             AUDIT_LOG.summary()["total_events"],
         )
-        return {**state, "export_paths": export_paths, "decision_log": decision_log}
+        return {
+            **state,
+            "export_paths": export_paths,
+            "decision_log": decision_log,
+            "drift_report": drift_report.to_dict(),
+        }

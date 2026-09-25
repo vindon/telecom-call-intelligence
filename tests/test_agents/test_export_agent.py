@@ -144,3 +144,79 @@ class TestEmergencyExport:
         state["aggregated_metrics"] = {}
         ExportAgent().run(state)
         assert exp_mod.VECTOR_STORE.size == 0
+
+
+class TestDriftCheck:
+    def test_insufficient_history_reports_as_such(self, isolate, make_record):
+        out = ExportAgent().run(_full_state(make_record))
+        summary = json.loads((isolate / "summary.json").read_text())
+        assert summary["drift_report"]["sufficient_history"] is False
+        assert summary["drift_report"]["any_drifted"] is False
+        assert out["drift_report"]["sufficient_history"] is False
+
+    def test_drifted_metric_is_flagged_and_does_not_block_export(self, isolate, make_record):
+        for i in range(5):
+            exp_mod.MEMORY.record_run(
+                {
+                    "run_timestamp": f"seed-{i}",
+                    "fcr_rate_pct": 75.0,
+                    "avg_handle_time_minutes": 7.0,
+                    "qa_avg_score": 90.0,
+                    "data_quality_pass_rate_pct": 95.0,
+                }
+            )
+        state = _full_state(make_record)
+        state["qa_report"]["summary"]["data_quality_pass_rate_pct"] = 50.0
+        out = ExportAgent().run(state)
+        summary = json.loads((isolate / "summary.json").read_text())
+        assert summary["drift_report"]["sufficient_history"] is True
+        assert summary["drift_report"]["any_drifted"] is True
+        drifted = [m["metric"] for m in summary["drift_report"]["metrics"] if m["drifted"]]
+        assert "data_quality_pass_rate_pct" in drifted
+        assert Path(out["export_paths"]["csv"]).exists()  # export still succeeded
+
+    def test_baseline_excludes_the_current_run(self, isolate, make_record):
+        # Regression guard: if the current run leaked into its own baseline,
+        # a real drift would be diluted/masked by itself.
+        for i in range(5):
+            exp_mod.MEMORY.record_run(
+                {
+                    "run_timestamp": f"seed-{i}",
+                    "fcr_rate_pct": 75.0,
+                    "avg_handle_time_minutes": 7.0,
+                    "qa_avg_score": 90.0,
+                    "data_quality_pass_rate_pct": 95.0,
+                }
+            )
+        state = _full_state(make_record)
+        state["aggregated_metrics"]["kpis"]["fcr_rate_pct"] = 40.0
+        ExportAgent().run(state)
+        summary = json.loads((isolate / "summary.json").read_text())
+        fcr = next(m for m in summary["drift_report"]["metrics"] if m["metric"] == "fcr_rate_pct")
+        assert fcr["baseline_mean"] == 75.0
+        assert fcr["drifted"] is True
+
+    def test_drift_decision_logged(self, isolate, make_record):
+        out = ExportAgent().run(_full_state(make_record))
+        types = [r["decision_type"] for r in out["decision_log"]]
+        assert "drift_check" in types
+
+    def test_emergency_export_logs_skipped_drift_decision(self, isolate, make_record):
+        state = _full_state(make_record)
+        state["aggregated_metrics"] = {}
+        state["agent_insights"] = {}
+        out = ExportAgent().run(state)  # must not raise
+        types = [r["decision_type"] for r in out["decision_log"]]
+        assert "drift_check" in types
+        assert out["drift_report"]["sufficient_history"] is False
+
+
+class TestManifestVersion:
+    def test_pipeline_version_matches_pyproject(self, isolate, make_record):
+        import re
+
+        pyproject = (Path(__file__).parent.parent.parent / "pyproject.toml").read_text()
+        version = re.search(r'^version\s*=\s*"([^"]+)"', pyproject, re.MULTILINE).group(1)
+        out = ExportAgent().run(_full_state(make_record))
+        manifest = json.loads(open(out["export_paths"]["manifest"]).read())
+        assert manifest["pipeline_version"] == version
