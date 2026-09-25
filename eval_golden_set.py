@@ -34,13 +34,21 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from pipeline.analyzer import analyze_batch
-from pipeline.config import (
+from dotenv import load_dotenv
+
+# Load .env before importing any pipeline module (they read API keys at call
+# time) — matches run_pipeline.py/run_batches.py's pattern. Missing this
+# meant ANTHROPIC_API_KEY was never in the process environment, so the very
+# first real run of this script failed before making any API call.
+load_dotenv()
+
+from pipeline.analyzer import analyze_batch  # noqa: E402
+from pipeline.config import (  # noqa: E402
     EVAL_DURATION_FIELD,
     EVAL_DURATION_TOLERANCE_PCT,
     EVAL_PASS_THRESHOLD_PCT,
 )
-from qa_audit import audit_record
+from qa_audit import audit_record  # noqa: E402
 
 GOLDEN_SET_PATH = Path("evals/golden_set.json")
 
