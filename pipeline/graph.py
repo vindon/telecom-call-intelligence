@@ -110,6 +110,7 @@ class PipelineState(TypedDict):
     approval_granted: bool  # human approval gate result
     # ── Traceability ─────────────────────────────────────────────────
     decision_log: list  # DecisionRecord dicts — agent reasoning audit trail
+    drift_report: dict  # DriftReport.to_dict() — see pipeline/drift.py
 
 
 # ── Node wrappers (thin console-printing shims around each agent) ─────
@@ -362,6 +363,23 @@ def export_node(state: PipelineState) -> dict:
     print(f"  ✓ Insights    : {paths.get('insights', '')}")
     print(f"  ✓ Decisions   : {paths.get('decisions', '')}  ({n_decisions} records)")
     print(f"  ✓ Manifest    : {paths.get('manifest', '')}")
+
+    drift = result.get("drift_report", {})
+    if drift.get("sufficient_history"):
+        verdict = "⚠ DRIFTED" if drift.get("any_drifted") else "✓ stable"
+        print(
+            f"  Drift check   : {verdict}  "
+            f"({drift.get('baseline_run_count', 0)} prior runs in baseline)"
+        )
+        for m in drift.get("metrics", []):
+            if m.get("drifted"):
+                print(f"    - {m['metric']}: {m['current']} vs baseline {m['baseline_mean']}")
+    else:
+        print(
+            f"  Drift check   : insufficient history "
+            f"({drift.get('baseline_run_count', 0)} prior run(s))"
+        )
+
     return result
 
 

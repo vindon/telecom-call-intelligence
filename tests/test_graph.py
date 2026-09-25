@@ -38,6 +38,7 @@ class TestPipelineState:
             "token_usage",
             # Traceability
             "decision_log",
+            "drift_report",
         }
         annotations = PipelineState.__annotations__
         missing = required - set(annotations.keys())
@@ -203,6 +204,52 @@ class TestNodeWrappers:
             mock_agent.run.return_value = fake_result
             result = graph_mod.export_node({"aggregated_metrics": {}})
         assert result is fake_result
+
+    def test_export_node_prints_drift_banner_when_drifted(self, capsys):
+        import pipeline.graph as graph_mod
+
+        fake_result = {
+            "export_paths": {"csv": "outputs/x.csv"},
+            "decision_log": [],
+            "drift_report": {
+                "sufficient_history": True,
+                "any_drifted": True,
+                "baseline_run_count": 8,
+                "metrics": [
+                    {
+                        "metric": "fcr_rate_pct",
+                        "current": 40.0,
+                        "baseline_mean": 75.0,
+                        "drifted": True,
+                    },
+                ],
+            },
+        }
+        with patch.object(graph_mod, "_export_agent") as mock_agent:
+            mock_agent.run.return_value = fake_result
+            graph_mod.export_node({"aggregated_metrics": {}})
+        out = capsys.readouterr().out
+        assert "DRIFTED" in out
+        assert "fcr_rate_pct" in out
+
+    def test_export_node_prints_insufficient_history(self, capsys):
+        import pipeline.graph as graph_mod
+
+        fake_result = {
+            "export_paths": {"csv": "outputs/x.csv"},
+            "decision_log": [],
+            "drift_report": {
+                "sufficient_history": False,
+                "any_drifted": False,
+                "baseline_run_count": 2,
+                "metrics": [],
+            },
+        }
+        with patch.object(graph_mod, "_export_agent") as mock_agent:
+            mock_agent.run.return_value = fake_result
+            graph_mod.export_node({"aggregated_metrics": {}})
+        out = capsys.readouterr().out
+        assert "insufficient history" in out
 
 
 # ── Approval gate ────────────────────────────────────────────────────────
