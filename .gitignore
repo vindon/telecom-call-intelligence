@@ -13,6 +13,9 @@ env/
 dist/
 build/
 .eggs/
+.coverage
+coverage.xml
+htmlcov/
 
 # ── Dataset (682 MB — exceeds GitHub's 100 MB hard limit; never commit) ──
 telecom_200k.csv

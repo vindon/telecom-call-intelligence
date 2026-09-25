@@ -47,11 +47,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
+      # Installed from the .lock files (fully pinned via `make lock`), not the
+      # abstract >= specs in requirements*.txt — CI gets the exact same
+      # dependency graph every run instead of whatever floats in latest.
       - name: Install production dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.lock
 
       - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.lock
 
       # ── Linting ─────────────────────────────────────────────────────
       - name: Ruff lint — pipeline modules
@@ -61,6 +64,12 @@ jobs:
 
       - name: Ruff lint — tests
         run: ruff check tests/
+
+      # ── Type checking ───────────────────────────────────────────────
+      # Mirrors `make type-check`. Previously only run locally/pre-push —
+      # a type error could merge to main undetected between local checks.
+      - name: Mypy — pipeline modules
+        run: mypy pipeline/ --ignore-missing-imports
 
       # ── Syntax check (fast fail on broken imports) ────────────────
       - name: Syntax check — all pipeline modules
@@ -104,13 +113,24 @@ jobs:
       - name: Run unit tests
         run: pytest tests/ -v --tb=short -m "not slow and not integration"
 
+      # ── Docs/version sync ───────────────────────────────────────
+      # Catches the exact drift this repo has hit before: pyproject.toml's
+      # version diverging from CHANGELOG.md, or README/CONTRIBUTING quoting
+      # a stale test count. See scripts/check_docs_sync.py.
+      - name: Check docs are in sync (version, test count)
+        run: python scripts/check_docs_sync.py
+
       # ── Coverage report ──────────────────────────────────────────
+      # Floor is 85% — comfortably below the current ~91% so it only fires
+      # on a real regression, not day-to-day noise. Previously
+      # continue-on-error:true made this report-only, so coverage could
+      # (and did) regress on individual modules with nothing to catch it.
       - name: Coverage report
         run: |
           pytest tests/ -m "not slow and not integration" \
             --cov=pipeline --cov-report=term-missing --cov-report=xml \
+            --cov-fail-under=85 \
             -q
-        continue-on-error: true  # Don't fail CI on coverage drop — report only
 
       # ── Integration smoke test (compile + route only) ─────────────
       - name: LangGraph graph compiles and routing is correct

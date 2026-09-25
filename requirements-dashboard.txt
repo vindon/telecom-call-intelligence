@@ -1,4 +1,5 @@
-# Streamlit Cloud deployment — dashboard only
+# Streamlit Cloud deployment — dashboard only. Install from
+# requirements-dashboard.lock (run `make lock` after editing this file).
 # Full pipeline requirements are in requirements.txt
 streamlit>=1.35.0
 plotly>=5.22.0

@@ -1,5 +1,6 @@
-# Development dependencies — install with: pip install -r requirements-dev.txt
-# Production deps are in requirements.txt
+# Development dependencies — install with: pip install -r requirements-dev.lock
+# (this file is the abstract spec; run `make lock` after editing it)
+# Production deps are in requirements.txt / requirements.lock
 
 # Testing
 pytest>=8.0.0

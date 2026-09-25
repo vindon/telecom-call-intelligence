@@ -1,3 +1,8 @@
+# This is the abstract dependency spec — human-edited, loose >= bounds.
+# Installs (local, CI, Render) use requirements.lock, the fully pinned
+# resolution generated from this file. After editing this file, run
+# `make lock` to regenerate requirements.lock before committing.
+
 # Google AI Studio inference (Gemini 2.0 Flash — free tier)
 # NOTE: google-generativeai is deprecated; use google-genai
 google-genai>=1.0.0

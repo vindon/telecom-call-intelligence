@@ -36,6 +36,23 @@ repos:
     hooks:
       - id: check-case-conflict
 
+  # Version/test-count drift guard — see scripts/check_docs_sync.py's
+  # docstring for the incident history this replaces manual vigilance for.
+  # Only runs when a doc, CHANGELOG, pyproject, or test file changed —
+  # otherwise the pytest --collect-only subprocess is dead weight on every
+  # unrelated commit.
+  - repo: local
+    hooks:
+      - id: check-docs-sync
+        name: Check docs are in sync (version, test count)
+        # .venv/bin/python, not `python`/`python3` on PATH — the script shells
+        # out to `pytest --collect-only`, which requires this repo's dev deps
+        # (see CONTRIBUTING.md's `make install-dev` setup).
+        entry: .venv/bin/python scripts/check_docs_sync.py
+        language: system
+        pass_filenames: false
+        files: ^(README\.md|CONTRIBUTING\.md|CHANGELOG\.md|ARCHITECTURE\.md|pyproject\.toml|tests/.*)$
+
   # Security static analysis (SAST) — secrets and injection/security
   # anti-patterns ruff doesn't check for. Runs in its own isolated
   # pip-installed environment, never this repo's venv: installing semgrep

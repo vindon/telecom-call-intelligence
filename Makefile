@@ -3,7 +3,7 @@
 # Usage: make <target>
 # All targets assume the project virtualenv is activated (.venv/).
 
-.PHONY: help install install-dev test test-fast test-cov lint format \
+.PHONY: help install install-dev lock test test-fast test-cov lint format \
         type-check check run run-batches dashboard demo clean clean-outputs
 
 PYTHON   := .venv/bin/python
@@ -20,6 +20,7 @@ help:
 	@echo "  ─────────────────────────────────────────────────"
 	@echo "  install         Install production dependencies"
 	@echo "  install-dev     Install dev dependencies (pytest, ruff, mypy)"
+	@echo "  lock            Regenerate requirements*.lock from requirements*.txt"
 	@echo "  test            Run full unit test suite"
 	@echo "  test-fast       Run tests, skip @slow and @integration marks"
 	@echo "  test-cov        Run tests with coverage report"
@@ -37,11 +38,18 @@ help:
 # ── Install ────────────────────────────────────────────────────────────
 
 install:
-	$(PIP) install -r requirements.txt
+	$(PIP) install -r requirements.lock
 
 install-dev:
-	$(PIP) install -r requirements.txt -r requirements-dev.txt
+	$(PIP) install -r requirements.lock -r requirements-dev.lock
 	$(PYTHON) -m pre_commit install
+
+# Regenerate the .lock files after editing a requirements*.txt spec.
+# Requires `uv` (https://docs.astral.sh/uv/): brew install uv
+lock:
+	uv pip compile requirements.txt -o requirements.lock
+	uv pip compile requirements-dev.txt -o requirements-dev.lock
+	uv pip compile requirements-dashboard.txt -o requirements-dashboard.lock
 
 # ── Tests ──────────────────────────────────────────────────────────────
 
@@ -53,7 +61,7 @@ test-fast:
 
 test-cov:
 	$(PYTEST) tests/ -v --tb=short \
-		--cov=pipeline --cov-report=term-missing --cov-report=html
+		--cov=pipeline --cov-report=term-missing --cov-report=html --cov-fail-under=85
 	@echo "\n  Coverage HTML report: htmlcov/index.html"
 
 # ── Code quality ───────────────────────────────────────────────────────

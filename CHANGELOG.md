@@ -6,6 +6,56 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [4.7.0] — 2026-09-25
+
+### Fixed — Engineering-standards audit: doc drift, CI gaps, dependency pinning, coverage gaps
+
+An audit against general engineering best practices (deep-module review discipline,
+CI/CD gate completeness, dependency reproducibility) surfaced six findings, all fixed:
+
+- **`pyproject.toml` version (4.1.1) had drifted from CHANGELOG.md's top entry (4.6.0)** —
+  the same drift this file's own [4.1.0] entry already called out as fixed once before.
+  README.md and CONTRIBUTING.md separately quoted the test count as 399 and 342, against
+  432 actually passing at audit time, and README.md/ARCHITECTURE.md's "v4.5" banners were
+  two releases stale. `scripts/check_docs_sync.py` (new) now fails CI and pre-commit if
+  pyproject's version diverges from CHANGELOG's top heading, if any test-count mention in
+  README.md/CONTRIBUTING.md diverges from what pytest actually collects, or if a "vX.Y"
+  banner in README.md/ARCHITECTURE.md diverges from pyproject's version — turning a
+  documented habit into an enforced gate.
+- **`make check`'s "full gate" (lint + type-check + test) was never actually run in CI** —
+  `.github/workflows/ci.yml` only ran ruff and pytest; a type error could merge to `main`
+  undetected. Added a `mypy pipeline/` step.
+- **Coverage reporting in CI was `continue-on-error: true`** — coverage could regress
+  silently with nothing to catch it. Added `--cov-fail-under=85` (current: ~91%).
+- **`mypy` had `check_untyped_defs` off by default** — the body of any function missing a
+  return-type annotation was never type-checked at all, a silent blind spot. Enabled it;
+  no new errors surfaced (the 33 unannotated defs in `pipeline/` were already correct).
+- **No dependency lock file** — all of `requirements*.txt` used unbounded `>=` specs with
+  zero pins, so a same-day upstream release could break CI or prod with no warning. Added
+  `requirements.lock`/`requirements-dev.lock`/`requirements-dashboard.lock` (universal,
+  Python 3.11+ resolution via `uv pip compile`, regenerated with `make lock`); CI, Render,
+  and `make install`/`install-dev` now install from the `.lock` files. The `.txt` files
+  remain the human-edited abstract spec.
+- **`pipeline/graph.py` (35% coverage) and `insights_agent.py` (64%) were the least-tested
+  modules in the codebase and the most architecturally load-bearing** — `graph.py` is the
+  LangGraph routing/wiring, `insights_agent.py` is the NVIDIA→Claude→rule-based fallback
+  chain. Added tests for every node wrapper, the human-approval-gate branches (auto-approve,
+  timeout, explicit reject, non-interactive EOFError), LangSmith tracing config, the
+  vector-memory build-time load guard, and the NVIDIA/Claude provider seam (success, missing
+  key, circuit-breaker trip/skip, 429-vs-timeout distinction, markdown-fence stripping).
+  `graph.py` → 99%, `insights_agent.py` → 98%, overall `pipeline/` coverage 82% → 91%.
+  +32 tests (432 → 464).
+
+Also audited for cost-leakage/retry risk per the same rubric: `analyzer.py`'s per-call
+retry loop (max 3 attempts, exponential backoff) and the SDK-level `max_retries=1` policy
+in `llm_clients.py` were confirmed intentional and correctly scoped — bounded, logged, and
+distinct from `orchestrator.py`'s strict no-auto-retry-on-batch-failure policy, which
+remains untouched. No changes needed there.
+
+Standards followed and how they're enforced day-to-day: `docs/engineering-standards.md`.
+
+---
+
 ## [4.6.0] — 2026-08-13
 
 ### Fixed — Architecture audit: dead code, duplicated seams, broken interface promise

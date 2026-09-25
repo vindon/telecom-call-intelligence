@@ -2,12 +2,20 @@
 Tests for pipeline/agents/insights_agent.py — InsightsAgent.
 All LLM calls are stubbed at the _llm_call boundary so the deliberation
 routing (Analyze → Critique → Synthesize) and fallback chain run for real.
+
+TestNvidiaCall/TestClaudeCall/TestLlmCallFallback go one layer deeper and
+stub the provider SDK clients themselves (get_nvidia_client/get_anthropic_
+client), so the NVIDIA→Claude fallback logic and the circuit breaker are
+exercised directly rather than assumed correct via the higher-level stub.
 """
+
+from unittest.mock import MagicMock
 
 import pytest
 
 import pipeline.agents.insights_agent as ins_mod
 from pipeline.agents.insights_agent import InsightsAgent, _rule_based_insights
+from pipeline.circuit_breaker import CircuitBreaker
 from pipeline.memory import AgentMemory
 
 
@@ -15,6 +23,9 @@ from pipeline.memory import AgentMemory
 def isolate(monkeypatch, tmp_path):
     monkeypatch.setattr(ins_mod, "MEMORY", AgentMemory(path=tmp_path / "memory.json"))
     monkeypatch.setattr(ins_mod, "VECTOR_MEMORY_ENABLED", False)
+    # Fresh, untripped breaker per test — the module-level singleton would
+    # otherwise leak a trip from one test into the next via its sentinel file.
+    monkeypatch.setattr(ins_mod, "_nvidia_breaker", CircuitBreaker(tmp_path / "nvidia_down"))
 
 
 KPIS = {
@@ -200,3 +211,172 @@ class TestInsightsAgent:
             historical_context='previous run {"fcr": 70}',
         )
         assert '{"fcr": 70}' in prompt
+
+
+# ── NVIDIA NIM call (provider seam) ─────────────────────────────────────
+
+
+def _fake_nvidia_response(content: str, prompt_tokens=100, completion_tokens=50):
+    return MagicMock(
+        choices=[MagicMock(message=MagicMock(content=content))],
+        usage=MagicMock(prompt_tokens=prompt_tokens, completion_tokens=completion_tokens),
+    )
+
+
+class TestNvidiaCall:
+    def test_missing_api_key_returns_none_without_calling_client(self, monkeypatch):
+        monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+        mock_get_client = MagicMock()
+        monkeypatch.setattr(ins_mod, "get_nvidia_client", mock_get_client)
+        assert InsightsAgent()._nvidia_call("prompt") is None
+        mock_get_client.assert_not_called()
+
+    def test_tripped_breaker_skips_call(self, monkeypatch):
+        monkeypatch.setenv("NVIDIA_API_KEY", "test-key")
+        ins_mod._nvidia_breaker.trip()
+        mock_get_client = MagicMock()
+        monkeypatch.setattr(ins_mod, "get_nvidia_client", mock_get_client)
+        assert InsightsAgent()._nvidia_call("prompt") is None
+        mock_get_client.assert_not_called()
+
+    def test_success_parses_json_and_records_usage(self, monkeypatch):
+        monkeypatch.setenv("NVIDIA_API_KEY", "test-key")
+        client = MagicMock()
+        client.chat.completions.create.return_value = _fake_nvidia_response(
+            '{"executive_summary": "ok"}'
+        )
+        monkeypatch.setattr(ins_mod, "get_nvidia_client", lambda timeout_s: client)
+        usage_acc = []
+        result = InsightsAgent()._nvidia_call("prompt", usage_acc=usage_acc)
+        assert result["executive_summary"] == "ok"
+        assert usage_acc == [
+            {
+                "provider": "nvidia_nim",
+                "model": ins_mod.INSIGHTS_MODEL,
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+            }
+        ]
+
+    def test_timeout_trips_breaker_and_returns_none(self, monkeypatch):
+        import httpx
+        import openai
+
+        monkeypatch.setenv("NVIDIA_API_KEY", "test-key")
+        client = MagicMock()
+        client.chat.completions.create.side_effect = openai.APITimeoutError(
+            httpx.Request("POST", "https://nvidia.example/v1/chat")
+        )
+        monkeypatch.setattr(ins_mod, "get_nvidia_client", lambda timeout_s: client)
+        assert InsightsAgent()._nvidia_call("prompt") is None
+        assert ins_mod._nvidia_breaker.tripped is True
+
+    def test_quota_exhausted_429_does_not_trip_breaker(self, monkeypatch):
+        monkeypatch.setenv("NVIDIA_API_KEY", "test-key")
+        client = MagicMock()
+        client.chat.completions.create.side_effect = RuntimeError("429 rate limited")
+        monkeypatch.setattr(ins_mod, "get_nvidia_client", lambda timeout_s: client)
+        assert InsightsAgent()._nvidia_call("prompt") is None
+        # A quota blip is transient, not "provider is down" — must not trip
+        # the breaker and skip a provider that may work again next pass.
+        assert ins_mod._nvidia_breaker.tripped is False
+
+
+# ── Claude call (fallback provider) ──────────────────────────────────────
+
+
+def _fake_claude_response(text: str, input_tokens=80, output_tokens=40):
+    return MagicMock(
+        content=[MagicMock(text=text)],
+        usage=MagicMock(input_tokens=input_tokens, output_tokens=output_tokens),
+    )
+
+
+class TestClaudeCall:
+    def test_missing_api_key_returns_none_without_calling_client(self, monkeypatch):
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        mock_get_client = MagicMock()
+        monkeypatch.setattr(ins_mod, "get_anthropic_client", mock_get_client)
+        assert InsightsAgent()._claude_call("prompt") is None
+        mock_get_client.assert_not_called()
+
+    def test_success_strips_markdown_fences_and_parses(self, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        client = MagicMock()
+        client.messages.create.return_value = _fake_claude_response(
+            '```json\n{"executive_summary": "ok"}\n```'
+        )
+        monkeypatch.setattr(ins_mod, "get_anthropic_client", lambda timeout_s: client)
+        usage_acc = []
+        result = InsightsAgent()._claude_call("prompt", usage_acc=usage_acc)
+        assert result["executive_summary"] == "ok"
+        assert usage_acc[0]["provider"] == "anthropic"
+
+    def test_call_failure_returns_none(self, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        client = MagicMock()
+        client.messages.create.side_effect = RuntimeError("connection reset")
+        monkeypatch.setattr(ins_mod, "get_anthropic_client", lambda timeout_s: client)
+        assert InsightsAgent()._claude_call("prompt") is None
+
+
+# ── _llm_call: NVIDIA → Claude fallback wiring ───────────────────────────
+
+
+class TestLlmCallFallback:
+    def test_nvidia_success_skips_claude(self, monkeypatch):
+        agent = InsightsAgent()
+        monkeypatch.setattr(agent, "_nvidia_call", lambda *a, **k: {"source": "nvidia"})
+        claude_call = MagicMock()
+        monkeypatch.setattr(agent, "_claude_call", claude_call)
+        result = agent._llm_call("prompt")
+        assert result == {"source": "nvidia"}
+        claude_call.assert_not_called()
+
+    def test_nvidia_failure_falls_back_to_claude(self, monkeypatch):
+        agent = InsightsAgent()
+        monkeypatch.setattr(agent, "_nvidia_call", lambda *a, **k: None)
+        monkeypatch.setattr(agent, "_claude_call", lambda *a, **k: {"source": "claude"})
+        assert agent._llm_call("prompt") == {"source": "claude"}
+
+    def test_both_providers_fail_returns_none(self, monkeypatch):
+        agent = InsightsAgent()
+        monkeypatch.setattr(agent, "_nvidia_call", lambda *a, **k: None)
+        monkeypatch.setattr(agent, "_claude_call", lambda *a, **k: None)
+        assert agent._llm_call("prompt") is None
+
+
+# ── _get_rich_context: vector-memory augmentation ────────────────────────
+
+
+class TestGetRichContext:
+    def test_disabled_returns_flat_context_only(self, monkeypatch):
+        monkeypatch.setattr(ins_mod, "VECTOR_MEMORY_ENABLED", False)
+        ctx = InsightsAgent()._get_rich_context(KPIS, n_calls=20)
+        assert ctx == ins_mod.MEMORY.get_context_for_insights()
+
+    def test_enabled_empty_store_returns_flat_context_only(self, monkeypatch):
+        monkeypatch.setattr(ins_mod, "VECTOR_MEMORY_ENABLED", True)
+        mock_store = MagicMock(size=0)
+        monkeypatch.setattr("pipeline.vector_memory.VECTOR_STORE", mock_store)
+        ctx = InsightsAgent()._get_rich_context(KPIS, n_calls=20)
+        assert ctx == ins_mod.MEMORY.get_context_for_insights()
+        mock_store.format_context.assert_not_called()
+
+    def test_enabled_nonempty_store_appends_vector_context(self, monkeypatch):
+        monkeypatch.setattr(ins_mod, "VECTOR_MEMORY_ENABLED", True)
+        mock_store = MagicMock(size=3)
+        mock_store.format_context.return_value = "similar run: FCR 65%"
+        monkeypatch.setattr("pipeline.vector_memory.VECTOR_STORE", mock_store)
+        ctx = InsightsAgent()._get_rich_context(KPIS, n_calls=20)
+        assert "similar run: FCR 65%" in ctx
+
+    def test_vector_store_failure_falls_back_to_flat_context(self, monkeypatch):
+        """Vector memory is enrichment, not a dependency — a broken vector
+        store must never take down InsightsAgent's historical context."""
+        monkeypatch.setattr(ins_mod, "VECTOR_MEMORY_ENABLED", True)
+        mock_store = MagicMock(size=3)
+        mock_store.format_context.side_effect = RuntimeError("index corrupt")
+        monkeypatch.setattr("pipeline.vector_memory.VECTOR_STORE", mock_store)
+        ctx = InsightsAgent()._get_rich_context(KPIS, n_calls=20)
+        assert ctx == ins_mod.MEMORY.get_context_for_insights()

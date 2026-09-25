@@ -1,6 +1,6 @@
 [project]
 name = "telecom-call-intelligence"
-version = "4.1.1"
+version = "4.7.0"
 description = "Multi-agent telecom call intelligence pipeline — LangGraph + Claude Haiku + NVIDIA NIM"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
@@ -34,6 +34,8 @@ ignore_missing_imports = true
 warn_unused_ignores    = false
 warn_return_any        = false
 strict_optional        = false   # TypedDict fields are not Optional by default
+check_untyped_defs     = true    # without this, an unannotated def's body is never
+                                  # type-checked at all — mypy silently skips it
 
 
 # ── Pytest ─────────────────────────────────────────────────────────────
