@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cost-to-Serve Architect — Full Case Study</title>
+<style>
+:root{
+  --ink:#14171C; --paper:#F6F4EF; --paper-2:#EFEBE0;
+  --amber:#B8752E; --amber-deep:#8F5A20;
+  --teal:#3B6E71; --teal-deep:#274D50;
+  --line:#DDD8CC; --muted:#6B6255;
+  --good:#3F7A4E; --warn:#B8752E;
+  --card:#FFFFFF;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#F3F0E8; --paper:#14171C; --paper-2:#1B1F26;
+    --amber:#E0A15C; --amber-deep:#F0BE85;
+    --teal:#7FB4B7; --teal-deep:#9ED0D2;
+    --line:#2C313A; --muted:#9A9285;
+    --card:#1B1F26;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#F3F0E8; --paper:#14171C; --paper-2:#1B1F26;
+  --amber:#E0A15C; --amber-deep:#F0BE85;
+  --teal:#7FB4B7; --teal-deep:#9ED0D2;
+  --line:#2C313A; --muted:#9A9285;
+  --card:#1B1F26;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper); color:var(--ink); margin:0; font-family:'IBM Plex Sans',-apple-system,sans-serif; font-size:15.5px; line-height:1.65}
+.wrap{max-width:760px; margin:0 auto; padding:0 20px}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif; text-wrap:balance; margin:0}
+.eyebrow{font-family:'IBM Plex Mono',monospace; font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:8px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.tab-num{font-variant-numeric:tabular-nums}
+.tag-amber{color:var(--amber-deep); font-weight:600}
+.tag-teal{color:var(--teal-deep); font-weight:600}
+
+.cover{padding:56px 0 40px; border-bottom:2px solid var(--ink)}
+.cover .eyebrow{color:var(--teal-deep)}
+.cover h1{font-size:clamp(1.7rem,3.6vw,2.3rem); font-weight:600; line-height:1.18}
+.cover .verdict{color:var(--amber-deep)}
+.cover .meta{display:flex; gap:24px; margin-top:20px; flex-wrap:wrap; font-size:.82rem; color:var(--muted); font-family:'IBM Plex Mono',monospace}
+
+section{padding:36px 0; border-bottom:1px solid var(--line)}
+.section-head{margin-bottom:20px}
+.section-head h2{font-size:1.4rem; font-weight:600}
+.section-head .sub{color:var(--muted); font-size:.9rem; margin-top:6px}
+
+.kpi-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px; overflow:hidden; margin:18px 0}
+.kpi{background:var(--card); padding:14px}
+.kpi .v{font-family:'Fraunces',serif; font-size:1.3rem; font-weight:600; color:var(--amber-deep)}
+.kpi .l{font-size:.72rem; color:var(--muted); margin-top:3px; line-height:1.3}
+
+.finding{display:flex; gap:12px; padding:10px 0; border-top:1px solid var(--line)}
+.finding:first-child{border-top:none}
+.fnum{font-family:'IBM Plex Mono',monospace; font-size:.72rem; font-weight:600; color:var(--paper); background:var(--amber-deep); width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px}
+.finding .ft{font-weight:600; font-size:.92rem}
+.finding .fd{color:var(--muted); font-size:.85rem; margin-top:2px}
+
+.waterfall{background:var(--ink); border-radius:10px; padding:20px; margin-top:10px}
+.wf-label{color:#9A9285; font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; margin-bottom:14px; font-family:'IBM Plex Mono',monospace}
+.wf-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08); font-size:.85rem}
+.wf-row .k{color:#C9C4B8}
+.wf-row .v{color:#F3F0E8; font-weight:600; font-family:'IBM Plex Mono',monospace}
+.wf-row .v.neg{color:#7FB4A0}
+.wf-total{display:flex; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.16)}
+.wf-total .v{font-family:'Fraunces',serif; font-size:1.3rem; color:#E0A15C; font-weight:600}
+.wf-banner{background:#E0A15C; color:#14171C; border-radius:6px; padding:8px 14px; text-align:center; font-weight:700; margin-top:10px; font-size:.85rem}
+
+.agent-card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:12px}
+.agent-card .a-head{display:flex; align-items:baseline; gap:10px; margin-bottom:6px}
+.agent-card .a-idx{font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--teal-deep); font-weight:600}
+.agent-card .a-name{font-weight:600; font-size:1.02rem}
+.agent-card .a-tag{font-size:.76rem; color:var(--muted); margin-left:auto; font-family:'IBM Plex Mono',monospace}
+.agent-card p{font-size:.86rem; margin:5px 0; color:var(--ink)}
+.react-step{display:flex; gap:8px; align-items:baseline; margin:3px 0; font-size:.82rem}
+.react-step b{color:var(--teal-deep); font-family:'IBM Plex Mono',monospace; font-size:.72rem; min-width:74px; flex-shrink:0}
+.route-note{font-size:.78rem; color:var(--muted); font-style:italic; margin-top:6px; padding-top:6px; border-top:1px dashed var(--line)}
+
+.guard-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:16px}
+.guard{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 16px}
+.g-status{display:inline-flex; font-size:.66rem; font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:20px; margin-bottom:6px}
+.g-live{background:rgba(63,122,78,.15); color:var(--good)}
+.g-new{background:rgba(59,110,113,.15); color:var(--teal-deep)}
+.guard h4{font-size:.88rem; font-weight:600; margin:0 0 3px}
+.guard p{font-size:.78rem; color:var(--muted); margin:0}
+
+.eval-strip{display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-top:14px}
+.eval-cell{flex:1; padding:12px; border-right:1px solid var(--line); background:var(--card)}
+.eval-cell:last-child{border-right:none}
+.eval-cell .v{font-family:'Fraunces',serif; font-weight:600; font-size:1.2rem; color:var(--good)}
+.eval-cell .l{font-size:.7rem; color:var(--muted); margin-top:2px}
+
+.issue{background:var(--card); border:1px solid var(--line); border-left:3px solid var(--warn); border-radius:0 8px 8px 0; padding:14px 16px; margin-bottom:10px}
+.issue h4{font-size:.9rem; font-weight:600; margin:0 0 4px; display:flex; gap:8px; align-items:center}
+.issue .sev{font-family:'IBM Plex Mono',monospace; font-size:.64rem; text-transform:uppercase; color:var(--warn); border:1px solid var(--warn); border-radius:20px; padding:1px 7px}
+.issue p{font-size:.82rem; color:var(--muted); margin:3px 0 0}
+.issue .fix{font-size:.78rem; color:var(--good); margin-top:5px}
+
+table{width:100%; border-collapse:collapse; margin-top:10px; font-size:.82rem}
+th,td{text-align:left; padding:7px 10px; border-bottom:1px solid var(--line)}
+th{font-family:'IBM Plex Mono',monospace; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted)}
+
+.ask{background:var(--ink); color:var(--paper); border-radius:12px; padding:28px 26px; margin-top:8px}
+.ask h2{color:#F3F0E8; font-size:1.25rem}
+.ask p{color:#C9C4B8; font-size:.88rem}
+.ask-cta{display:inline-block; margin-top:14px; background:#E0A15C; color:#14171C; font-weight:700; padding:10px 18px; border-radius:6px; text-decoration:none; font-size:.85rem}
+
+footer{padding:24px 0 50px; text-align:center; color:var(--muted); font-size:.74rem; font-family:'IBM Plex Mono',monospace}
+
+@media (max-width:600px){
+  .cover{padding:40px 0 28px}
+  section{padding:26px 0}
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
+
+<div class="cover">
+  <div class="wrap">
+    <div class="eyebrow">AI Architecture Case Study &middot; Full Technical Depth</div>
+    <h1>Cost-to-Serve Architect: <span class="verdict">a production AI system that discloses what it doesn't know yet.</span></h1>
+    <div class="meta">
+      <span>7 agents &middot; 1 LangGraph state machine</span>
+      <span>70+ fields extracted per call</span>
+      <span>September 2026</span>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-amber">01 &middot; The Business Problem</div>
+      <h2>Telecom care centers can't see which calls are actually worth having.</h2>
+      <div class="sub">A carrier handling 100,000 monthly care calls at an industry-typical $6/call fully-loaded cost has no systematic way to separate value-creating calls from pure overhead &mdash; unless every call is read the same way, at the same depth, every time. That's the problem this pipeline solves: it extracts 70+ structured fields per call (issue category, resolution method, sentiment trajectory, phase-level time allocation, upsell outcome) so cost, quality, and automation-fit questions can be answered from data instead of sampling a handful of calls a month.</div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="v tab-num">$600K</div><div class="l">Monthly cost baseline &middot; 100K calls &middot; $6/call</div></div>
+      <div class="kpi"><div class="v tab-num">59.3%</div><div class="l">Avoidable contacts</div></div>
+      <div class="kpi"><div class="v tab-num">23.3%</div><div class="l">Escalation rate vs. 15% industry avg</div></div>
+      <div class="kpi"><div class="v tab-num">44.2%</div><div class="l">Fully AI-resolvable</div></div>
+    </div>
+    <p style="color:var(--muted); font-size:.82rem">Figures traced to a 172-call verified analysis run (<span class="mono">outputs/full_results_combined_*.json</span>), not projected from a handful of calls.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-amber">02 &middot; Opportunity Assessment</div>
+      <h2>Five findings, each independently actionable.</h2>
+    </div>
+    <div class="finding"><div class="fnum">1</div><div><div class="ft">Nearly six-in-ten calls should never happen.</div><div class="fd">59.3% avoidable &mdash; billing confusion, preventable technical issues, self-serve-answerable questions.</div></div></div>
+    <div class="finding"><div class="fnum">2</div><div><div class="ft">Four-in-ten calls need no human agent.</div><div class="fd">44.2% fully AI-resolvable: plan queries, roaming activation, billing credits &mdash; deterministic operations.</div></div></div>
+    <div class="finding"><div class="fnum">3</div><div><div class="ft">Escalation runs 55% above industry.</div><div class="fd">23.3% vs. 15% benchmark; each escalation costs 3&ndash;5&times; a standard call.</div></div></div>
+    <div class="finding"><div class="fnum">4</div><div><div class="ft">Upsell converts at 92% when attempted, but agents only try 35% of the time.</div><div class="fd">A behavioral lever, not a demand-side one.</div></div></div>
+    <div class="finding"><div class="fnum">5</div><div><div class="ft">A quarter of demand is preventable before the phone rings.</div><div class="fd">25.0% of contacts carry a detectable proactive trigger &mdash; bill spikes, usage thresholds, travel signals.</div></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-amber">03 &middot; Cost-Benefit</div>
+      <h2>$600K to $280.5K a month, without adding headcount.</h2>
+      <div class="sub">Three levers, each gated by a realistic capture rate rather than 100% adoption on day one.</div>
+    </div>
+    <div class="waterfall">
+      <div class="wf-label">Monthly cost model &middot; 100K calls &middot; $6/call</div>
+      <div class="wf-row"><span class="k">Baseline cost today</span><span class="v">$600,000</span></div>
+      <div class="wf-row"><span class="k">Proactive prevention &middot; 25.0% of calls &middot; 60% capture</span><span class="v neg">&minus;$90,000</span></div>
+      <div class="wf-row"><span class="k">Self-serve automation &middot; 43.6% of calls &middot; 85% capture</span><span class="v neg">&minus;$222,360</span></div>
+      <div class="wf-row"><span class="k">Agentic AI resolution &middot; 1.7% of calls &middot; 70% capture</span><span class="v neg">&minus;$7,140</span></div>
+      <div class="wf-total"><span class="k">Target state</span><span class="v">$280,500</span></div>
+      <div class="wf-banner">53% cost reduction &middot; $319,500/month saved</div>
+    </div>
+    <table>
+      <tr><th>Cost bucket</th><th>Share of agent time</th><th>Monthly cost</th></tr>
+      <tr><td>Cost to Serve (P1&ndash;P4)</td><td class="tab-num">85.7%</td><td class="tab-num">$514,200</td></tr>
+      <tr><td>Cost to Sell (P5)</td><td class="tab-num">5.7%</td><td class="tab-num">$34,200</td></tr>
+      <tr><td>Cost to Retain (cross-cutting)</td><td class="tab-num">8.6%</td><td class="tab-num">$51,600</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-teal">04 &middot; Technical Architecture</div>
+      <h2>Seven agents, one LangGraph, one accountable state.</h2>
+      <div class="sub">Agents are stateless — <span class="mono">run(state: dict) -&gt; dict</span> — and state handoff is immutable: every agent returns <span class="mono">{**state, "new_key": new_value}</span>. Nothing mutates in place, so any two agents' outputs can be diffed against the same input.</div>
+    </div>
+
+    <div class="agent-card">
+      <div class="a-head"><span class="a-idx">01</span><span class="a-name">DataIngestionAgent</span><span class="a-tag">Fetch &amp; validate</span></div>
+      <p>Streams call transcripts from the source dataset (HuggingFace corpus with local-CSV fallback). Validates minimum transcript length and turn count before anything downstream sees the call.</p>
+      <p style="font-size:.78rem; color:var(--muted)">Handoff: <span class="mono">validated_transcripts</span> + <span class="mono">validation_errors</span> into shared state.</p>
+    </div>
+
+    <div class="agent-card">
+      <div class="a-head"><span class="a-idx">02</span><span class="a-name">ExtractionAgent</span><span class="a-tag">Claude Haiku 4.5 &middot; ReAct</span></div>
+      <p>This is the pipeline's clearest thinking&rarr;reasoning&rarr;acting loop:</p>
+      <div class="react-step"><b>REASON</b> Assess which of 7 critical fields are likely present before calling the model.</div>
+      <div class="react-step"><b>ACT</b> Call Claude Haiku 4.5 for full 70-field structured extraction, JSON mode.</div>
+      <div class="react-step"><b>OBSERVE</b> Score field coverage inline against the critical-field list.</div>
+      <div class="react-step"><b>REASON</b> Coverage below threshold? Decide whether a targeted gap-fill retry is warranted.</div>
+      <div class="react-step"><b>ACT</b> Re-query for only the missing fields, not the whole record.</div>
+      <div class="react-step"><b>OBSERVE</b> Merge and record the coverage improvement.</div>
+      <p>A second pass fires only when the first one measurably needs it &mdash; not on every call. Rate-limited per provider (Claude: 50 RPM); every LLM client is constructed with an explicit timeout and <span class="mono">max_retries=1</span>, not the SDK default, because SDK-level retry compounding with application-level retry once nearly hit the orchestrator's 600-second subprocess timeout.</p>
+    </div>
+
+    <div class="agent-card">
+      <div class="a-head"><span class="a-idx">03</span><span class="a-name">QualityAgent</span><span class="a-tag">100-pt QA + Data Quality Gate</span></div>
+      <p><b>QA Score (0&ndash;100):</b> four weighted dimensions &mdash; completeness (30), enum validity (25), cross-field consistency (25), plausibility (20). Grades HIGH (&ge;85) / MEDIUM (&ge;60) / LOW; LOW is excluded from aggregation.</p>
+      <p><b>Data Quality Gate (pass/fail, independent):</b> can this call's <em>time data</em> be trusted for cost-lever attribution? Three deterministic, non-LLM checks &mdash; phase-reconciliation, timestamp ground-truth against the source dataset's own turn timestamps, and transcript-completeness. A call can score 100/100 on QA and still fail this gate; the two are never blended into one number, because a well-formed extraction is not the same claim as trustworthy time data.</p>
+      <div class="route-note">Routing: a catastrophic pass-rate failure here routes directly to ExportAgent (node 07), skipping aggregation, insights, and approval entirely &mdash; the pipeline never silently proceeds on data it can't stand behind.</div>
+    </div>
+
+    <div class="agent-card">
+      <div class="a-head"><span class="a-idx">04</span><span class="a-name">AggregationAgent</span><span class="a-tag">KPI computation</span></div>
+      <p>Rolls per-call extractions into executive KPIs (FCR, AHT, avoidable-call rate, agentic-AI-resolvable rate) and the three-lever cost-to-serve model (proactive / self-serve / agentic), each allocated in direct proportion to phase-duration fields &mdash; which is exactly why the Data Quality Gate upstream matters: a call whose phase durations don't reconcile misattributes cost across every downstream dollar figure.</p>
+    </div>
+
+    <div class="agent-card">
+      <div class="a-head"><span class="a-idx">05</span><span class="a-name">InsightsAgent</span><span class="a-tag">NVIDIA NIM &middot; deliberation</span></div>
+      <div class="react-step"><b>ANALYZE</b> Chain-of-thought pass over aggregated KPIs &mdash; which are outside benchmark, likely root cause.</div>
+      <div class="react-step"><b>CRITIQUE</b> A second pass grades the first pass's own recommendations for specificity and data-grounding &mdash; self-reflection, not a rubber stamp.</div>
+      <div class="react-step"><b>SYNTHESIZE</b> A third pass rewrites anything the critique flagged as weak before it reaches an executive audience.</div>
+      <p>Provider chain: NVIDIA NIM (Llama 3.3 70B) &rarr; Claude Haiku &rarr; rule-based fallback, selected automatically on key availability and live circuit-breaker state. A provider outage trips a shared circuit breaker once and stays tripped for the rest of the run &mdash; remaining passes skip straight to the next tier instead of re-paying the same timeout repeatedly.</p>
+    </div>
+
+    <div class="agent-card">
+      <div class="a-head"><span class="a-idx">06</span><span class="a-name">ApprovalGate</span><span class="a-tag">Human-in-the-loop</span></div>
+      <p>Optional checkpoint before export: presents the KPI summary and waits for explicit operator confirmation, with a configurable auto-approve timeout for unattended batch runs. Disabled by default in this configuration &mdash; a transparent pass-through that costs nothing in CI, but the seam exists for a deployment that wants a human in the loop before every export.</p>
+    </div>
+
+    <div class="agent-card">
+      <div class="a-head"><span class="a-idx">07</span><span class="a-name">ExportAgent</span><span class="a-tag">Write + drift check</span></div>
+      <p>Writes CSV, full JSON, QA report, insights, decision log, audit trail, and the dashboard's <span class="mono">summary.json</span>. Immediately before recording the run into history, it runs the drift check against the rolling baseline of prior runs &mdash; deliberately positioned so the baseline can never include the run being compared against itself. The drift-check call itself is wrapped in a try/except: an exception there is caught and logged, never allowed to fail the export, matching the same never-block-export pattern used for the vector-memory write.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-teal">05 &middot; Quality, Drift, Evals, Observability</div>
+      <h2>Four separate questions, four separate answers.</h2>
+      <div class="sub">Never blended into one score &mdash; extraction can be well-formed and still untrustworthy for cost attribution; a run can look fine and still be quietly drifting.</div>
+    </div>
+    <div class="guard-grid">
+      <div class="guard"><span class="g-status g-live">Live</span><h4>QA Score</h4><p>Live average 98.6/100 across verified runs.</p></div>
+      <div class="guard"><span class="g-status g-live">Live</span><h4>Data Quality Gate</h4><p>Independent pass/fail on time-data trustworthiness for cost attribution.</p></div>
+      <div class="guard"><span class="g-status g-new">New</span><h4>Drift Detection</h4><p>Flags a metric only past both a 2&sigma; statistical bound and a 10% practical one &mdash; biased toward few false alarms on a ~20-run history.</p></div>
+      <div class="guard"><span class="g-status g-new">New</span><h4>Golden-Set Eval</h4><p>15 real calls, ground truth frozen from a verified-HIGH run, re-extracted on demand.</p></div>
+      <div class="guard"><span class="g-status g-live">Live</span><h4>Decision Log</h4><p>Every autonomous choice recorded as a structured trace: what, why, alternatives, confidence. Never transcript text or PII.</p></div>
+      <div class="guard"><span class="g-status g-live">Live</span><h4>Langfuse / LangSmith</h4><p>One trace per call for extraction+gap-fill, one per run for insights &mdash; raw transcript content redacted before export.</p></div>
+    </div>
+    <div class="section-head" style="margin-top:28px"><div class="eyebrow tag-teal">Golden-Set Eval &mdash; Actual Result, Run 2026-09-25</div></div>
+    <div class="eval-strip">
+      <div class="eval-cell"><div class="v">15/15</div><div class="l">Calls scored, 0 failures</div></div>
+      <div class="eval-cell"><div class="v">87.6%</div><div class="l">Aggregate field accuracy</div></div>
+      <div class="eval-cell"><div class="v">PASS</div><div class="l">Verdict (threshold 85%)</div></div>
+      <div class="eval-cell"><div class="v">$0.11</div><div class="l">Actual spend, as estimated</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-teal">06 &middot; Security &amp; Cost Control</div>
+      <h2>The failure mode this system is designed against is an unattended one.</h2>
+    </div>
+    <div class="guard-grid">
+      <div class="guard"><h4>Multi-layer sanitization</h4><p>InputSanitizer (prompt injection, PII), OutputSanitizer (code execution, secrets, response-size bombs), AgentScopeGuard (per-agent tool access), SecretGuard.</p></div>
+      <div class="guard"><h4>Budget &amp; rate governance</h4><p>Hard per-run spend ceiling; per-provider rate limiters; every client built with explicit timeout + max_retries=1.</p></div>
+      <div class="guard"><h4>Strict halt-on-failure</h4><p>Orchestrator halts an entire multi-batch run on first failure, requires explicit human acknowledgement to resume &mdash; replaced an auto-retry loop that silently doubled spend on a hung batch in production.</p></div>
+      <div class="guard"><h4>Circuit breakers</h4><p>Provider outage trips once, stays tripped for the run &mdash; no repeated timeout-paying on a known-down provider.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-amber">07 &middot; Known Issues</div>
+      <h2>What's still imperfect, stated before anyone has to ask.</h2>
+    </div>
+    <div class="issue">
+      <h4>Drift detection is near-inert on FCR at current batch granularity <span class="sev">Documented</span></h4>
+      <p>Against 28 real historical runs, FCR's rolling baseline standard deviation is wide enough (20-call batches produce high binomial noise) that the drift check would only fire outside roughly a 24&ndash;114% band &mdash; effectively never, for a percentage metric. The threshold design is sound; its sensitivity at this data granularity was undersold until this audit quantified it.</p>
+      <div class="fix">Mitigated: a minimum-call-count filter now excludes low-volume runs from both the baseline and the current-run comparison. Full fix: run drift on the ~100-call orchestrated run, not the 20-call batch.</div>
+    </div>
+    <div class="issue">
+      <h4>The eval harness scores first-pass extraction only <span class="sev">Documented</span></h4>
+      <p>Golden-set ground truth was captured from the full pipeline including the ReAct gap-fill pass; the eval re-extracts via first-pass only. A case that originally needed gap-fill to reach its correct values can show a false regression.</p>
+      <div class="fix">Accepted for now, documented in the harness itself; wiring in gap-fill is a larger, separately-scoped change.</div>
+    </div>
+    <div class="issue">
+      <h4>An auto-retry loop once cost real money in production <span class="sev">Resolved</span></h4>
+      <p>A prior version silently retried a hung batch twice before a human noticed &mdash; roughly $1.80 wasted on discarded work. Root cause: no policy distinguishing "call failed, retry the call" from "batch is stuck, stop and ask."</p>
+      <div class="fix">Fixed: orchestrator now halts the entire run on first failure; no config flag re-enables auto-retry without a discussion first.</div>
+    </div>
+  </div>
+</section>
+
+<section style="border-bottom:none">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow tag-amber">08 &middot; Outcome &amp; Value</div>
+      <h2>The system, and the judgment behind it, are the same deliverable.</h2>
+    </div>
+    <div class="ask">
+      <h2>Looking for someone who ships AI systems, not AI demos.</h2>
+      <p>This pipeline &mdash; architecture, governance, drift monitoring, and the honest gaps above &mdash; is one example of how AI strategy and platform ownership get executed end to end. Open to a conversation about your team's automation roadmap.</p>
+      <a class="ask-cta" href="https://www.linkedin.com/in/vinothnataraj" target="_blank" rel="noopener">Connect on LinkedIn &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer>TELECOM CALL INTELLIGENCE &middot; FULL ARCHITECTURE CASE STUDY &middot; SEPTEMBER 2026</footer>
+
+</body>
+</html>
